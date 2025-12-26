@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% block title %}Record Contribution{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Record Contribution</h1>
+            <p class="text-sm text-gray-500">Record tithes, offerings, and other contributions</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'contributions:weekly_entry' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">calendar_view_week</span>Weekly Entry
+            </a>
+            <a href="{% url 'contributions:list' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">arrow_back</span>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Entry Type Selection -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">swap_horiz</span>
+                Entry Type
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="entry_type" value="general" class="peer sr-only" checked onchange="toggleEntryType('general')">
+                    <div class="p-4 border-2 border-gray-200 rounded-xl transition-all peer-checked:border-primary-500 peer-checked:bg-primary-50 hover:border-gray-300">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-green-600 text-2xl">groups</span>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">General Contribution</p>
+                                <p class="text-sm text-gray-500">Record a contribution for the branch (e.g., Sunday offering)</p>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+                <label class="relative cursor-pointer">
+                    <input type="radio" name="entry_type" value="individual" class="peer sr-only" onchange="toggleEntryType('individual')">
+                    <div class="p-4 border-2 border-gray-200 rounded-xl transition-all peer-checked:border-primary-500 peer-checked:bg-primary-50 hover:border-gray-300">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-blue-600 text-2xl">person</span>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Individual Contribution</p>
+                                <p class="text-sm text-gray-500">Record a contribution for a specific member</p>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="is_individual" id="isIndividual" value="false">
+        
+        <!-- Contribution Type Selection -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">category</span>
+                    Contribution Type
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {% for ct in contribution_types %}
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="contribution_type" value="{{ ct.id }}" class="peer sr-only" required>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl text-center transition-all peer-checked:border-primary-500 peer-checked:bg-primary-50 hover:border-gray-300 hover:bg-gray-50">
+                            <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 
+                                {% if ct.category == 'tithe' %}bg-blue-100 text-blue-600
+                                {% elif ct.category == 'offering' %}bg-green-100 text-green-600
+                                {% elif ct.category == 'donation' %}bg-purple-100 text-purple-600
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                <span class="material-icons-outlined text-2xl">
+                                    {% if ct.category == 'tithe' %}savings
+                                    {% elif ct.category == 'offering' %}volunteer_activism
+                                    {% elif ct.category == 'donation' %}redeem
+                                    {% else %}paid{% endif %}
+                                </span>
+                            </div>
+                            <p class="font-medium text-gray-900 text-sm">{{ ct.name }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ ct.get_category_display }}</p>
+                        </div>
+                        <div class="absolute top-2 right-2 hidden peer-checked:block">
+                            <span class="material-icons text-primary-600 text-xl">check_circle</span>
+                        </div>
+                    </label>
+                    {% empty %}
+                    <div class="col-span-full text-center py-8 text-gray-500">
+                        <span class="material-icons-outlined text-4xl text-gray-300 mb-2">category</span>
+                        <p>No contribution types configured</p>
+                        <a href="{% url 'contributions:types' %}" class="text-primary-600 hover:underline">Configure Types</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Contribution Details -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">edit_note</span>
+                    Contribution Details
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Date -->
+                    <div class="form-group">
+                        <label class="form-label required">Date</label>
+                        <input type="date" name="date" required class="form-input" id="contributionDate">
+                    </div>
+                    
+                    <!-- Amount -->
+                    <div class="form-group">
+                        <label class="form-label required">Amount (GH₵)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">GH₵</span>
+                            <input type="number" name="amount" step="0.01" min="0.01" required 
+                                class="form-input pl-14" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <!-- Member Selection (Individual only) -->
+                    <div class="form-group md:col-span-2" id="memberSection" style="display: none;">
+                        <label class="form-label required">Select Member</label>
+                        <div class="relative">
+                            <input type="text" id="memberSearch" class="form-input" placeholder="Search by name or member ID..." autocomplete="off">
+                            <input type="hidden" name="member" id="memberInput">
+                            <div id="memberResults" class="absolute z-10 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-60 overflow-auto"></div>
+                        </div>
+                        <div id="selectedMember" class="mt-2 hidden">
+                            <span class="inline-flex items-center gap-2 px-3 py-2 bg-primary-100 text-primary-800 rounded-lg">
+                                <span class="material-icons-outlined text-lg">person</span>
+                                <span id="memberName"></span>
+                                <button type="button" onclick="clearMember()" class="hover:text-primary-600 ml-2">&times;</button>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Branch (for mission admins only) -->
+                    {% if user.is_mission_admin %}
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <select name="branch" class="form-input form-select">
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}">{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <input type="hidden" name="branch" value="{{ user.branch_id }}">
+                    {% endif %}
+                    
+                    <!-- Notes -->
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Notes</label>
+                        <textarea name="description" rows="2" class="form-input" placeholder="Optional notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex flex-col sm:flex-row justify-end gap-4">
+            <a href="{% url 'contributions:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                Save Contribution
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Set default date to today
+document.getElementById('contributionDate').value = new Date().toISOString().split('T')[0];
+
+// Members data for search
+const members = [
+    {% for member in members %}
+    { id: '{{ member.id }}', name: '{{ member.get_full_name }}', memberId: '{{ member.member_id }}' },
+    {% endfor %}
+];
+
+function toggleEntryType(type) {
+    const memberSection = document.getElementById('memberSection');
+    const isIndividualInput = document.getElementById('isIndividual');
+    
+    if (type === 'individual') {
+        memberSection.style.display = 'block';
+        isIndividualInput.value = 'true';
+    } else {
+        memberSection.style.display = 'none';
+        isIndividualInput.value = 'false';
+        clearMember();
+    }
+}
+
+// Member search functionality
+const memberSearchInput = document.getElementById('memberSearch');
+const memberResults = document.getElementById('memberResults');
+
+memberSearchInput.addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    if (query.length < 2) {
+        memberResults.classList.add('hidden');
+        return;
+    }
+    
+    const filtered = members.filter(m => 
+        m.name.toLowerCase().includes(query) || 
+        m.memberId.toLowerCase().includes(query)
+    ).slice(0, 10);
+    
+    if (filtered.length > 0) {
+        memberResults.innerHTML = filtered.map(m => `
+            <div class="p-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3" onclick="selectMember('${m.id}', '${m.name}', '${m.memberId}')">
+                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span class="text-xs font-medium text-primary-600">${m.name.split(' ').map(n => n[0]).join('')}</span>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">${m.name}</p>
+                    <p class="text-xs text-gray-500">${m.memberId}</p>
+                </div>
+            </div>
+        `).join('');
+        memberResults.classList.remove('hidden');
+    } else {
+        memberResults.innerHTML = '<div class="p-3 text-gray-500 text-center">No members found</div>';
+        memberResults.classList.remove('hidden');
+    }
+});
+
+memberSearchInput.addEventListener('blur', function() {
+    setTimeout(() => memberResults.classList.add('hidden'), 200);
+});
+
+function selectMember(id, name, memberId) {
+    document.getElementById('memberInput').value = id;
+    document.getElementById('memberName').textContent = `${name} (${memberId})`;
+    document.getElementById('selectedMember').classList.remove('hidden');
+    memberSearchInput.value = '';
+    memberResults.classList.add('hidden');
+}
+
+function clearMember() {
+    document.getElementById('memberInput').value = '';
+    document.getElementById('selectedMember').classList.add('hidden');
+}
+</script>
+{% endblock %}

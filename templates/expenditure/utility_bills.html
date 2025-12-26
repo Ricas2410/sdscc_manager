@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Utility Bills{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Utility Bills</h1>
+            <p class="text-sm text-gray-500">Manage electricity, water, and other utility payments</p>
+        </div>
+        <button type="button" onclick="openAddModal()" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">add</span>Add Utility Bill
+        </button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">bolt</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Electricity</p>
+                    <p class="text-xl font-bold text-yellow-600">GH₵ {{ summaries.electricity|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">water_drop</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Water</p>
+                    <p class="text-xl font-bold text-blue-600">GH₵ {{ summaries.water|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">wifi</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Internet</p>
+                    <p class="text-xl font-bold text-purple-600">GH₵ {{ summaries.internet|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-gray-100">
+                    <span class="material-icons-outlined text-gray-600">receipt_long</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total This Month</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵ {{ summaries.total|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bills List -->
+    <div class="card">
+        <div class="card-header flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">Recent Utility Bills</h3>
+            <div class="flex gap-2">
+                <select class="form-input form-select text-sm py-1.5">
+                    <option value="">All Types</option>
+                    <option value="electricity">Electricity</option>
+                    <option value="water">Water</option>
+                    <option value="internet">Internet</option>
+                    <option value="phone">Phone</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Branch</th>
+                        <th>Provider</th>
+                        <th>Period</th>
+                        <th class="text-right">Amount</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td>{{ bill.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="material-icons-outlined text-sm">
+                                    {% if bill.utility_type == 'electricity' %}bolt
+                                    {% elif bill.utility_type == 'water' %}water_drop
+                                    {% elif bill.utility_type == 'internet' %}wifi
+                                    {% else %}receipt{% endif %}
+                                </span>
+                                {{ bill.get_utility_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ bill.branch.name }}</td>
+                        <td>{{ bill.provider|default:"-" }}</td>
+                        <td>{{ bill.month }}/{{ bill.year }}</td>
+                        <td class="text-right font-semibold">GH₵ {{ bill.amount|floatformat:2 }}</td>
+                        <td>
+                            {% if bill.is_paid %}
+                            <span class="badge badge-success">Paid</span>
+                            {% else %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <button class="text-primary-600 hover:text-primary-800">
+                                <span class="material-icons-outlined text-sm">visibility</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-8 text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300">receipt_long</span>
+                            <p class="mt-2">No utility bills recorded yet</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Utility Bill Modal -->
+<div id="addModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeAddModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Add Utility Bill</h3>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Utility Type</label>
+                        <select name="utility_type" required class="form-input form-select">
+                            <option value="electricity">Electricity</option>
+                            <option value="water">Water</option>
+                            <option value="internet">Internet</option>
+                            <option value="phone">Phone</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Amount (GH₵)</label>
+                        <input type="number" name="amount" step="0.01" min="0" required class="form-input">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Date</label>
+                        <input type="date" name="date" required class="form-input" id="billDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Provider</label>
+                        <input type="text" name="provider" class="form-input" placeholder="e.g., ECG, GWCL">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Billing Period</label>
+                    <input type="text" name="billing_period" class="form-input" placeholder="e.g., January 2025">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('billDate').value = new Date().toISOString().split('T')[0];
+
+function openAddModal() {
+    document.getElementById('addModal').classList.remove('hidden');
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,214 @@
+<!-- Top Navigation Bar -->
+<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-gradient-to-r from-[#0B43DC] to-[#02107B] px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+    <!-- Mobile menu button -->
+    <button type="button" class="lg:hidden -m-2.5 p-2.5 text-white hover:text-gray-200" onclick="toggleSidebar()">
+        <span class="sr-only">Open sidebar</span>
+        <span class="material-icons">menu</span>
+    </button>
+    
+    <!-- Separator -->
+    <div class="h-6 w-px bg-white/20 lg:hidden"></div>
+    
+    <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+        <!-- Enhanced Search -->
+        <form class="flex items-center flex-1 max-w-md mx-4" action="{% url 'core:search' %}" method="GET">
+            <div class="relative w-full">
+                <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-white/70 text-lg pointer-events-none">search</span>
+                <input 
+                    id="search-field" 
+                    class="w-full h-10 pl-10 pr-4 border border-white/20 rounded-full text-sm text-white placeholder-white/60 bg-white/15 focus:bg-white/25 focus:border-white/50 outline-none transition-all hover:bg-white/20" 
+                    placeholder="Search..." 
+                    type="search" 
+                    name="q"
+                    autocomplete="off">
+            </div>
+        </form>
+        
+        <div class="flex items-center gap-x-4 lg:gap-x-6">
+            <!-- Hierarchy Selector (for admins) -->
+            {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %}
+            <div class="relative" id="branchDropdownContainer">
+                <button type="button" onclick="toggleDropdown('branchDropdown')" class="flex items-center gap-2 text-sm text-white hover:text-gray-200 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
+                    <span class="material-icons-outlined text-white/70">location_on</span>
+                    <span class="hidden sm:block">
+                        {% if user.is_mission_admin %}All Branches
+                        {% elif user.managed_area %}{{ user.managed_area.name }}
+                        {% elif user.managed_district %}{{ user.managed_district.name }}
+                        {% elif user.branch %}{{ user.branch.name }}
+                        {% else %}Select Branch{% endif %}
+                    </span>
+                    <span class="material-icons text-white/70 text-sm">expand_more</span>
+                </button>
+                <div id="branchDropdown" class="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5">
+                    <div class="py-2 max-h-64 overflow-y-auto">
+                        {% if user.is_mission_admin %}
+                            <a href="?branch=all" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">All Branches</a>
+                            <hr class="my-1">
+                        {% endif %}
+                        <p class="px-4 py-2 text-xs text-gray-500">Select hierarchy from <a href="{% url 'core:branches' %}" class="text-primary-600 hover:underline">Administration</a></p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Notifications -->
+            <div class="relative" id="notificationDropdownContainer">
+                <button type="button" onclick="toggleDropdown('notificationDropdown'); loadNotifications();" class="relative -m-2.5 p-2.5 text-white/70 hover:text-white transition-colors">
+                    <span class="sr-only">View notifications</span>
+                    <span class="material-icons-outlined">notifications</span>
+                    <!-- Notification badge -->
+                    <span id="notificationBadge" class="hidden absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                </button>
+                
+                <!-- Notification Dropdown -->
+                <div id="notificationDropdown" class="absolute right-0 z-50 mt-2 w-80 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5">
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                            <a href="{% url 'core:notifications' %}" class="text-xs text-primary-600 hover:text-primary-800 font-medium">View All</a>
+                        </div>
+                    </div>
+                    
+                    <div id="notificationList" class="max-h-96 overflow-y-auto">
+                        <div class="p-8 text-center text-gray-500">
+                            <span class="material-icons-outlined text-3xl text-gray-300">notifications_none</span>
+                            <p class="mt-2 text-sm">Loading notifications...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border-t border-gray-200 bg-gray-50">
+                        <a href="{% url 'core:notifications' %}" class="block w-full text-center text-sm text-primary-600 hover:text-primary-800 font-medium">
+                            View All Notifications →
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+            let notificationsLoaded = false;
+            function loadNotifications() {
+                if (notificationsLoaded) return;
+                notificationsLoaded = true;
+                
+                fetch('{% url "core:notifications_api" %}')
+                    .then(response => response.json())
+                    .then(data => {
+                        const list = document.getElementById('notificationList');
+                        const badge = document.getElementById('notificationBadge');
+                        
+                        if (data.unread_count > 0) {
+                            badge.classList.remove('hidden');
+                        }
+                        
+                        if (data.notifications.length === 0) {
+                            list.innerHTML = `
+                                <div class="p-8 text-center text-gray-500">
+                                    <span class="material-icons-outlined text-3xl text-gray-300">notifications_none</span>
+                                    <p class="mt-2 text-sm">No notifications yet</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        const icons = {
+                            'contribution': { icon: 'payments', color: 'green' },
+                            'expenditure': { icon: 'receipt_long', color: 'red' },
+                            'announcement': { icon: 'campaign', color: 'purple' },
+                            'member_added': { icon: 'person_add', color: 'blue' },
+                            'birthday': { icon: 'cake', color: 'pink' },
+                            'prayer_request': { icon: 'favorite', color: 'yellow' },
+                            'default': { icon: 'notifications', color: 'gray' }
+                        };
+                        
+                        list.innerHTML = data.notifications.map(n => {
+                            const iconData = icons[n.type] || icons['default'];
+                            return `
+                                <div class="p-4 hover:bg-gray-50 border-b border-gray-100 ${!n.is_read ? 'bg-blue-50/50' : ''}">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-${iconData.color}-100 flex items-center justify-center flex-shrink-0">
+                                            <span class="material-icons-outlined text-${iconData.color}-600 text-sm">${iconData.icon}</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-gray-900 ${!n.is_read ? 'font-medium' : ''}">${n.title}</p>
+                                            <p class="text-xs text-gray-500 mt-1">${n.message}</p>
+                                            <p class="text-xs text-gray-400 mt-1">${n.time_ago}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    })
+                    .catch(() => {
+                        document.getElementById('notificationList').innerHTML = `
+                            <div class="p-8 text-center text-gray-500">
+                                <p class="text-sm">Failed to load notifications</p>
+                            </div>
+                        `;
+                    });
+            }
+            
+            // Check for unread notifications on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                fetch('{% url "core:notifications_api" %}')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.unread_count > 0) {
+                            document.getElementById('notificationBadge').classList.remove('hidden');
+                        }
+                    });
+            });
+            </script>
+            
+            <!-- Separator -->
+            <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-white/20"></div>
+            
+            <!-- Profile dropdown -->
+            <div class="relative" id="userDropdownContainer">
+                <button type="button" onclick="toggleDropdown('userDropdown')" class="flex items-center gap-x-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" class="h-8 w-8 rounded-full object-cover bg-gray-50 ring-2 ring-white">
+                    {% else %}
+                        <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center ring-2 ring-white">
+                            <span class="text-white font-medium text-sm">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                        </div>
+                    {% endif %}
+                    <span class="hidden lg:flex lg:items-center">
+                        <span class="text-sm font-medium text-white">{{ user.get_short_name }}</span>
+                        <span class="material-icons text-white/70 ml-1 text-sm">expand_more</span>
+                    </span>
+                </button>
+                
+                <div id="userDropdown" class="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-xl ring-1 ring-black ring-opacity-5">
+                    <div class="py-2">
+                        <div class="px-4 py-3 border-b border-gray-100">
+                            <p class="text-sm font-semibold text-gray-900">{{ user.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ user.user_id }}</p>
+                            <span class="inline-flex mt-2 items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700">
+                                {{ user.get_role_display }}
+                            </span>
+                        </div>
+                        <a href="{% url 'accounts:profile' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <span class="material-icons-outlined text-gray-400 text-lg">person</span>
+                            Your Profile
+                        </a>
+                        <a href="{% url 'accounts:change_pin' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <span class="material-icons-outlined text-gray-400 text-lg">lock</span>
+                            Change PIN
+                        </a>
+                        {% if user.is_mission_admin %}
+                        <a href="{% url 'core:settings' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <span class="material-icons-outlined text-gray-400 text-lg">settings</span>
+                            Settings
+                        </a>
+                        {% endif %}
+                        <hr class="my-2">
+                        <a href="{% url 'accounts:logout' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                            <span class="material-icons-outlined text-lg">logout</span>
+                            Sign out
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

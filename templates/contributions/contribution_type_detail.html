@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}{{ ct.name }} - Contribution Type{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ ct.name }}</h1>
+            <p class="text-gray-500 mt-1">Contribution type details</p>
+        </div>
+        <div class="flex gap-2">
+            {% if user.is_mission_admin %}
+            <a href="{% url 'contributions:types' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">arrow_back</span>Back
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Type Info Card -->
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="w-16 h-16 mx-auto rounded-xl flex items-center justify-center mb-4
+                    {% if ct.category == 'tithe' %}bg-blue-100 text-blue-600
+                    {% elif ct.category == 'offering' %}bg-green-100 text-green-600
+                    {% elif ct.category == 'donation' %}bg-purple-100 text-purple-600
+                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    <span class="material-icons-outlined text-3xl">
+                        {% if ct.category == 'tithe' %}savings
+                        {% elif ct.category == 'offering' %}volunteer_activism
+                        {% elif ct.category == 'donation' %}redeem
+                        {% else %}paid{% endif %}
+                    </span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900">{{ ct.name }}</h2>
+                <p class="text-gray-500">{{ ct.code }}</p>
+                <div class="mt-3 flex flex-wrap justify-center gap-2">
+                    <span class="badge {% if ct.category == 'tithe' %}badge-primary{% elif ct.category == 'offering' %}badge-success{% else %}badge-gray{% endif %}">
+                        {{ ct.get_category_display }}
+                    </span>
+                    {% if ct.is_individual %}
+                    <span class="badge badge-warning">Individual</span>
+                    {% else %}
+                    <span class="badge badge-gray">General</span>
+                    {% endif %}
+                    {% if ct.is_closed %}
+                    <span class="badge badge-danger">Closed</span>
+                    {% else %}
+                    <span class="badge badge-success">Active</span>
+                    {% endif %}
+                </div>
+                {% if ct.description %}
+                <p class="mt-4 text-sm text-gray-600">{{ ct.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Stats & Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Statistics -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="stat-card">
+                    <p class="text-sm text-gray-500">Total Contributions</p>
+                    <p class="text-2xl font-bold text-gray-900">GH₵{{ total_amount|floatformat:2 }}</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-sm text-gray-500">Transaction Count</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_count }}</p>
+                </div>
+            </div>
+
+            <!-- Allocation Rules -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="font-semibold text-gray-900">Allocation Rules</h3>
+                </div>
+                <div class="card-body">
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-600">Mission</span>
+                                <span class="font-semibold text-primary-600">{{ ct.mission_percentage }}%</span>
+                            </div>
+                            <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-primary-500 rounded-full" style="width: {{ ct.mission_percentage }}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-sm text-gray-600">Branch</span>
+                                <span class="font-semibold text-green-600">{{ ct.branch_percentage }}%</span>
+                            </div>
+                            <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-green-500 rounded-full" style="width: {{ ct.branch_percentage }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="font-semibold text-gray-900">Information</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <dt class="text-gray-500">Created</dt>
+                            <dd class="font-medium">{{ ct.created_at|date:"M d, Y" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Updated</dt>
+                            <dd class="font-medium">{{ ct.updated_at|date:"M d, Y" }}</dd>
+                        </div>
+                        {% if ct.is_closed %}
+                        <div>
+                            <dt class="text-gray-500">Closed On</dt>
+                            <dd class="font-medium text-red-600">{{ ct.closed_at|date:"M d, Y" }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

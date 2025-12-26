@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% block title %}{{ member.get_full_name }} - Member Details{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'members:list' %}" class="text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ member.get_full_name }}</h1>
+                <p class="text-sm text-gray-500">Member ID: <span class="font-mono text-primary-600">{{ member.member_id }}</span></p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'members:edit' member.id %}" class="btn btn-primary">
+                <span class="material-icons-outlined mr-2">edit</span>Edit Member
+            </a>
+        </div>
+    </div>
+
+    <!-- Member Summary Card -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex flex-col md:flex-row md:items-center gap-6">
+                <!-- Avatar -->
+                <div class="flex-shrink-0">
+                    <div class="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                        {% if member.profile_picture %}
+                        <img src="{{ member.profile_picture.url }}" class="h-24 w-24 object-cover">
+                        {% else %}
+                        <span class="text-4xl text-primary-600 font-bold">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Info -->
+                <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Branch</p>
+                        <p class="font-semibold text-gray-900">{{ member.branch.name|default:"Unassigned" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Pastor</p>
+                        <p class="font-semibold text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        {% if member.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Total Contributions</p>
+                        <p class="font-semibold text-green-600">GH₵ {{ total_contributions|floatformat:2 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Attendance Rate</p>
+                        <p class="font-semibold text-blue-600">{{ attendance_rate|floatformat:0 }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200">
+        <nav class="flex gap-4">
+            <a href="?tab=profile" class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'profile' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
+                <span class="material-icons-outlined align-middle mr-1 text-base">person</span>Profile
+            </a>
+            <a href="?tab=contributions" class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'contributions' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
+                <span class="material-icons-outlined align-middle mr-1 text-base">payments</span>Contributions
+            </a>
+            <a href="?tab=attendance" class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'attendance' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
+                <span class="material-icons-outlined align-middle mr-1 text-base">event_available</span>Attendance
+            </a>
+        </nav>
+    </div>
+
+    <!-- Tab Content -->
+    {% if tab == 'profile' %}
+    <!-- PROFILE TAB -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Personal Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900">Personal Information</h3>
+            </div>
+            <div class="card-body">
+                <dl class="grid grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-500">Full Name</dt>
+                        <dd class="font-medium text-gray-900">{{ member.get_full_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Gender</dt>
+                        <dd class="font-medium text-gray-900">{{ member.get_gender_display|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Date of Birth</dt>
+                        <dd class="font-medium text-gray-900">{{ member.date_of_birth|date:"F d, Y"|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Marital Status</dt>
+                        <dd class="font-medium text-gray-900">{{ profile.marital_status|default:"-"|title }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900">Contact Information</h3>
+            </div>
+            <div class="card-body">
+                <dl class="grid grid-cols-1 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-500">Phone Number</dt>
+                        <dd class="font-medium text-gray-900">{{ member.phone|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Email</dt>
+                        <dd class="font-medium text-gray-900">{{ member.email|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Address</dt>
+                        <dd class="font-medium text-gray-900">{{ profile.address|default:"-" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-red-500 align-middle mr-2">emergency</span>
+                    Emergency Contact
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if profile.emergency_contact_name %}
+                <dl class="grid grid-cols-1 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-500">Contact Name</dt>
+                        <dd class="font-medium text-gray-900">{{ profile.emergency_contact_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Phone Number</dt>
+                        <dd class="font-medium text-gray-900">{{ profile.emergency_contact_phone|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Relationship</dt>
+                        <dd class="font-medium text-gray-900">{{ profile.emergency_contact_relationship|default:"-" }}</dd>
+                    </div>
+                </dl>
+                {% else %}
+                <p class="text-gray-500 text-sm">No emergency contact information provided.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Church Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900">Church Information</h3>
+            </div>
+            <div class="card-body">
+                <dl class="grid grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-500">Branch</dt>
+                        <dd class="font-medium text-gray-900">{{ member.branch.name|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Pastor</dt>
+                        <dd class="font-medium text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">District / Area</dt>
+                        <dd class="font-medium text-gray-900">
+                            {% if member.branch %}{{ member.branch.district.name }} / {{ member.branch.district.area.name }}{% else %}-{% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Date Joined</dt>
+                        <dd class="font-medium text-gray-900">{{ member.date_joined|date:"F d, Y" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Profession</dt>
+                        <dd class="font-medium text-gray-900">{{ profile.profession|default:"-" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {% elif tab == 'contributions' %}
+    <!-- CONTRIBUTIONS TAB -->
+    <div class="card">
+        <div class="card-header flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">Contribution History</h3>
+            <span class="text-lg font-bold text-green-600">Total: GH₵ {{ total_contributions|floatformat:2 }}</span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in contributions %}
+                    <tr>
+                        <td class="text-gray-500">{{ c.date|date:"M d, Y" }}</td>
+                        <td class="font-medium">{{ c.contribution_type.name }}</td>
+                        <td>
+                            <span class="badge {% if c.contribution_type.category == 'tithe' %}badge-primary{% else %}badge-secondary{% endif %}">
+                                {{ c.contribution_type.get_category_display }}
+                            </span>
+                        </td>
+                        <td class="text-right font-semibold text-green-600">GH₵ {{ c.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300">account_balance_wallet</span>
+                            <p class="mt-2">No contributions recorded for this member</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% elif tab == 'attendance' %}
+    <!-- ATTENDANCE TAB -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">event_available</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Present</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ total_attendance }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-green-100">
+                    <span class="material-icons-outlined text-green-600">percent</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Rate</p>
+                    <p class="text-2xl font-bold text-green-600">{{ attendance_rate|floatformat:0 }}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-4">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">schedule</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Records</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ attendance_records|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">Attendance History</h3>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Service</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td>{{ record.session.date|date:"M d, Y" }}</td>
+                        <td>{{ record.session.service_type.name|default:"Service" }}</td>
+                        <td>
+                            {% if record.is_present %}
+                            <span class="badge badge-success">Present</span>
+                            {% else %}
+                            <span class="badge badge-danger">Absent</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-8 text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300">event_busy</span>
+                            <p class="mt-2">No attendance records for this member</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

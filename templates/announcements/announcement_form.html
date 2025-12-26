@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}{% if is_edit %}Edit{% else %}New{% endif %} Announcement{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if is_edit %}Edit{% else %}Create{% endif %} Announcement</h1>
+            <p class="text-gray-500 mt-1">Share news and updates with the church community</p>
+        </div>
+        <a href="{% url 'announcements:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Main Content -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">campaign</span>
+                    Announcement Details
+                </h2>
+            </div>
+            <div class="card-body space-y-6">
+                <div class="form-group">
+                    <label class="form-label required">Title</label>
+                    <input type="text" name="title" value="{{ announcement.title|default:'' }}" required class="form-input" placeholder="Enter a clear, descriptive title">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Content</label>
+                    <textarea name="content" rows="6" required class="form-input" placeholder="Write your announcement message...">{{ announcement.content|default:'' }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">Tip: Keep your message clear and concise for better readability</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">settings</span>
+                    Publication Settings
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Priority Level</label>
+                        <select name="priority" class="form-input form-select">
+                            <option value="low" {% if announcement.priority == 'low' %}selected{% endif %}>
+                                Normal
+                            </option>
+                            <option value="medium" {% if announcement.priority == 'medium' %}selected{% endif %}>
+                                Important
+                            </option>
+                            <option value="high" {% if announcement.priority == 'high' %}selected{% endif %}>
+                                Urgent
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Target Audience</label>
+                        <select name="scope" class="form-input form-select">
+                            <option value="branch" {% if announcement.scope == 'branch' %}selected{% endif %}>Branch Only</option>
+                            {% if user.is_district_executive or user.is_area_executive or user.is_mission_admin %}
+                            <option value="district" {% if announcement.scope == 'district' %}selected{% endif %}>District-wide</option>
+                            {% endif %}
+                            {% if user.is_area_executive or user.is_mission_admin %}
+                            <option value="area" {% if announcement.scope == 'area' %}selected{% endif %}>Area-wide</option>
+                            {% endif %}
+                            {% if user.is_mission_admin %}
+                            <option value="mission" {% if announcement.scope == 'mission' %}selected{% endif %}>Mission-wide (All Branches)</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Publish Date & Time</label>
+                        <input type="datetime-local" name="publish_date" value="{{ publish_date|default:today }} {{ now|default:'12:00' }}" class="form-input">
+                        <p class="text-xs text-gray-500 mt-1">When should this announcement become visible?</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expiry Date & Time</label>
+                        <input type="datetime-local" name="expiry_date" value="{{ expiry_date }}" class="form-input">
+                        <p class="text-xs text-gray-500 mt-1">Leave blank for no expiry</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Media -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">image</span>
+                    Attachment
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-0">
+                    <label class="form-label">Featured Image</label>
+                    {% if announcement.image %}
+                    <div class="mb-3 p-3 bg-gray-50 rounded-lg flex items-center gap-3">
+                        <img src="{{ announcement.image.url }}" alt="Current image" class="w-16 h-16 object-cover rounded">
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Current image</p>
+                            <p class="text-xs text-gray-500">Upload new to replace</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-primary-300 transition">
+                        <span class="material-icons-outlined text-4xl text-gray-300 mb-2">cloud_upload</span>
+                        <p class="text-sm text-gray-600 mb-2">Drag and drop an image here, or click to browse</p>
+                        <input type="file" name="image" accept="image/*" class="form-input">
+                        <p class="text-xs text-gray-400 mt-2">Supports: JPG, PNG, GIF (Max 5MB)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'announcements:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">{% if is_edit %}save{% else %}send{% endif %}</span>
+                {% if is_edit %}Update Announcement{% else %}Publish Announcement{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

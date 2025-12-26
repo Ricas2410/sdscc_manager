@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}Pastor Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-indigo-200">Welcome back,</p>
+                <h1 class="text-2xl font-bold">Pastor {{ user.get_full_name }}</h1>
+                <p class="text-indigo-200 mt-1">{{ user.branch.name }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-indigo-200">Commission Status</p>
+                <p class="text-2xl font-bold">{% if commission_eligible %}Eligible{% else %}Not Eligible{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Branch Members -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-blue-100 p-3">
+                            <span class="material-icons-outlined text-blue-600">groups</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">My Flock</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ total_members|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Rate -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-green-100 p-3">
+                            <span class="material-icons-outlined text-green-600">trending_up</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Avg Attendance</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ avg_attendance|default:"0" }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tithe Progress -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-yellow-100 p-3">
+                            <span class="material-icons-outlined text-yellow-600">savings</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Tithe Target</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ tithe_progress|default:"0" }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commission -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-purple-100 p-3">
+                            <span class="material-icons-outlined text-purple-600">monetization_on</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">This Month</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ commission_amount|default:"0.00"|floatformat:2 }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Member Care -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Visitors -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">Recent Visitors</h3>
+                    <a href="{% url 'attendance:list' %}" class="text-sm text-primary-600 hover:text-primary-500">View all</a>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for visitor in recent_visitors %}
+                    <div class="px-4 py-4 sm:px-6 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span class="material-icons-outlined text-gray-500">person</span>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900">{{ visitor.name }}</p>
+                                <p class="text-sm text-gray-500">{{ visitor.phone }}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-500">{{ visitor.visit_date|date:"M d" }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="px-4 py-8 text-center text-gray-500">
+                        <span class="material-icons-outlined text-4xl text-gray-300">person_search</span>
+                        <p class="mt-2">No recent visitors</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Attendance Trend -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Attendance Trend</h3>
+                <canvas id="attendanceChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Pastoral Actions</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'members:list' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">groups</span>
+                        <span class="text-sm font-medium text-gray-700">View Members</span>
+                    </a>
+                    <a href="{% url 'attendance:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">fact_check</span>
+                        <span class="text-sm font-medium text-gray-700">Take Attendance</span>
+                    </a>
+                    <a href="{% url 'sermons:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">menu_book</span>
+                        <span class="text-sm font-medium text-gray-700">Add Sermon</span>
+                    </a>
+                    <a href="{% url 'announcements:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">campaign</span>
+                        <span class="text-sm font-medium text-gray-700">Make Announcement</span>
+                    </a>
+                    <a href="{% url 'payroll:commissions' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">receipt</span>
+                        <span class="text-sm font-medium text-gray-700">My Commission</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Upcoming Events -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Upcoming Events</h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for event in upcoming_events %}
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 bg-primary-100 rounded-lg p-2 text-center min-w-[50px]">
+                                <p class="text-xs text-primary-600 font-medium">{{ event.start_date|date:"M" }}</p>
+                                <p class="text-lg font-bold text-primary-700">{{ event.start_date|date:"d" }}</p>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">{{ event.title }}</p>
+                                <p class="text-xs text-gray-500">{{ event.start_time|time:"g:i A" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No upcoming events</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('attendanceChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Attendance',
+                    data: [85, 92, 78, 95],
+                    borderColor: 'rgb(79, 70, 229)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

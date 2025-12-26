@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Expenditure Details{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="{% url 'expenditure:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900">Expenditure Details</h1>
+        </div>
+        {% if not expenditure.is_approved and user.role in 'mission_admin,branch_executive' %}
+        <form method="post" action="{% url 'expenditure:detail' expenditure.id %}">
+            {% csrf_token %}
+            <button type="submit" name="approve" class="btn-primary">
+                <span class="material-icons-outlined mr-1">check</span> Approve
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-8 text-center border-b bg-gradient-to-r from-red-50 to-red-100">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 mb-4">
+                {{ expenditure.category.name }}
+            </span>
+            <p class="text-4xl font-bold text-red-600">GH₵ {{ expenditure.amount|floatformat:2 }}</p>
+            <p class="text-gray-500 mt-2">{{ expenditure.date|date:"l, F d, Y" }}</p>
+        </div>
+        
+        <div class="p-6">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <dt class="text-sm text-gray-500">Description</dt>
+                    <dd class="mt-1 text-gray-900">{{ expenditure.description }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Branch</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.branch.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Payment Method</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.get_payment_method_display|default:"Cash" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Vendor/Payee</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.vendor|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Receipt Number</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.receipt_number|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Status</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {% if expenditure.is_approved %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                            {% if expenditure.is_approved %}Approved{% else %}Pending Approval{% endif %}
+                        </span>
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Recorded By</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.recorded_by.get_full_name|default:"-" }}</dd>
+                </div>
+            </dl>
+
+            {% if expenditure.receipt %}
+            <div class="mt-6 pt-6 border-t">
+                <dt class="text-sm text-gray-500 mb-2">Receipt/Invoice</dt>
+                <a href="{{ expenditure.receipt.url }}" target="_blank" class="inline-flex items-center text-primary-600 hover:text-primary-500">
+                    <span class="material-icons-outlined mr-1">attachment</span> View Attachment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="border-t px-6 py-4 text-sm text-gray-500">
+            <p>Created: {{ expenditure.created_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}Assets & Inventory{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:flex items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Assets & Inventory</h1>
+            <p class="text-sm text-gray-500">Track church assets and equipment</p>
+        </div>
+        <button type="button" onclick="openAddModal()" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">add_box</span>Add Asset
+        </button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Assets</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.total_assets|default:0 }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-primary-600">inventory_2</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Purchase Value</p>
+                        <p class="text-2xl font-bold text-blue-600">GH₵ {{ stats.total_purchase|floatformat:2|default:"0.00" }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-blue-600">payments</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Current Value</p>
+                        <p class="text-2xl font-bold text-green-600">GH₵ {{ stats.total_value|floatformat:2|default:"0.00" }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-green-600">trending_up</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assets List -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">Asset List</h3>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Category</th>
+                        <th>Branch/Level</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-right">Purchase Price</th>
+                        <th class="text-right">Current Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ asset.name }}</div>
+                            {% if asset.description %}
+                            <div class="text-xs text-gray-500">{{ asset.description|truncatewords:10 }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ asset.get_category_display }}</td>
+                        <td>
+                            {% if asset.branch %}
+                            {{ asset.branch.name }}
+                            {% else %}
+                            <span class="badge badge-primary">Mission Level</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ asset.quantity }}</td>
+                        <td class="text-right font-mono">GH₵ {{ asset.purchase_price|floatformat:2 }}</td>
+                        <td class="text-right font-mono font-semibold text-green-600">GH₵ {{ asset.current_value|floatformat:2 }}</td>
+                        <td>
+                            {% if asset.status == 'active' %}
+                            <span class="badge badge-success">Active</span>
+                            {% elif asset.status == 'damaged' %}
+                            <span class="badge badge-warning">Damaged</span>
+                            {% elif asset.status == 'disposed' %}
+                            <span class="badge badge-secondary">Disposed</span>
+                            {% else %}
+                            <span class="badge badge-danger">Lost</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300">inventory_2</span>
+                            <p class="mt-2">No assets recorded yet</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Asset Modal -->
+<div id="addModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeAddModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Add New Asset</h3>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                
+                <div class="form-group">
+                    <label class="form-label required">Asset Name</label>
+                    <input type="text" name="name" required class="form-input" placeholder="e.g., Sound System">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Category</label>
+                        <select name="category" required class="form-input form-select">
+                            <option value="furniture">Furniture</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="instruments">Musical Instruments</option>
+                            <option value="vehicle">Vehicle</option>
+                            <option value="building">Building/Property</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Quantity</label>
+                        <input type="number" name="quantity" min="1" value="1" required class="form-input">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Purchase Price (GH₵)</label>
+                        <input type="number" name="purchase_price" step="0.01" min="0" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Purchase Date</label>
+                        <input type="date" name="purchase_date" class="form-input" id="purchaseDate">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Vendor/Supplier</label>
+                    <input type="text" name="vendor" class="form-input" placeholder="Where it was purchased">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" rows="2" class="form-input" placeholder="Additional details..."></textarea>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('purchaseDate').value = new Date().toISOString().split('T')[0];
+
+function openAddModal() {
+    document.getElementById('addModal').classList.remove('hidden');
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

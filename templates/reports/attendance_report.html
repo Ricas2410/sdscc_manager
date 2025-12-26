@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Report{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Attendance Report</h1>
+            <p class="text-gray-500 mt-1">Service attendance analysis</p>
+        </div>
+        <a href="{% url 'reports:index' %}" class="btn btn-secondary">Back</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Branch</label>
+                    <select name="branch" class="form-input form-select">
+                        <option value="">All Branches</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Total Sessions</p>
+            <p class="text-2xl font-bold">{{ total_sessions|default:"0" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Avg Attendance</p>
+            <p class="text-2xl font-bold">{{ avg_attendance|default:"0" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Total Visitors</p>
+            <p class="text-2xl font-bold">{{ total_visitors|default:"0" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Peak Attendance</p>
+            <p class="text-2xl font-bold">{{ peak_attendance|default:"0" }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2 class="font-semibold">Attendance Trend</h2></div>
+        <div class="card-body"><canvas id="attendanceChart" height="300"></canvas></div>
+    </div>
+</div>
+<script>
+new Chart(document.getElementById('attendanceChart'), {
+    type: 'line', data: { labels: ['Week 1','Week 2','Week 3','Week 4'], datasets: [{ label: 'Attendance', data: [120,135,128,145], borderColor: '#3b82f6', fill: false }] },
+    options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Change PIN{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto space-y-6">
+    <div class="text-center">
+        <div class="w-16 h-16 mx-auto rounded-full bg-primary-100 flex items-center justify-center mb-4">
+            <span class="material-icons-outlined text-primary-600 text-3xl">pin</span>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900">Change PIN</h1>
+        <p class="text-gray-500 mt-1">Update your login PIN</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label required">Current PIN</label>
+                    <input type="password" name="current_pin" required class="form-input" maxlength="10" placeholder="Enter current PIN">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">New PIN</label>
+                    <input type="password" name="new_pin" required class="form-input" minlength="5" maxlength="10" placeholder="Enter new PIN (min 5 characters)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Confirm New PIN</label>
+                    <input type="password" name="confirm_pin" required class="form-input" minlength="5" maxlength="10" placeholder="Confirm new PIN">
+                </div>
+                <div class="flex gap-4">
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-secondary flex-1">Cancel</a>
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <span class="material-icons-outlined mr-2">save</span>Update PIN
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

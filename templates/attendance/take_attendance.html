@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block title %}Take Attendance{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Take Attendance</h1>
+            <p class="text-sm text-gray-500">{{ branch.name }} • {{ branch.district.name }}</p>
+        </div>
+        <a href="{% url 'attendance:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back to History
+        </a>
+    </div>
+
+    <form method="post" id="attendanceForm" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Service Details -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">event</span>
+                    Service Details
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group mb-0">
+                        <label class="form-label required">Service Type</label>
+                        <select name="service_type" required class="form-input form-select">
+                            <option value="">Select Service</option>
+                            {% for st in service_types %}
+                            <option value="{{ st.id }}">{{ st.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label required">Date</label>
+                        <input type="date" name="date" value="{{ today }}" required class="form-input" id="attendanceDate">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">General Notes</label>
+                        <input type="text" name="session_notes" class="form-input" placeholder="e.g., Special service, Revival...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Headcount Summary (Auto-calculated) -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="card p-4 text-center">
+                <p class="text-sm text-gray-500">Total Present</p>
+                <p class="text-2xl font-bold text-primary-600" id="totalPresent">0</p>
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-sm text-gray-500">Men</p>
+                <p class="text-2xl font-bold text-blue-600" id="maleCount">0</p>
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-sm text-gray-500">Women</p>
+                <p class="text-2xl font-bold text-pink-600" id="femaleCount">0</p>
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-sm text-gray-500">Children</p>
+                <p class="text-2xl font-bold text-green-600" id="childCount">0</p>
+                <input type="hidden" name="children_count" id="childrenInput" value="0">
+            </div>
+            <div class="card p-4 text-center">
+                <p class="text-sm text-gray-500">Visitors</p>
+                <p class="text-2xl font-bold text-orange-600" id="visitorCount">0</p>
+            </div>
+        </div>
+
+        <!-- Members Table -->
+        <div class="card">
+            <div class="card-header flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h2 class="font-semibold text-gray-900">
+                        <span class="material-icons-outlined text-primary-600 align-middle mr-2">groups</span>
+                        Members Attendance
+                    </h2>
+                    <p class="text-sm text-gray-500">Check members who are present</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <input type="text" id="memberSearch" class="form-input py-2 text-sm" placeholder="Search members..." onkeyup="filterMembers()">
+                    <button type="button" onclick="selectAll()" class="btn btn-sm btn-secondary">Select All</button>
+                    <button type="button" onclick="deselectAll()" class="btn btn-sm btn-secondary">Deselect All</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="membersTable">
+                    <thead>
+                        <tr>
+                            <th class="w-12">
+                                <input type="checkbox" id="selectAllCheck" onchange="toggleAll(this)" class="w-4 h-4 rounded border-gray-300 text-primary-600">
+                            </th>
+                            <th>Member</th>
+                            <th class="hidden md:table-cell">ID</th>
+                            <th class="hidden md:table-cell">Gender</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members %}
+                        <tr class="member-row" data-name="{{ member.get_full_name|lower }}" data-gender="{{ member.gender|default:'M' }}">
+                            <td>
+                                <input type="checkbox" name="present" value="{{ member.id }}" 
+                                    data-gender="{{ member.gender|default:'M' }}"
+                                    class="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 member-checkbox"
+                                    onchange="updateHeadcount()">
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    {% if member.profile_picture %}
+                                    <img src="{{ member.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover">
+                                    {% else %}
+                                    <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <span class="text-sm font-medium text-primary-600">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ member.get_full_name }}</p>
+                                        <p class="text-xs text-gray-500 md:hidden">{{ member.member_id }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="hidden md:table-cell">
+                                <span class="font-mono text-sm text-gray-500">{{ member.member_id }}</span>
+                            </td>
+                            <td class="hidden md:table-cell">
+                                {% if member.gender == 'M' %}
+                                <span class="badge badge-primary">Male</span>
+                                {% else %}
+                                <span class="badge badge-pink">Female</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <input type="text" name="note_{{ member.id }}" class="form-input py-1 text-sm w-full" placeholder="Reason if absent...">
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-gray-500">
+                                <span class="material-icons-outlined text-4xl text-gray-300">group_off</span>
+                                <p class="mt-2">No members in this branch</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Visitors Section -->
+        <div class="card">
+            <div class="card-header flex items-center justify-between">
+                <div>
+                    <h2 class="font-semibold text-gray-900">
+                        <span class="material-icons-outlined text-orange-500 align-middle mr-2">person_add</span>
+                        Visitors
+                    </h2>
+                    <p class="text-sm text-gray-500">Record first-time visitors</p>
+                </div>
+                <button type="button" onclick="addVisitor()" class="btn btn-sm btn-primary">
+                    <span class="material-icons-outlined mr-1">add</span>Add Visitor
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="visitorsContainer" class="space-y-3">
+                    <!-- Visitors will be added here dynamically -->
+                </div>
+                <div id="noVisitors" class="text-center py-6 text-gray-500">
+                    <span class="material-icons-outlined text-3xl text-gray-300">person_add</span>
+                    <p class="mt-1 text-sm">No visitors added yet. Click "Add Visitor" to record one.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Children Count -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-green-500 align-middle mr-2">child_care</span>
+                    Children Attendance
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group mb-0">
+                        <label class="form-label">Number of Children</label>
+                        <input type="number" name="children_count" min="0" value="0" class="form-input" 
+                               onchange="document.getElementById('childCount').textContent = this.value">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Boys</label>
+                        <input type="number" name="boys_count" min="0" value="0" class="form-input">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Girls</label>
+                        <input type="number" name="girls_count" min="0" value="0" class="form-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="sticky bottom-0 bg-white border-t py-4 -mx-4 px-4 md:relative md:bg-transparent md:border-0 md:mx-0 md:px-0">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-sm text-gray-600">
+                    <span class="font-semibold text-primary-600" id="selectedCount">0</span> members marked present
+                </div>
+                <div class="flex gap-4 w-full md:w-auto">
+                    <a href="{% url 'attendance:list' %}" class="btn btn-secondary flex-1 md:flex-none">Cancel</a>
+                    <button type="submit" class="btn btn-primary btn-lg flex-1 md:flex-none">
+                        <span class="material-icons-outlined mr-2">check</span>
+                        Save Attendance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let visitorCount = 0;
+
+// Set default date to today
+document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0];
+
+function selectAll() {
+    document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = true);
+    document.getElementById('selectAllCheck').checked = true;
+    updateHeadcount();
+}
+
+function deselectAll() {
+    document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheck').checked = false;
+    updateHeadcount();
+}
+
+function toggleAll(checkbox) {
+    if (checkbox.checked) selectAll();
+    else deselectAll();
+}
+
+function updateHeadcount() {
+    let total = 0, male = 0, female = 0;
+    document.querySelectorAll('.member-checkbox:checked').forEach(cb => {
+        total++;
+        if (cb.dataset.gender === 'M') male++;
+        else female++;
+    });
+    
+    document.getElementById('totalPresent').textContent = total;
+    document.getElementById('maleCount').textContent = male;
+    document.getElementById('femaleCount').textContent = female;
+    document.getElementById('selectedCount').textContent = total;
+}
+
+function filterMembers() {
+    const query = document.getElementById('memberSearch').value.toLowerCase();
+    document.querySelectorAll('.member-row').forEach(row => {
+        const name = row.dataset.name;
+        row.style.display = name.includes(query) ? '' : 'none';
+    });
+}
+
+function addVisitor() {
+    visitorCount++;
+    const container = document.getElementById('visitorsContainer');
+    document.getElementById('noVisitors').style.display = 'none';
+    
+    const visitorHtml = `
+        <div class="visitor-entry grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg" id="visitor_${visitorCount}">
+            <input type="text" name="visitor_name_${visitorCount}" class="form-input" placeholder="Full Name" required>
+            <input type="tel" name="visitor_phone_${visitorCount}" class="form-input" placeholder="Phone Number">
+            <select name="visitor_gender_${visitorCount}" class="form-input form-select">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+            </select>
+            <div class="flex gap-2">
+                <input type="text" name="visitor_notes_${visitorCount}" class="form-input flex-1" placeholder="Notes">
+                <button type="button" onclick="removeVisitor(${visitorCount})" class="btn btn-danger btn-sm">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', visitorHtml);
+    updateVisitorCount();
+}
+
+function removeVisitor(id) {
+    document.getElementById(`visitor_${id}`).remove();
+    updateVisitorCount();
+    if (document.querySelectorAll('.visitor-entry').length === 0) {
+        document.getElementById('noVisitors').style.display = 'block';
+    }
+}
+
+function updateVisitorCount() {
+    const count = document.querySelectorAll('.visitor-entry').length;
+    document.getElementById('visitorCount').textContent = count;
+}
+
+// Initialize headcount
+updateHeadcount();
+</script>
+
+<style>
+.badge-pink {
+    background-color: #fce7f3;
+    color: #be185d;
+}
+</style>
+{% endblock %}

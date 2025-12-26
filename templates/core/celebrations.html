@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Celebrations{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Upcoming Celebrations</h1>
+            <p class="text-gray-500">Birthdays and anniversaries in the next {{ days }} days</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="?days=7" class="px-3 py-1.5 rounded-lg text-sm {% if days == 7 %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                7 Days
+            </a>
+            <a href="?days=14" class="px-3 py-1.5 rounded-lg text-sm {% if days == 14 %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                14 Days
+            </a>
+            <a href="?days=30" class="px-3 py-1.5 rounded-lg text-sm {% if days == 30 %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                30 Days
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Birthdays -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-5 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-pink-600">cake</span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Upcoming Birthdays</h2>
+                        <p class="text-sm text-gray-500">{{ birthdays|length }} member{{ birthdays|length|pluralize }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for item in birthdays %}
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            {% if item.user.profile_picture %}
+                            <img src="{{ item.user.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover">
+                            {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center">
+                                <span class="text-white font-medium">{{ item.user.first_name.0 }}</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="font-medium text-gray-900">{{ item.user.get_full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ item.user.branch.name|default:"No Branch" }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium {% if item.days_until == 0 %}text-pink-600{% else %}text-gray-700{% endif %}">
+                                {{ item.date|date:"M d" }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {% if item.days_until == 0 %}
+                                    Today! 🎉
+                                {% elif item.days_until == 1 %}
+                                    Tomorrow
+                                {% else %}
+                                    In {{ item.days_until }} days
+                                {% endif %}
+                            </p>
+                            <p class="text-xs text-gray-400">Turning {{ item.age }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center">
+                    <span class="material-icons-outlined text-4xl text-gray-300">cake</span>
+                    <p class="text-gray-500 mt-2">No birthdays in the next {{ days }} days</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Anniversaries -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-5 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-red-600">favorite</span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Wedding Anniversaries</h2>
+                        <p class="text-sm text-gray-500">{{ anniversaries|length }} couple{{ anniversaries|length|pluralize }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="divide-y divide-gray-100">
+                {% for item in anniversaries %}
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            {% if item.user.profile_picture %}
+                            <img src="{{ item.user.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover">
+                            {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
+                                <span class="text-white font-medium">{{ item.user.first_name.0 }}</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="font-medium text-gray-900">{{ item.user.get_full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ item.user.branch.name|default:"No Branch" }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium {% if item.days_until == 0 %}text-red-600{% else %}text-gray-700{% endif %}">
+                                {{ item.date|date:"M d" }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                {% if item.days_until == 0 %}
+                                    Today! 💕
+                                {% elif item.days_until == 1 %}
+                                    Tomorrow
+                                {% else %}
+                                    In {{ item.days_until }} days
+                                {% endif %}
+                            </p>
+                            <p class="text-xs text-gray-400">{{ item.years }} years</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center">
+                    <span class="material-icons-outlined text-4xl text-gray-300">favorite</span>
+                    <p class="text-gray-500 mt-2">No anniversaries in the next {{ days }} days</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tips -->
+    <div class="bg-blue-50 rounded-xl p-5">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-blue-600">tips_and_updates</span>
+            <div class="text-sm text-blue-700">
+                <p class="font-medium">Celebration Tips</p>
+                <ul class="mt-2 list-disc list-inside space-y-1">
+                    <li>Send birthday wishes via WhatsApp or SMS</li>
+                    <li>Recognize birthdays during announcements</li>
+                    <li>Consider a monthly birthday celebration</li>
+                    <li>Update member profiles with accurate birth dates</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

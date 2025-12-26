@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Contribution Details{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="{% url 'contributions:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900">Contribution Details</h1>
+        </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-8 text-center border-b bg-gradient-to-r from-primary-50 to-primary-100">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 mb-4">
+                {{ contribution.contribution_type.name }}
+            </span>
+            <p class="text-4xl font-bold text-gray-900">GH₵ {{ contribution.amount|floatformat:2 }}</p>
+            <p class="text-gray-500 mt-2">{{ contribution.date|date:"l, F d, Y" }}</p>
+        </div>
+        
+        <div class="p-6">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <dt class="text-sm text-gray-500">Contributor</dt>
+                    <dd class="mt-1 font-medium text-gray-900">
+                        {% if contribution.member %}
+                        <a href="{% url 'members:detail' contribution.member.id %}" class="text-primary-600 hover:underline">
+                            {{ contribution.member.get_full_name }}
+                        </a>
+                        {% else %}
+                        <span class="text-gray-500">General Contribution</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Branch</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ contribution.branch.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Category</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ contribution.contribution_type.get_category_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Recorded By</dt>
+                    <dd class="mt-1 font-medium text-gray-900">{{ contribution.recorded_by.get_full_name|default:"-" }}</dd>
+                </div>
+                {% if contribution.description %}
+                <div class="md:col-span-2">
+                    <dt class="text-sm text-gray-500">Notes</dt>
+                    <dd class="mt-1 text-gray-900">{{ contribution.description }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+
+        <!-- Allocation Breakdown -->
+        {% if contribution.contribution_type.mission_percentage > 0 %}
+        <div class="border-t px-6 py-4 bg-gray-50">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">Allocation Breakdown</h3>
+            <div class="flex items-center space-x-4">
+                <div class="flex-1">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Branch ({{ contribution.contribution_type.branch_percentage }}%)</span>
+                        <span class="font-medium">GH₵ {{ contribution.branch_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ contribution.contribution_type.branch_percentage }}%"></div>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Mission ({{ contribution.contribution_type.mission_percentage }}%)</span>
+                        <span class="font-medium">GH₵ {{ contribution.mission_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: {{ contribution.contribution_type.mission_percentage }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="border-t px-6 py-4 text-sm text-gray-500">
+            <p>Created: {{ contribution.created_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

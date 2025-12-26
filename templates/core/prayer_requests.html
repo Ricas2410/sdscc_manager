@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Prayer Requests{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Prayer Requests</h1>
+            <p class="text-gray-500">Share and support each other in prayer</p>
+        </div>
+        <a href="{% url 'core:prayer_request_add' %}" class="btn-primary">
+            <span class="material-icons-outlined text-lg mr-2">add</span>
+            Submit Request
+        </a>
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <!-- Status Filter -->
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700">Status:</span>
+                <div class="tab-nav">
+                    <a href="{% url 'core:prayer_requests' %}" 
+                       class="{% if not request.GET.status and not request.GET.approval %}active{% endif %}">
+                        All
+                    </a>
+                    {% for status_val, status_label in status_choices %}
+                    <a href="{% url 'core:prayer_requests' %}?status={{ status_val }}" 
+                       class="{% if request.GET.status == status_val %}active{% endif %}">
+                        {{ status_label }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Admin: Approval Filter -->
+            {% if is_admin %}
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700">Approval:</span>
+                <div class="tab-nav">
+                    <a href="{% url 'core:prayer_requests' %}" 
+                       class="{% if not request.GET.approval %}active{% endif %}">
+                        All
+                    </a>
+                    <a href="{% url 'core:prayer_requests' %}?approval=pending" 
+                       class="{% if request.GET.approval == 'pending' %}active{% endif %}">
+                        Pending
+                        {% if pending_count > 0 %}
+                        <span class="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">{{ pending_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'core:prayer_requests' %}?approval=approved" 
+                       class="{% if request.GET.approval == 'approved' %}active{% endif %}">
+                        Approved
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Prayer Requests Grid -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {% for prayer in prayers %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow {% if not prayer.is_approved %}border-l-4 border-l-yellow-400{% endif %}">
+            <!-- Status & Approval Badges -->
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if prayer.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif prayer.status == 'prayed' %}bg-blue-100 text-blue-800
+                        {% elif prayer.status == 'answered' %}bg-green-100 text-green-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ prayer.get_status_display }}
+                    </span>
+                    {% if not prayer.is_approved %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                        <span class="material-icons text-xs mr-0.5">pending</span>
+                        Awaiting Approval
+                    </span>
+                    {% endif %}
+                </div>
+                <span class="text-xs text-gray-500">{{ prayer.created_at|naturaltime }}</span>
+            </div>
+            
+            <!-- Title & Description -->
+            <h3 class="font-semibold text-gray-900 mb-2">{{ prayer.title }}</h3>
+            <p class="text-sm text-gray-600 line-clamp-3 mb-4">{{ prayer.description }}</p>
+            
+            <!-- Requester & Scope -->
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons-outlined text-lg">person</span>
+                    <span>{{ prayer.requester.get_full_name }}</span>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                    <span class="material-icons text-xs mr-0.5">visibility</span>
+                    {{ prayer.get_visibility_scope_display }}
+                </span>
+            </div>
+            
+            <!-- Prayer Count & Actions -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <span class="material-icons-outlined text-lg text-pink-500">favorite</span>
+                    <span>{{ prayer.prayer_count }} prayed</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    {% if prayer.requester == user and not prayer.is_approved %}
+                    <!-- Edit Button (for requester) -->
+                    <a href="{% url 'core:prayer_request_edit' prayer.id %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors" title="Edit your prayer request">
+                        <span class="material-icons text-sm">edit</span>
+                        Edit
+                    </a>
+                    {% endif %}
+                    
+                    {% if is_admin and not prayer.is_approved %}
+                    <!-- Admin Approve Button -->
+                    <form method="POST" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve">
+                        <input type="hidden" name="prayer_id" value="{{ prayer.id }}">
+                        <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-sm font-medium hover:bg-green-100 transition-colors" title="Approve this request">
+                            <span class="material-icons text-sm">check_circle</span>
+                            Approve
+                        </button>
+                    </form>
+                    {% elif prayer.is_approved %}
+                        {% if prayer.id not in user_prayers %}
+                        <form action="{% url 'core:prayer_request_pray' prayer.id %}" method="POST" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-50 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-100 transition-colors">
+                                <span class="material-icons text-sm">favorite_border</span>
+                                I Prayed
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 rounded-full text-sm font-medium">
+                            <span class="material-icons text-sm">check</span>
+                            Prayed
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Testimony (if answered) -->
+            {% if prayer.status == 'answered' and prayer.testimony %}
+            <div class="mt-4 p-3 bg-green-50 rounded-lg">
+                <p class="text-xs font-medium text-green-800 mb-1">Testimony:</p>
+                <p class="text-sm text-green-700">{{ prayer.testimony }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Approval Info -->
+            {% if prayer.is_approved and prayer.approved_by %}
+            <div class="mt-3 text-xs text-gray-400">
+                Approved by {{ prayer.approved_by.get_full_name }} {{ prayer.approved_at|naturaltime }}
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="col-span-full p-12 text-center bg-white rounded-xl shadow-sm border border-gray-200">
+            <span class="material-icons-outlined text-6xl text-gray-300">volunteer_activism</span>
+            <p class="text-gray-500 mt-4">No prayer requests found</p>
+            <a href="{% url 'core:prayer_request_add' %}" class="btn-primary mt-4 inline-flex">
+                Submit the First Request
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Info Box for Members -->
+    {% if not is_admin %}
+    <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-blue-600">info</span>
+            <div class="text-sm text-blue-700">
+                <p class="font-medium">About Prayer Requests</p>
+                <p class="mt-1">Prayer requests require approval from a pastor or branch admin before they become visible to other members. Your own requests are always visible to you.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

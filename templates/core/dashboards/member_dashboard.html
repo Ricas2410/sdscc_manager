@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center">
+            <div class="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" class="h-16 w-16 rounded-full object-cover">
+                {% else %}
+                <span class="material-icons-outlined text-4xl">person</span>
+                {% endif %}
+            </div>
+            <div class="ml-4">
+                <p class="text-emerald-100">Welcome back,</p>
+                <h1 class="text-2xl font-bold">{{ user.get_full_name }}</h1>
+                <p class="text-emerald-100 text-sm">{{ user.branch.name }} • Member ID: {{ user.member_id }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Total Contributions -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-green-100 p-3">
+                            <span class="material-icons-outlined text-green-600">volunteer_activism</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">My Contributions (YTD)</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ total_contributions|default:"0.00"|floatformat:2 }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tithe This Year -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-blue-100 p-3">
+                            <span class="material-icons-outlined text-blue-600">savings</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Tithe (YTD)</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ total_tithe|default:"0.00"|floatformat:2 }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-purple-100 p-3">
+                            <span class="material-icons-outlined text-purple-600">event_available</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Attendance Rate</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ attendance_rate|default:"0" }}%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-orange-100 p-3">
+                            <span class="material-icons-outlined text-orange-600">diversity_3</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">My Groups</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ group_count|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- My Contributions -->
+        <div class="lg:col-span-2 bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">My Recent Contributions</h3>
+                <a href="{% url 'contributions:list' %}" class="text-sm text-primary-600 hover:text-primary-500">View
+                    all</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for contribution in recent_contributions %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ contribution.date|date:"M
+                                d, Y" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if contribution.contribution_type.category == 'tithe' %}bg-blue-100 text-blue-800
+                                    {% elif contribution.contribution_type.category == 'offering' %}bg-green-100 text-green-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ contribution.contribution_type.name }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">GH₵ {{
+                                contribution.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+                                <span
+                                    class="material-icons-outlined text-4xl text-gray-300">account_balance_wallet</span>
+                                <p class="mt-2">No contributions recorded yet</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Contribution Chart -->
+            <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Monthly Giving</h3>
+                <canvas id="contributionChart" height="200"></canvas>
+            </div>
+
+            <!-- Announcements -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">Announcements</h3>
+                    <a href="{% url 'announcements:list' %}" class="text-sm text-primary-600">View all</a>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for announcement in announcements %}
+                    <a href="{% url 'announcements:detail' announcement.id %}" class="block p-4 hover:bg-gray-50">
+                        <p class="text-sm font-medium text-gray-900">{{ announcement.title }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ announcement.created_at|timesince }} ago</p>
+                    </a>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No announcements</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Latest Sermons -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">Latest Sermons</h3>
+                    <a href="{% url 'sermons:list' %}" class="text-sm text-primary-600">View all</a>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for sermon in latest_sermons %}
+                    <a href="{% url 'sermons:detail' sermon.id %}" class="block p-4 hover:bg-gray-50">
+                        <div class="flex items-start">
+                            <span class="material-icons-outlined text-primary-600 mr-3">play_circle</span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ sermon.title }}</p>
+                                <p class="text-xs text-gray-500">{{ sermon.preacher }} • {{ sermon.sermon_date|date:"M
+                                    d" }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No sermons available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Groups -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">My Groups & Ministries</h3>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for membership in my_groups %}
+                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                    <div class="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-primary-600">group</span>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">{{ membership.group.name }}</p>
+                        <p class="text-xs text-gray-500">{{ membership.role|default:"Member" }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    <span class="material-icons-outlined text-4xl text-gray-300">groups</span>
+                    <p class="mt-2">You haven't joined any groups yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('contributionChart');
+        if (ctx) {
+            const monthlyData = JSON.parse('{{ monthly_contributions|safe }}');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Contributions',
+                        data: monthlyData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

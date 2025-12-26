@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Import Contributions{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Import Contributions</h1>
+            <p class="mt-1 text-sm text-gray-500">Bulk import contributions from a CSV file</p>
+        </div>
+        <a href="{% url 'contributions:list' %}" class="btn-secondary mt-4 sm:mt-0">
+            <span class="material-icons-outlined mr-1">arrow_back</span> Back to Contributions
+        </a>
+    </div>
+
+    <!-- Instructions -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div class="flex">
+            <span class="material-icons-outlined text-blue-600 mr-3 text-2xl">info</span>
+            <div>
+                <h3 class="text-lg font-medium text-blue-900">Import Instructions</h3>
+                <ul class="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
+                    <li>Download the CSV template to see the required format</li>
+                    <li>Required fields: <strong>member_id, contribution_type, amount, date</strong></li>
+                    <li>Date format: YYYY-MM-DD (e.g., 2024-01-15)</li>
+                    <li>Member ID must match existing member IDs in the system</li>
+                    <li>Contribution type must match existing types (Tithe, Offering, etc.)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Template -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">CSV Template</h3>
+                <p class="text-sm text-gray-500">Download the template with all required columns</p>
+            </div>
+            <a href="{% url 'contributions:import_template' %}" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">download</span> Download Template
+            </a>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Upload CSV File</h3>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-400 transition-colors" id="dropzone">
+                    <div class="space-y-1 text-center">
+                        <span class="material-icons-outlined text-5xl text-gray-400">upload_file</span>
+                        <div class="flex text-sm text-gray-600">
+                            <label for="csv_file" class="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500">
+                                <span>Upload a file</span>
+                                <input id="csv_file" name="csv_file" type="file" accept=".csv" class="sr-only" required>
+                            </label>
+                            <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-gray-500">CSV file up to 10MB</p>
+                        <p class="text-sm text-gray-700 font-medium" id="file-name"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4">
+                <a href="{% url 'contributions:list' %}" class="btn-secondary">Cancel</a>
+                <button type="submit" class="btn-primary">
+                    <span class="material-icons-outlined mr-1">upload</span> Import Contributions
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Available Contribution Types -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Available Contribution Types</h3>
+            <p class="text-sm text-gray-500">Use these exact names in your CSV file</p>
+        </div>
+        <div class="p-6">
+            <div class="flex flex-wrap gap-2">
+                {% for ct in contribution_types %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if ct.category == 'tithe' %}bg-blue-100 text-blue-800
+                    {% elif ct.category == 'offering' %}bg-green-100 text-green-800
+                    {% elif ct.category == 'special' %}bg-purple-100 text-purple-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ ct.name }}
+                </span>
+                {% empty %}
+                <p class="text-gray-500">No contribution types defined yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Expected Format -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Expected CSV Format</h3>
+        </div>
+        <div class="p-6 overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500">Column</th>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500">Required</th>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500">Example</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr><td class="px-3 py-2 font-medium">member_id</td><td class="px-3 py-2"><span class="text-red-600">Yes</span></td><td class="px-3 py-2 text-gray-500">AN001</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">contribution_type</td><td class="px-3 py-2"><span class="text-red-600">Yes</span></td><td class="px-3 py-2 text-gray-500">Tithe</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">amount</td><td class="px-3 py-2"><span class="text-red-600">Yes</span></td><td class="px-3 py-2 text-gray-500">100.00</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">date</td><td class="px-3 py-2"><span class="text-red-600">Yes</span></td><td class="px-3 py-2 text-gray-500">2024-01-15</td></tr>
+                    <tr><td class="px-3 py-2 font-medium">description</td><td class="px-3 py-2">No</td><td class="px-3 py-2 text-gray-500">Monthly tithe</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('csv_file').addEventListener('change', function(e) {
+    document.getElementById('file-name').textContent = e.target.files[0]?.name || '';
+});
+</script>
+{% endblock %}

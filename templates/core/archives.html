@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Archives{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900">Archives</h1>
+        <p class="mt-4 text-lg text-gray-500">Access to archived data will be available here.</p>
+        <div class="mt-8">
+            <a href="{% url 'core:dashboard' %}" class="text-primary-600 hover:text-primary-500 font-medium">
+                &larr; Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% block title %}Members{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Page Header with Branch Info -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Church Members</h1>
+                    {% if request.GET.branch %}
+                        {% if branch %}
+                        <p class="mt-2 text-sm text-gray-600">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">church</span>
+                            Showing members for: <span class="font-semibold">{{ branch.name }}</span>
+                            {% if branch.district %}
+                            ({{ branch.district.name }} • {{ branch.district.area.name }})
+                            {% endif %}
+                        </p>
+                        {% if branch.pastor %}
+                        <p class="mt-1 text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">person</span>
+                            Pastor: {{ branch.pastor.get_full_name }}
+                        </p>
+                        {% endif %}
+                        {% endif %}
+                    {% elif user.is_mission_admin %}
+                        <p class="mt-2 text-sm text-gray-600">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">groups</span>
+                            All members in the system
+                        </p>
+                    {% elif user.branch %}
+                        <p class="mt-2 text-sm text-gray-600">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">church</span>
+                            {{ user.branch.name }} ({{ user.branch.district.name }} • {{ user.branch.district.area.name }})
+                        </p>
+                    {% endif %}
+                </div>
+                <div class="flex gap-3">
+                    {% if request.GET.branch and branch %}
+                    <a href="{% url 'members:list' %}" class="btn btn-secondary">
+                        <span class="material-icons-outlined mr-2">list</span>All Members
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'members:add' %}{% if request.GET.branch %}?branch={{ request.GET.branch }}{% endif %}" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">person_add</span>Add Member
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Tabs -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="border-b border-gray-200">
+                <nav class="flex overflow-x-auto" aria-label="Tabs">
+                    <a href="{% url 'members:list' %}{% if request.GET.branch %}?branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if not request.GET.role %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">groups</span>
+                        All Members
+                    </a>
+                    {% if user.is_mission_admin %}
+                    <a href="{% url 'members:list' %}?role=branch_executive{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'branch_executive' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">admin_panel_settings</span>
+                        Branch Admins
+                    </a>
+                    <a href="{% url 'members:list' %}?role=area_executive{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'area_executive' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">public</span>
+                        Area Admins
+                    </a>
+                    <a href="{% url 'members:list' %}?role=district_executive{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'district_executive' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">location_city</span>
+                        District Admins
+                    </a>
+                    <a href="{% url 'members:list' %}?role=pastor{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'pastor' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">church</span>
+                        Pastors
+                    </a>
+                    <a href="{% url 'members:list' %}?role=staff{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'staff' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">badge</span>
+                        Staff
+                    </a>
+                    <a href="{% url 'members:list' %}?role=auditor{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'auditor' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">verified_user</span>
+                        Auditors
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'members:list' %}?role=member{% if request.GET.branch %}&branch={{ request.GET.branch }}{% endif %}" 
+                       class="{% if request.GET.role == 'member' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">person</span>
+                        Regular Members
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card">
+        <div class="card-body">
+            <form method="get">
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- Search Bar - Full Width -->
+                    <div class="form-group mb-0">
+                        <label class="form-label">Search Members</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <span class="material-icons-outlined">search</span>
+                            </span>
+                            <input type="text" name="q" value="{{ request.GET.q }}"
+                                placeholder="Search by name, member ID, or phone..."
+                                class="form-input pl-10">
+                        </div>
+                    </div>
+
+                    <!-- Filter Options - Grid Layout -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Hierarchical Branch Filter (only for users with hierarchy access) -->
+                        {% if show_hierarchy_filters %}
+                            {% if user.is_mission_admin %}
+                            <div class="form-group mb-0">
+                                <label class="form-label">Area</label>
+                                <select name="area" class="form-input form-select" onchange="this.form.submit()">
+                                    <option value="">All Areas</option>
+                                    {% for area in areas %}
+                                    <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+
+                            {% if user.is_mission_admin or user.is_area_executive %}
+                            <div class="form-group mb-0">
+                                <label class="form-label">District</label>
+                                <select name="district" class="form-input form-select" onchange="this.form.submit()">
+                                    <option value="">All Districts</option>
+                                    {% for district in districts %}
+                                    <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+
+                            {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %}
+                            <div class="form-group mb-0">
+                                <label class="form-label">Branch</label>
+                                <select name="branch" class="form-input form-select" onchange="this.form.submit()">
+                                    <option value="">All Branches</option>
+                                    {% for branch in branches %}
+                                    <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <div class="form-group mb-0">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-input form-select" onchange="this.form.submit()">
+                                <option value="">All Status</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
+                        <div class="text-sm text-gray-600">
+                            {% if members %}
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Showing {{ members|length }} member{{ members|length|pluralize }}
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="{% url 'members:list' %}" class="btn btn-secondary">
+                                <span class="material-icons-outlined">clear</span>
+                                <span class="hidden sm:inline ml-2">Clear</span>
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-icons-outlined">search</span>
+                                <span class="hidden sm:inline ml-2">Search</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Members Table -->
+    <div class="card">
+        <div class="card-header flex items-center justify-between">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">groups</span>
+                Member List
+            </h2>
+            <span class="badge badge-primary">{{ members|length }} Member{{ members|length|pluralize }}</span>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th class="hidden md:table-cell">Member ID</th>
+                        <th class="hidden lg:table-cell">Branch</th>
+                        <th class="hidden md:table-cell">Phone</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                    <tr class="hover:bg-gray-50">
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                                    {% if member.profile_picture %}
+                                    <img class="w-10 h-10 rounded-full object-cover" src="{{ member.profile_picture.url }}" alt="{{ member.get_full_name }}">
+                                    {% else %}
+                                    <span class="text-sm font-medium text-primary-600">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ member.get_full_name }}</p>
+                                    <p class="text-xs text-gray-500 md:hidden">{{ member.member_id }}</p>
+                                    {% if member.branch %}
+                                    <p class="text-xs text-gray-500 lg:hidden">{{ member.branch.name }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="hidden md:table-cell">
+                            <span class="font-mono text-sm text-gray-600">{{ member.member_id }}</span>
+                        </td>
+                        <td class="hidden lg:table-cell">
+                            {% if member.branch %}
+                            <span class="text-sm text-gray-900">{{ member.branch.name }}</span>
+                            {% else %}
+                            <span class="text-sm text-gray-400">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="hidden md:table-cell">
+                            <span class="text-sm text-gray-600">{{ member.phone|default:"-" }}</span>
+                        </td>
+                        <td>
+                            {% if member.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'members:detail' member.id %}" class="text-primary-600 hover:text-primary-900 text-sm font-medium">View</a>
+                                <a href="{% url 'members:edit' member.id %}" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Edit</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12">
+                            <div class="text-center">
+                                <span class="material-icons-outlined text-5xl text-gray-300">people</span>
+                                <p class="mt-2 text-gray-500">No members found</p>
+                                <p class="mt-1 text-sm text-gray-400">Try adjusting your filters or add your first member</p>
+                                <a href="{% url 'members:add' %}{% if request.GET.branch %}?branch={{ request.GET.branch }}{% endif %}" class="btn btn-primary mt-4">
+                                    <span class="material-icons-outlined mr-2">person_add</span>Add First Member
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p class="text-sm text-gray-600">
+                Showing <span class="font-medium">{{ page_obj.start_index }}</span> to 
+                <span class="font-medium">{{ page_obj.end_index }}</span> of 
+                <span class="font-medium">{{ page_obj.paginator.count }}</span> members
+            </p>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" class="btn btn-secondary">
+                    <span class="material-icons-outlined mr-1">chevron_left</span>Previous
+                </a>
+                {% endif %}
+                
+                <span class="px-3 py-1 text-sm text-gray-600">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" class="btn btn-secondary">
+                    Next<span class="material-icons-outlined ml-1">chevron_right</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

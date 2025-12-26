@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}Audit Reports{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="card">
+        <div class="card-body">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <span class="material-icons-outlined align-middle mr-2">assessment</span>
+                Audit Reports
+            </h1>
+            <p class="mt-2 text-sm text-gray-600">
+                Generate comprehensive audit reports for compliance and oversight
+            </p>
+        </div>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Financial Reports -->
+        <div class="card">
+            <div class="card-header bg-green-50">
+                <h3 class="font-semibold text-green-900">
+                    <span class="material-icons-outlined align-middle mr-2">account_balance</span>
+                    Financial Reports
+                </h3>
+            </div>
+            <div class="card-body">
+                <ul class="space-y-3">
+                    <li>
+                        <a href="{% url 'auditing:financial_reports' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Financial Reports by Period
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'reports:financial' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Consolidated Financial Report
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'reports:contributions' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Contributions Analysis
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'reports:expenditure' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Expenditure Breakdown
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Compliance Reports -->
+        <div class="card">
+            <div class="card-header bg-blue-50">
+                <h3 class="font-semibold text-blue-900">
+                    <span class="material-icons-outlined align-middle mr-2">verified_user</span>
+                    Compliance Reports
+                </h3>
+            </div>
+            <div class="card-body">
+                <ul class="space-y-3">
+                    <li>
+                        <a href="{% url 'auditing:logs' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Audit Trail Logs
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'auditing:flags' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Audit Flags & Alerts
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'contributions:remittances' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Remittance Compliance
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Operational Reports -->
+        <div class="card">
+            <div class="card-header bg-purple-50">
+                <h3 class="font-semibold text-purple-900">
+                    <span class="material-icons-outlined align-middle mr-2">analytics</span>
+                    Operational Reports
+                </h3>
+            </div>
+            <div class="card-body">
+                <ul class="space-y-3">
+                    <li>
+                        <a href="{% url 'reports:attendance' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Attendance Reports
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'members:list' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Membership Reports
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'contributions:tithe_performance' %}" class="flex items-center text-sm text-primary-600 hover:text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-2">chevron_right</span>
+                            Tithe Performance
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Export Options -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">Quick Export</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-sm text-gray-600 mb-4">Generate and download comprehensive reports in various formats</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button class="btn btn-outline-primary">
+                    <span class="material-icons-outlined mr-2">picture_as_pdf</span>
+                    Export to PDF
+                </button>
+                <button class="btn btn-outline-success">
+                    <span class="material-icons-outlined mr-2">table_chart</span>
+                    Export to Excel
+                </button>
+                <button class="btn btn-outline-secondary">
+                    <span class="material-icons-outlined mr-2">description</span>
+                    Export to CSV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

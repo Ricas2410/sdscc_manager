@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
+        <p class="mt-1 text-sm text-gray-500">Generate and view financial and operational reports</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Financial Reports -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-green-500 to-green-600">
+                <h3 class="text-lg font-semibold text-white">Financial Reports</h3>
+            </div>
+            <div class="p-4 space-y-2">
+                <a href="{% url 'reports:contributions' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-green-600 mr-3">payments</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Contribution Report</p>
+                        <p class="text-xs text-gray-500">All contributions summary</p>
+                    </div>
+                </a>
+                <a href="{% url 'reports:expenditure' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-green-600 mr-3">receipt_long</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Expenditure Report</p>
+                        <p class="text-xs text-gray-500">Expense breakdown</p>
+                    </div>
+                </a>
+                <a href="{% url 'reports:financial' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-green-600 mr-3">account_balance</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Financial Summary</p>
+                        <p class="text-xs text-gray-500">Income vs expenditure</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Membership Reports -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600">
+                <h3 class="text-lg font-semibold text-white">Membership Reports</h3>
+            </div>
+            <div class="p-4 space-y-2">
+                <a href="{% url 'members:list' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-blue-600 mr-3">people</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Member Directory</p>
+                        <p class="text-xs text-gray-500">Complete member list</p>
+                    </div>
+                </a>
+                <a href="{% url 'reports:attendance' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-blue-600 mr-3">fact_check</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Attendance Report</p>
+                        <p class="text-xs text-gray-500">Service attendance trends</p>
+                    </div>
+                </a>
+                <a href="{% url 'groups:list' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-blue-600 mr-3">diversity_3</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Group Report</p>
+                        <p class="text-xs text-gray-500">Ministry groups summary</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Administrative Reports -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-purple-500 to-purple-600">
+                <h3 class="text-lg font-semibold text-white">Administrative</h3>
+            </div>
+            <div class="p-4 space-y-2">
+                {% if user.role == 'mission_admin' %}
+                <a href="{% url 'contributions:remittances' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-purple-600 mr-3">sync_alt</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Remittance Report</p>
+                        <p class="text-xs text-gray-500">Branch remittances</p>
+                    </div>
+                </a>
+                <a href="{% url 'payroll:commissions' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-purple-600 mr-3">paid</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Commission Report</p>
+                        <p class="text-xs text-gray-500">Pastor commissions</p>
+                    </div>
+                </a>
+                {% endif %}
+                <a href="{% url 'auditing:logs' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50">
+                    <span class="material-icons-outlined text-purple-600 mr-3">history</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Audit Logs</p>
+                        <p class="text-xs text-gray-500">System activity trail</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Generate -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Generate Custom Report</h3>
+        <form method="get" action="{% url 'reports:financial' %}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
+                <select name="type" class="input-field">
+                    <option value="financial">Financial Summary</option>
+                    <option value="contributions">Contributions</option>
+                    <option value="expenditure">Expenditure</option>
+                    <option value="attendance">Attendance</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input type="date" name="from_date" class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input type="date" name="to_date" class="input-field">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="btn-primary w-full">
+                    <span class="material-icons-outlined mr-1">assessment</span> Generate
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

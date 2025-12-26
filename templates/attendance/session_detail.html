@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Attendance - {{ session.date }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Attendance Record</h1>
+            <p class="text-gray-500 mt-1">{{ session.service_type.name }} - {{ session.date|date:"l, M d, Y" }}</p>
+        </div>
+        <a href="{% url 'attendance:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <!-- Session Info -->
+    <div class="card">
+        <div class="card-body">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div>
+                    <p class="text-sm text-gray-500">Branch</p>
+                    <p class="font-semibold text-gray-900">{{ session.branch.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Service</p>
+                    <p class="font-semibold text-gray-900">{{ session.service_type.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Present</p>
+                    <p class="text-2xl font-bold text-green-600">{{ present.count }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Absent</p>
+                    <p class="text-2xl font-bold text-red-600">{{ absent.count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Present -->
+        <div class="card">
+            <div class="card-header bg-green-50">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons-outlined text-green-600">check_circle</span>
+                    <h2 class="font-semibold text-green-900">Present ({{ present.count }})</h2>
+                </div>
+            </div>
+            <div class="card-body max-h-96 overflow-y-auto">
+                <ul class="divide-y">
+                    {% for record in present %}
+                    <li class="py-3 flex items-center gap-3">
+                        {% if record.member.profile_picture %}
+                        <img src="{{ record.member.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover">
+                        {% else %}
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <span class="text-sm font-medium text-green-600">{{ record.member.first_name|slice:":1" }}{{ record.member.last_name|slice:":1" }}</span>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <p class="font-medium text-gray-900">{{ record.member.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ record.member.user_id }}</p>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="py-8 text-center text-gray-500">No members marked present</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Absent -->
+        <div class="card">
+            <div class="card-header bg-red-50">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons-outlined text-red-600">cancel</span>
+                    <h2 class="font-semibold text-red-900">Absent ({{ absent.count }})</h2>
+                </div>
+            </div>
+            <div class="card-body max-h-96 overflow-y-auto">
+                <ul class="divide-y">
+                    {% for record in absent %}
+                    <li class="py-3 flex items-center gap-3">
+                        {% if record.member.profile_picture %}
+                        <img src="{{ record.member.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover">
+                        {% else %}
+                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                            <span class="text-sm font-medium text-red-600">{{ record.member.first_name|slice:":1" }}{{ record.member.last_name|slice:":1" }}</span>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <p class="font-medium text-gray-900">{{ record.member.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ record.member.user_id }}</p>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="py-8 text-center text-gray-500">No members marked absent</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visitors Section -->
+    <div class="card">
+        <div class="card-header bg-purple-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons-outlined text-purple-600">person_add</span>
+                    <h2 class="font-semibold text-purple-900">Visitors ({{ session.visitor_records.count }})</h2>
+                </div>
+                {% if user.is_any_admin or user.is_pastor or user.is_branch_executive %}
+                <a href="{% url 'attendance:add_visitor' session.id %}" class="btn btn-primary btn-sm">
+                    <span class="material-icons-outlined mr-1">add</span>Add Visitor
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            {% if session.visitor_records.all %}
+            <div class="space-y-3">
+                {% for visitor in session.visitor_records.all %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-900">{{ visitor.name }}</p>
+                        <p class="text-sm text-gray-500">
+                            {% if visitor.phone %}{{ visitor.phone }}{% endif %}
+                            {% if visitor.invited_by %} • Invited by: {{ visitor.invited_by.get_full_name|default:visitor.invited_by.member_id }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if visitor.status == 'new' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">First Time</span>
+                        {% elif visitor.status == 'returning' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Returning</span>
+                        {% elif visitor.status == 'joined' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Joined</span>
+                        {% endif %}
+                        <a href="{% url 'attendance:visitor_detail' visitor.id %}" class="text-blue-600 hover:text-blue-800 text-sm">
+                            View
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <span class="material-icons-outlined text-4xl text-gray-300 mb-2">person_add</span>
+                <p class="font-medium">No visitors recorded</p>
+                <p class="text-sm">Add visitors to track follow-up opportunities</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

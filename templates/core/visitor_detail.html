@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ visitor.full_name }} - Visitor{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'core:visitors' %}" class="p-2 hover:bg-gray-100 rounded-lg">
+                <span class="material-icons">arrow_back</span>
+            </a>
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <span class="text-white text-2xl font-bold">{{ visitor.first_name.0 }}{{ visitor.last_name.0 }}</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ visitor.full_name }}</h1>
+                    <p class="text-gray-500">First visit: {{ visitor.first_visit_date|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if visitor.status == 'new' %}bg-yellow-100 text-yellow-800
+            {% elif visitor.status == 'contacted' %}bg-blue-100 text-blue-800
+            {% elif visitor.status == 'follow_up' %}bg-purple-100 text-purple-800
+            {% elif visitor.status == 'returned' %}bg-indigo-100 text-indigo-800
+            {% elif visitor.status == 'converted' %}bg-green-100 text-green-800
+            {% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ visitor.get_status_display }}
+        </span>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Visitor Info -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Contact Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <div class="space-y-3">
+                    {% if visitor.phone %}
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-gray-400">phone</span>
+                        <a href="tel:{{ visitor.phone }}" class="text-blue-600 hover:underline">{{ visitor.phone }}</a>
+                    </div>
+                    {% endif %}
+                    {% if visitor.email %}
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-gray-400">email</span>
+                        <a href="mailto:{{ visitor.email }}" class="text-blue-600 hover:underline">{{ visitor.email }}</a>
+                    </div>
+                    {% endif %}
+                    {% if visitor.address %}
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-outlined text-gray-400">location_on</span>
+                        <span class="text-gray-600">{{ visitor.address }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <!-- Update Status -->
+                    <form method="POST" class="flex items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_status">
+                        <select name="status" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            {% for status_val, status_label in status_choices %}
+                            <option value="{{ status_val }}" {% if visitor.status == status_val %}selected{% endif %}>
+                                {{ status_label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-secondary text-sm">Update</button>
+                    </form>
+                    
+                    <!-- Schedule Follow-up -->
+                    <form method="POST" class="flex items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="schedule_followup">
+                        <input type="date" name="next_follow_up" 
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                               value="{{ visitor.next_follow_up|date:'Y-m-d' }}">
+                        <button type="submit" class="btn-secondary text-sm">Schedule</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Notes -->
+            {% if visitor.notes %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-900 mb-3">Notes</h3>
+                <p class="text-gray-600 text-sm">{{ visitor.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Follow-up History -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Add Follow-up -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-900 mb-4">Add Follow-up</h3>
+                <form method="POST" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_followup">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Method</label>
+                            <select name="method" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                {% for method_val, method_label in method_choices %}
+                                <option value="{{ method_val }}">{{ method_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input type="date" name="follow_up_date" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                   value="{{ today|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="2" required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                  placeholder="What was discussed..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Visitor Response</label>
+                        <textarea name="response" rows="2"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                  placeholder="How did they respond..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">
+                        <span class="material-icons-outlined text-lg mr-2">add</span>
+                        Record Follow-up
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Follow-up History -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="font-semibold text-gray-900 mb-4">Follow-up History</h3>
+                <div class="space-y-4">
+                    {% for fu in follow_ups %}
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ fu.get_method_display }}
+                                </span>
+                                <span class="text-sm text-gray-500">{{ fu.follow_up_date|date:"M d, Y" }}</span>
+                            </div>
+                            <span class="text-xs text-gray-400">by {{ fu.followed_by.get_full_name }}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">{{ fu.notes }}</p>
+                        {% if fu.response %}
+                        <div class="p-2 bg-white rounded border-l-2 border-green-500">
+                            <p class="text-xs font-medium text-gray-500 mb-1">Response:</p>
+                            <p class="text-sm text-gray-600">{{ fu.response }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-500 py-8">No follow-ups recorded yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

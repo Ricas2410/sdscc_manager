@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate Monthly Report{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{% url 'reports:monthly_reports' %}" class="inline-flex items-center text-gray-500 hover:text-gray-700 mb-4">
+            <span class="material-icons text-lg mr-1">arrow_back</span>
+            Back to Monthly Reports
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">Generate Monthly Report</h1>
+        <p class="text-gray-500">Create a new monthly report for {{ branch.name }}</p>
+    </div>
+    
+    <!-- Info Alert -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-start gap-3">
+            <span class="material-icons text-blue-600">info</span>
+            <div>
+                <p class="font-medium text-blue-800">Automatic Data Collection</p>
+                <p class="text-sm text-blue-700 mt-1">
+                    The system will automatically collect data from contributions, expenditures, and attendance records 
+                    for the selected month to generate this report.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+        {% csrf_token %}
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Select Month <span class="text-red-500">*</span>
+            </label>
+            <select name="month" required class="form-input">
+                <option value="">Choose a month</option>
+                {% for month_num, month_name in months %}
+                <option value="{{ month_num }}">{{ month_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Year <span class="text-red-500">*</span>
+            </label>
+            <select name="year" required class="form-input">
+                <option value="{{ current_year }}" selected>{{ current_year }}</option>
+                <option value="{{ current_year|add:'-1' }}">{{ current_year|add:'-1' }}</option>
+            </select>
+        </div>
+        
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">What will be included:</h3>
+            <ul class="space-y-2 text-sm text-gray-600">
+                <li class="flex items-center">
+                    <span class="material-icons text-green-500 mr-2">check_circle</span>
+                    Total contributions (tithe, offering, special)
+                </li>
+                <li class="flex items-center">
+                    <span class="material-icons text-green-500 mr-2">check_circle</span>
+                    Total expenditures by category
+                </li>
+                <li class="flex items-center">
+                    <span class="material-icons text-green-500 mr-2">check_circle</span>
+                    Attendance statistics and service count
+                </li>
+                <li class="flex items-center">
+                    <span class="material-icons text-green-500 mr-2">check_circle</span>
+                    Mission remittance calculation (10% of tithe)
+                </li>
+                <li class="flex items-center">
+                    <span class="material-icons text-green-500 mr-2">check_circle</span>
+                    Branch balance calculation
+                </li>
+            </ul>
+        </div>
+        
+        <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
+            <button type="submit" class="btn-primary">
+                <span class="material-icons-outlined text-lg mr-2">assessment</span>
+                Generate Report
+            </button>
+            <a href="{% url 'reports:monthly_reports' %}" class="btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

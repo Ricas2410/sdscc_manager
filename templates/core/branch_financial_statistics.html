@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% block title %}Financial Statistics{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Financial Statistics</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                {% if period_type == 'monthly' %}
+                    {{ month_name }} {{ year }}
+                {% else %}
+                    {{ year }}
+                {% endif %}
+                {% if selected_branch %}- {{ selected_branch.name }}{% endif %}
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex space-x-2">
+            <button onclick="exportPDF()" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">picture_as_pdf</span> Export PDF
+            </button>
+            <button onclick="exportExcel()" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">grid_on</span> Export Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {% if user.is_mission_admin %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <select name="branch" class="input-field">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if selected_branch and selected_branch.id == branch.id %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                <select name="period" id="periodSelect" class="input-field">
+                    <option value="yearly" {% if period_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                    <option value="monthly" {% if period_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <select name="year" class="input-field">
+                    {% for y in available_years %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div id="monthFilter" {% if period_type == 'yearly' %}style="display:none"{% endif %}>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                <select name="month" class="input-field">
+                    {% for m in months %}
+                    <option value="{{ m.0 }}" {% if month == m.0 %}selected{% endif %}>{{ m.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="md:col-span-4 flex items-end">
+                <button type="submit" class="btn-primary">
+                    <span class="material-icons-outlined mr-1">filter_list</span> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if selected_branch %}
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-green-600 text-2xl">trending_up</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Contributions</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ total_contributions|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-red-600 text-2xl">trending_down</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Expenditures</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ total_expenditures|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-blue-600 text-2xl">account_balance_wallet</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Coffer Balance</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ coffer_balance|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-purple-600 text-2xl">church</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Mission Remittance</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ mission_remittance|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    {% if period_type == 'yearly' %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Monthly Trend Chart -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Monthly Trend</h3>
+            <canvas id="trendChart" height="200"></canvas>
+        </div>
+        
+        <!-- Contribution Types Chart -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Contributions by Type</h3>
+            <canvas id="contributionChart" height="200"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Detailed Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Contributions Breakdown -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Contributions Breakdown</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Tithe</span>
+                        <span class="text-sm font-medium">₦{{ tithe_total|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Other Contributions</span>
+                        <span class="text-sm font-medium">₦{{ other_contributions|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <span class="text-sm font-medium text-gray-900">Total Contributions</span>
+                        <span class="text-lg font-bold text-gray-900">₦{{ total_contributions|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+                
+                {% if contributions_by_type %}
+                <div class="mt-6">
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">By Contribution Type</h4>
+                    <div class="space-y-2">
+                        {% for contrib in contributions_by_type %}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">{{ contrib.contribution_type__name|title }}</span>
+                            <span class="font-medium">₦{{ contrib.total|floatformat:2|intcomma }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Expenditures Breakdown -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Expenditures Breakdown</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Payroll</span>
+                        <span class="text-sm font-medium">₦{{ total_payroll|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Other Expenses</span>
+                        <span class="text-sm font-medium">₦{{ total_expenditures|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Remittances Sent</span>
+                        <span class="text-sm font-medium">₦{{ total_remittances|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <span class="text-sm font-medium text-gray-900">Total Outflows</span>
+                        <span class="text-lg font-bold text-gray-900">
+                            ₦{{ total_expenditures|add:total_payroll|add:total_remittances|floatformat:2|intcomma }}
+                        </span>
+                    </div>
+                </div>
+                
+                {% if expenditures_by_category %}
+                <div class="mt-6">
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">By Category</h4>
+                    <div class="space-y-2">
+                        {% for exp in expenditures_by_category %}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">{{ exp.category|title }}</span>
+                            <span class="font-medium">₦{{ exp.total|floatformat:2|intcomma }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Remittances -->
+    {% if remittances %}
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Recent Remittances</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for rem in remittances %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ rem.date|date:"d M Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₦{{ rem.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                {% if rem.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif rem.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ rem.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No Branch Selected -->
+    <div class="bg-white shadow rounded-lg p-12 text-center">
+        <span class="material-icons-outlined text-6xl text-gray-400">account_balance</span>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">Select a Branch</h3>
+        <p class="mt-2 text-sm text-gray-500">Please select a branch to view its financial statistics</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Period filter toggle
+document.getElementById('periodSelect').addEventListener('change', function() {
+    const monthFilter = document.getElementById('monthFilter');
+    if (this.value === 'monthly') {
+        monthFilter.style.display = 'block';
+    } else {
+        monthFilter.style.display = 'none';
+        // Clear month selection
+        const monthSelect = monthFilter.querySelector('select');
+        monthSelect.value = '';
+    }
+});
+
+{% if selected_branch and period_type == 'yearly' %}
+// Monthly Trend Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for m in monthly_data %}'{{ m.month_name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Contributions',
+            data: [{% for m in monthly_data %}{{ m.contributions }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Expenditures',
+            data: [{% for m in monthly_data %}{{ m.expenditures }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₦' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Contribution Types Chart
+const contribCtx = document.getElementById('contributionChart').getContext('2d');
+new Chart(contribCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for contrib in contributions_by_type %}'{{ contrib.contribution_type__name|title }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for contrib in contributions_by_type %}{{ contrib.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right',
+            }
+        }
+    }
+});
+{% endif %}
+
+function exportPDF() {
+    window.print();
+}
+
+function exportExcel() {
+    // Basic CSV export for now
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + "Period,Branch,Contributions,Expenditures,Payroll,Remittances,Coffer Balance\n"
+        + "{{ period_type }},{{ selected_branch.name|default:'All' }},{{ total_contributions }},{{ total_expenditures }},{{ total_payroll }},{{ total_remittances }},{{ coffer_balance }}";
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "financial_statistics_{{ year }}_{{ month|default:'all' }}.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

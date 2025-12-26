@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Attendance History{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Attendance History</h1>
+            <p class="text-gray-500 mt-1">View and manage service attendance records</p>
+        </div>
+        <a href="{% url 'attendance:take' %}" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">add</span>Take Attendance
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                {% if branches %}
+                <div class="form-group mb-0">
+                    <label class="form-label">Branch</label>
+                    <select name="branch" class="form-input form-select">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="form-group mb-0">
+                    <label class="form-label">Service Type</label>
+                    <select name="service_type" class="form-input form-select">
+                        <option value="">All Types</option>
+                        {% for st in service_types %}
+                        <option value="{{ st.id }}" {% if request.GET.service_type == st.id|stringformat:"s" %}selected{% endif %}>{{ st.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="form-input">
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-1">Filter</button>
+                    <a href="{% url 'attendance:list' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Service Type</th>
+                        <th>Branch</th>
+                        <th class="text-center">Present</th>
+                        <th class="text-center">Visitors</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ session.date|date:"M d, Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ session.date|date:"l" }}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-primary">{{ session.service_type.name }}</span>
+                        </td>
+                        <td class="text-gray-500">{{ session.branch.name }}</td>
+                        <td class="text-center">
+                            <span class="font-semibold text-gray-900">{{ session.total_attendance }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="text-gray-500">{{ session.visitors_count }}</span>
+                        </td>
+                        <td class="text-right">
+                            <a href="{% url 'attendance:session_detail' session.id %}" class="btn btn-sm btn-secondary">
+                                <span class="material-icons-outlined text-sm">visibility</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">fact_check</span>
+                            <p class="mt-2 text-gray-500">No attendance sessions recorded</p>
+                            <a href="{% url 'attendance:take' %}" class="mt-4 btn btn-primary">Take First Attendance</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if sessions.has_other_pages %}
+        <div class="card-body border-t">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500">
+                    Showing {{ sessions.start_index }} - {{ sessions.end_index }} of {{ sessions.paginator.count }}
+                </p>
+                <nav class="flex items-center gap-1">
+                    {% if sessions.has_previous %}
+                    <a href="?page={{ sessions.previous_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Previous</a>
+                    {% endif %}
+                    {% if sessions.has_next %}
+                    <a href="?page={{ sessions.next_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Next</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

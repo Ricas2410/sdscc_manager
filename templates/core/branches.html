@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+{% block title %}Branches{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Branches</h1>
+            <p class="mt-1 text-sm text-gray-500">Local church branches</p>
+        </div>
+        {% if user.is_mission_admin %}
+        <button type="button" onclick="openAddModal()" class="btn btn-primary">
+            <span class="material-icons-outlined mr-1">add</span>Add Branch
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Branch name..." class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">District</label>
+                    <select name="district" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }} ({{ district.area.name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end gap-2 lg:col-span-2">
+                    <button type="submit" class="btn btn-primary flex-1">Filter</button>
+                    <a href="{% url 'core:branches' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Branches Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for branch in branches %}
+        <div class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+            <div class="h-20 bg-gradient-to-r from-green-500 to-teal-600 flex items-center px-4">
+                <span class="material-icons-outlined text-4xl text-white/50">church</span>
+                <div class="ml-3 text-white">
+                    <h3 class="font-semibold">{{ branch.name }}</h3>
+                    <p class="text-xs text-white/80">Code: {{ branch.code|default:"N/A" }}</p>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="text-sm text-gray-500 mb-3">
+                    <p>{{ branch.district.name }} • {{ branch.district.area.name }}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-center mb-4">
+                    <div class="bg-gray-50 rounded p-2">
+                        <p class="text-lg font-bold text-gray-900">{{ branch.total_members|default:"0" }}</p>
+                        <p class="text-xs text-gray-500">Members</p>
+                    </div>
+                    <div class="bg-gray-50 rounded p-2">
+                        <p class="text-lg font-bold text-gray-900">GH₵{{ branch.monthly_tithe_target|floatformat:0|default:"0" }}</p>
+                        <p class="text-xs text-gray-500">Target</p>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center pt-3 border-t">
+                    {% if branch.pastor %}
+                    <span class="text-xs text-gray-500">Pastor: {{ branch.pastor.get_full_name }}</span>
+                    {% else %}
+                    <span class="text-xs text-gray-400">No pastor assigned</span>
+                    {% endif %}
+                    <button type="button" onclick="viewBranch('{{ branch.id }}', '{{ branch.name|escapejs }}', '{{ branch.code|default:""|escapejs }}', '{{ branch.district.name|escapejs }}', '{{ branch.district.area.name|escapejs }}', '{% if branch.pastor %}{{ branch.pastor.get_full_name|escapejs }}{% else %}Not assigned{% endif %}', '{{ branch.address|default:""|escapejs }}', '{{ branch.phone|default:""|escapejs }}', '{{ branch.total_members|default:0 }}')" class="text-sm text-primary-600 hover:text-primary-500">View Details →</button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-white shadow rounded-lg p-12 text-center">
+            <span class="material-icons-outlined text-5xl text-gray-300">church</span>
+            <p class="mt-2 text-gray-500">No branches found</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Branch Modal -->
+<div id="addBranchModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeAddModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div class="p-6 border-b flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Add New Branch</h3>
+                <button type="button" onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                
+                <div class="form-group">
+                    <label class="form-label required">Branch Name</label>
+                    <input type="text" name="name" required class="form-input" placeholder="e.g., Atonsu Branch" id="branchNameInput" onkeyup="generateCode()">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Branch Code</label>
+                    <input type="text" name="code" required class="form-input" placeholder="Auto-generated" id="branchCodeInput" maxlength="5">
+                    <p class="text-xs text-gray-500 mt-1">Auto-generated from branch name (first 2-3 letters + number)</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Area</label>
+                        <select name="area" id="addAreaSelect" required class="form-input form-select" onchange="loadDistrictsForAdd()">
+                            <option value="">Select Area</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">District</label>
+                        <select name="district" id="addDistrictSelect" required class="form-input form-select" disabled>
+                            <option value="">Select District</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <textarea name="address" rows="2" class="form-input" placeholder="Branch location address"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" class="form-input" placeholder="+233...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Monthly Tithe Target</label>
+                        <input type="number" name="monthly_tithe_target" step="0.01" class="form-input" placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Assign Pastor</label>
+                    <select name="pastor" class="form-input form-select">
+                        <option value="">-- No Pastor Assigned --</option>
+                        {% for pastor in pastors %}
+                        <option value="{{ pastor.id }}">{{ pastor.get_full_name }} ({{ pastor.branch.name|default:"Unassigned" }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Optional: Assign a pastor to this branch</p>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-1">add</span>Add Branch
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Branch Modal -->
+<div id="viewBranchModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeViewModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div class="p-6 border-b flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900" id="viewBranchTitle">Branch Details</h3>
+                <button type="button" onclick="closeViewModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-gradient-to-r from-green-500 to-teal-600 rounded-lg p-4 text-white">
+                    <h4 class="text-xl font-bold" id="viewName"></h4>
+                    <p class="text-white/80 text-sm" id="viewCode"></p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">District</p>
+                        <p class="font-medium" id="viewDistrict"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Area</p>
+                        <p class="font-medium" id="viewArea"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Pastor</p>
+                        <p class="font-medium" id="viewPastor"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Members</p>
+                        <p class="font-medium" id="viewMembers"></p>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-sm text-gray-500">Address</p>
+                    <p class="font-medium" id="viewAddress"></p>
+                </div>
+                
+                <div>
+                    <p class="text-sm text-gray-500">Phone</p>
+                    <p class="font-medium" id="viewPhone"></p>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <a href="#" id="viewMembersLink" class="btn btn-secondary">
+                        <span class="material-icons-outlined mr-1">groups</span>View Members
+                    </a>
+                    {% if user.is_mission_admin %}
+                    <button type="button" onclick="editBranch()" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-1">edit</span>Edit Branch
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Branch Modal -->
+<div id="editBranchModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeEditModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div class="p-6 border-b flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Edit Branch</h3>
+                <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="branch_id" id="editBranchId">
+                
+                <div class="form-group">
+                    <label class="form-label required">Branch Name</label>
+                    <input type="text" name="name" required class="form-input" id="editBranchName">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Branch Code</label>
+                    <input type="text" name="code" required class="form-input" id="editBranchCode" maxlength="5">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Area</label>
+                        <select name="area" id="editAreaSelect" required class="form-input form-select" onchange="loadDistrictsForEdit()">
+                            <option value="">Select Area</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">District</label>
+                        <select name="district" id="editDistrictSelect" required class="form-input form-select">
+                            <option value="">Select District</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <textarea name="address" rows="2" class="form-input" id="editBranchAddress"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" class="form-input" id="editBranchPhone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Monthly Tithe Target</label>
+                        <input type="number" name="monthly_tithe_target" step="0.01" class="form-input" id="editBranchTarget">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Assign Pastor</label>
+                    <select name="pastor" class="form-input form-select" id="editBranchPastor">
+                        <option value="">-- No Pastor Assigned --</option>
+                        {% for pastor in pastors %}
+                        <option value="{{ pastor.id }}">{{ pastor.get_full_name }} ({{ pastor.branch.name|default:"Unassigned" }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Optional: Assign or reassign a pastor to this branch</p>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-1">save</span>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentBranchId = null;
+const districts = {{ districts_json|safe }};
+
+function openAddModal() {
+    document.getElementById('addBranchModal').classList.remove('hidden');
+}
+
+function closeAddModal() {
+    document.getElementById('addBranchModal').classList.add('hidden');
+}
+
+function generateCode() {
+    const name = document.getElementById('branchNameInput').value.trim();
+    if (name.length >= 2) {
+        // Take first 2-3 letters, uppercase
+        let code = name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
+        if (code.length < 2) code = name.substring(0, 2).toUpperCase();
+        document.getElementById('branchCodeInput').value = code;
+    }
+}
+
+function loadDistrictsForAdd() {
+    const areaId = document.getElementById('addAreaSelect').value;
+    const districtSelect = document.getElementById('addDistrictSelect');
+    
+    districtSelect.innerHTML = '<option value="">Select District</option>';
+    districtSelect.disabled = !areaId;
+    
+    if (areaId) {
+        // Filter districts by area
+        districts.forEach(d => {
+            if (d.area_id == areaId) {
+                districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            }
+        });
+    }
+}
+
+function viewBranch(id, name, code, district, area, pastor, address, phone, members) {
+    currentBranchId = id;
+    document.getElementById('viewBranchTitle').textContent = name + ' Details';
+    document.getElementById('viewName').textContent = name;
+    document.getElementById('viewCode').textContent = 'Code: ' + (code || 'Not set');
+    document.getElementById('viewDistrict').textContent = district;
+    document.getElementById('viewArea').textContent = area;
+    document.getElementById('viewPastor').textContent = pastor;
+    document.getElementById('viewMembers').textContent = members + ' members';
+    document.getElementById('viewAddress').textContent = address || 'Not provided';
+    document.getElementById('viewPhone').textContent = phone || 'Not provided';
+    document.getElementById('viewMembersLink').href = "{% url 'members:list' %}?branch=" + id;
+    document.getElementById('viewBranchModal').classList.remove('hidden');
+}
+
+function closeViewModal() {
+    document.getElementById('viewBranchModal').classList.add('hidden');
+}
+
+function editBranch() {
+    // Get branch data from the view modal or fetch from server
+    fetch(`/api/branches/${currentBranchId}/`)
+        .then(response => response.json())
+        .then(branch => {
+            // Populate basic fields
+            document.getElementById('editBranchId').value = currentBranchId;
+            document.getElementById('editBranchName').value = branch.name;
+            document.getElementById('editBranchCode').value = branch.code || '';
+            document.getElementById('editBranchAddress').value = branch.address || '';
+            document.getElementById('editBranchPhone').value = branch.phone || '';
+            document.getElementById('editBranchTarget').value = branch.monthly_tithe_target || 0;
+            
+            // Set area first
+            const areaSelect = document.getElementById('editAreaSelect');
+            areaSelect.value = branch.area_id;
+            
+            // Load districts for the selected area
+            loadDistrictsForEdit();
+            
+            // After districts are loaded, set the district value
+            setTimeout(() => {
+                const districtSelect = document.getElementById('editDistrictSelect');
+                districtSelect.value = branch.district_id;
+            }, 100);
+            
+            // Set pastor selection
+            const pastorSelect = document.getElementById('editBranchPastor');
+            pastorSelect.value = branch.pastor_id || '';
+            
+            // Close view modal and open edit modal
+            closeViewModal();
+            document.getElementById('editBranchModal').classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error fetching branch data:', error);
+            // Fallback to view modal data
+            const viewName = document.getElementById('viewName').textContent;
+            const viewCode = document.getElementById('viewCode').textContent.replace('Code: ', '');
+            const viewAddress = document.getElementById('viewAddress').textContent;
+            const viewPhone = document.getElementById('viewPhone').textContent;
+            
+            document.getElementById('editBranchId').value = currentBranchId;
+            document.getElementById('editBranchName').value = viewName;
+            document.getElementById('editBranchCode').value = viewCode === 'Not set' ? '' : viewCode;
+            document.getElementById('editBranchAddress').value = viewAddress === 'Not provided' ? '' : viewAddress;
+            document.getElementById('editBranchPhone').value = viewPhone === 'Not provided' ? '' : viewPhone;
+            
+            closeViewModal();
+            document.getElementById('editBranchModal').classList.remove('hidden');
+        });
+}
+
+function closeEditModal() {
+    document.getElementById('editBranchModal').classList.add('hidden');
+}
+
+function loadDistrictsForEdit() {
+    const areaSelect = document.getElementById('editAreaSelect');
+    const districtSelect = document.getElementById('editDistrictSelect');
+    const areaId = areaSelect.value;
+    
+    districtSelect.innerHTML = '<option value="">Select District</option>';
+    districtSelect.disabled = !areaId;
+    
+    if (areaId) {
+        districts.forEach(d => {
+            if (d.area_id == areaId) {
+                districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

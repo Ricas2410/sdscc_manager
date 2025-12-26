@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Area Dashboard - {{ area.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Area Dashboard</h1>
+            <p class="mt-1 text-sm text-gray-500">{{ area.name }}</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{% url 'core:calendar' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">calendar_month</span>Calendar
+            </a>
+            <a href="{% url 'reports:monthly_reports' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">assessment</span>Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                        <span class="material-icons-outlined text-blue-600">location_city</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Districts</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ area.districts.count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                        <span class="material-icons-outlined text-green-600">church</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Branches</p>
+                        <p class="text-2xl font-bold text-gray-900">
+                            {% for district in area.districts.all %}
+                                {% if forloop.first %}{{ district.branches.count }}{% endif %}
+                            {% endfor %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                        <span class="material-icons-outlined text-purple-600">groups</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Total Members</p>
+                        <p class="text-2xl font-bold text-gray-900">
+                            {% for district in area.districts.all %}
+                                {% for branch in district.branches.all %}
+                                    {% if forloop.parentloop.first and forloop.first %}{{ branch.member_count|default:0 }}{% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-amber-100 rounded-lg p-3">
+                        <span class="material-icons-outlined text-amber-600">trending_up</span>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">This Month</p>
+                        <p class="text-2xl font-bold text-gray-900">Active</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Districts List -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">location_city</span>
+                Districts in {{ area.name }}
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">{{ area.districts.count }} districts</p>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for district in area.districts.all %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-900">{{ district.name }}</h3>
+                            <p class="text-sm text-gray-500 mt-1">Code: {{ district.code }}</p>
+                        </div>
+                        {% if district.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-3 space-y-2">
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span class="material-icons-outlined text-lg mr-1">church</span>
+                            {{ district.branches.count }} branches
+                        </div>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span class="material-icons-outlined text-lg mr-1">groups</span>
+                            {% for branch in district.branches.all %}
+                                {% if forloop.first %}{{ branch.member_count|default:0 }}{% endif %}
+                            {% endfor %} members
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 flex gap-2">
+                        <a href="{% url 'members:list' %}?district={{ district.id }}" class="text-sm text-blue-600 hover:text-blue-800">
+                            View Members
+                        </a>
+                        <span class="text-gray-300">•</span>
+                        <a href="{% url 'attendance:list' %}?district={{ district.id }}" class="text-sm text-blue-600 hover:text-blue-800">
+                            Attendance
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-12">
+                    <span class="material-icons-outlined text-4xl text-gray-400">location_city</span>
+                    <p class="mt-2 text-gray-500">No districts found in this area</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">flash_on</span>
+                Quick Actions
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="{% url 'members:list' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span class="material-icons-outlined text-blue-600 mr-3">groups</span>
+                    <div>
+                        <p class="font-medium text-gray-900">View Members</p>
+                        <p class="text-sm text-gray-500">Browse all members</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'attendance:tracking' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span class="material-icons-outlined text-green-600 mr-3">fact_check</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Attendance</p>
+                        <p class="text-sm text-gray-500">Track attendance</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'contributions:list' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span class="material-icons-outlined text-purple-600 mr-3">payments</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Contributions</p>
+                        <p class="text-sm text-gray-500">View contributions</p>
+                    </div>
+                </a>
+                
+                <a href="{% url 'announcements:list' %}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span class="material-icons-outlined text-amber-600 mr-3">campaign</span>
+                    <div>
+                        <p class="font-medium text-gray-900">Announcements</p>
+                        <p class="text-sm text-gray-500">Send updates</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

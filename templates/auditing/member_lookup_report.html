@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Member Lookup Report{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Member Lookup Report</h1>
+        <p class="text-gray-600">Search for a member by ID or phone number to view their contribution and attendance history</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card mb-6">
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="form-group">
+                    <label class="form-label">Member ID / Phone</label>
+                    <input type="text" name="member_id" value="{{ member_id_input }}" 
+                        class="form-input" placeholder="e.g., AN001 or 0241234567">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" value="{{ from_date|default:'' }}" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" value="{{ to_date|default:'' }}" class="form-input">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">
+                        <span class="material-icons-outlined">search</span>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if member %}
+    <!-- Member Info -->
+    <div class="card mb-6">
+        <div class="card-header flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                {% if member.profile_picture %}
+                <img src="{{ member.profile_picture.url }}" alt="{{ member.get_full_name }}" 
+                    class="w-16 h-16 rounded-full object-cover">
+                {% else %}
+                <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span class="text-2xl font-bold text-primary-600">{{ member.first_name.0 }}{{ member.last_name.0 }}</span>
+                </div>
+                {% endif %}
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">{{ member.get_full_name }}</h2>
+                    <p class="text-gray-600">{{ member.member_id }} | {{ member.phone }}</p>
+                    <p class="text-sm text-gray-500">{{ member.branch.name|default:'No Branch' }}</p>
+                </div>
+            </div>
+            <a href="{% url 'auditing:export_member_report_pdf' %}?member_id={{ member.member_id }}&from_date={{ from_date|default:'' }}&to_date={{ to_date|default:'' }}" 
+                class="btn btn-secondary">
+                <span class="material-icons-outlined">picture_as_pdf</span>Export PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Contribution Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-green-600 align-middle mr-2">payments</span>
+                    Contributions Summary
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-green-50 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-green-600">GH₵ {{ contribution_summary.total_amount|floatformat:2|intcomma }}</p>
+                        <p class="text-sm text-gray-600">Total Amount</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-blue-600">{{ contribution_summary.count }}</p>
+                        <p class="text-sm text-gray-600">Contributions</p>
+                    </div>
+                </div>
+                
+                {% if contribution_summary.by_type %}
+                <h4 class="font-medium text-gray-700 mb-2">By Type</h4>
+                <div class="space-y-2">
+                    {% for item in contribution_summary.by_type %}
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <span class="text-gray-700">{{ item.contribution_type__name }}</span>
+                        <span class="font-medium">GH₵ {{ item.total|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-blue-600 align-middle mr-2">event_available</span>
+                    Attendance Summary
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-blue-50 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-blue-600">{{ attendance_summary.total_sessions }}</p>
+                        <p class="text-sm text-gray-600">Total Sessions</p>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-green-600">{{ attendance_summary.present_count }}</p>
+                        <p class="text-sm text-gray-600">Present</p>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-4 text-center">
+                        <p class="text-2xl font-bold text-purple-600">{{ attendance_summary.attendance_rate|floatformat:1 }}%</p>
+                        <p class="text-sm text-gray-600">Rate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Contributions -->
+    <div class="card mt-6">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">Recent Contributions</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Branch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in contributions %}
+                    <tr>
+                        <td>{{ c.date|date:"M d, Y" }}</td>
+                        <td>{{ c.contribution_type.name }}</td>
+                        <td class="font-medium text-green-600">GH₵ {{ c.amount|floatformat:2|intcomma }}</td>
+                        <td>{{ c.branch.name }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-gray-500 py-4">No contributions found</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Monthly Report - {{ report.branch.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <a href="{% url 'reports:monthly_reports' %}" class="inline-flex items-center text-gray-500 hover:text-gray-700 mb-2">
+                <span class="material-icons text-lg mr-1">arrow_back</span>
+                Back to Monthly Reports
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900">
+                {{ report.branch.name }} - {{ report.month_name }} {{ report.year }}
+            </h1>
+            <p class="text-gray-500">
+                {% if report.status == 'draft' %}Draft Report{% elif report.status == 'submitted' %}Submitted for Review{% else %}{{ report.get_status_display }}{% endif %}
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'reports:monthly_report_export_single_pdf' report.id %}" 
+               class="btn-secondary" target="_blank">
+                <span class="material-icons-outlined text-lg mr-2">picture_as_pdf</span>
+                Export PDF
+            </a>
+            {% if can_edit and report.status == 'draft' %}
+            <form method="POST" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="submit">
+                <button type="submit" class="btn-primary">
+                    <span class="material-icons-outlined text-lg mr-2">send</span>
+                    Submit for Review
+                </button>
+            </form>
+            {% endif %}
+            {% if can_approve and report.status == 'submitted' %}
+            <form method="POST" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn-green">
+                    <span class="material-icons-outlined text-lg mr-2">check_circle</span>
+                    Approve Report
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Status Alert -->
+    {% if report.is_overdue %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+            <span class="material-icons text-red-600">warning</span>
+            <div>
+                <p class="font-medium text-red-800">Payment Overdue</p>
+                <p class="text-sm text-red-700 mt-1">
+                    Mission remittance of GH₵{{ report.mission_remittance_balance|floatformat:2|intcomma }} is overdue.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Services</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ report.total_services }}</p>
+                </div>
+                <span class="material-icons-outlined text-3xl text-blue-500">church</span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Avg Attendance</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ report.average_attendance|floatformat:0 }}</p>
+                </div>
+                <span class="material-icons-outlined text-3xl text-green-500">groups</span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">New Members</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ report.new_members }}</p>
+                </div>
+                <span class="material-icons-outlined text-3xl text-purple-500">person_add</span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Visitors</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ report.visitors_count }}</p>
+                </div>
+                <span class="material-icons-outlined text-3xl text-orange-500">travel_explore</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Financial Summary -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Financial Summary</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Contributions -->
+            <div>
+                <h3 class="text-md font-medium text-gray-700 mb-4 flex items-center">
+                    <span class="material-icons-outlined text-green-600 mr-2">trending_up</span>
+                    Contributions
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Tithe</span>
+                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.tithe_amount|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Offering</span>
+                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.offering_amount|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Special Contributions</span>
+                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.special_contributions|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-sm font-semibold text-gray-700">Total Contributions</span>
+                        <span class="text-sm font-bold text-green-600">GH₵{{ report.total_contributions|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Expenditures -->
+            <div>
+                <h3 class="text-md font-medium text-gray-700 mb-4 flex items-center">
+                    <span class="material-icons-outlined text-red-600 mr-2">trending_down</span>
+                    Expenditures
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Utility Expenses</span>
+                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.utility_expenses|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Maintenance</span>
+                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.maintenance_expenses|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-sm text-gray-600">Other Expenses</span>
+                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.other_expenses|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-sm font-semibold text-gray-700">Total Expenditure</span>
+                        <span class="text-sm font-bold text-red-600">GH₵{{ report.total_expenditure|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mission Remittance & Balance -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Mission Remittance & Balance</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">Mission Remittance Due</p>
+                <p class="text-2xl font-bold text-blue-600">GH₵{{ report.mission_remittance_due|floatformat:2|intcomma }}</p>
+                <p class="text-xs text-gray-500 mt-1">10% of tithe</p>
+            </div>
+            
+            <div class="text-center p-4 {% if report.mission_remittance_paid > 0 %}bg-green-50{% else %}bg-orange-50{% endif %} rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">Mission Remittance Paid</p>
+                <p class="text-2xl font-bold {% if report.mission_remittance_paid > 0 %}text-green-600{% else %}text-orange-600{% endif %}">
+                    GH₵{{ report.mission_remittance_paid|floatformat:2|intcomma }}
+                </p>
+                {% if report.payment_date %}
+                <p class="text-xs text-gray-500 mt-1">Paid on {{ report.payment_date|date:"M d, Y" }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">Branch Balance</p>
+                <p class="text-2xl font-bold text-purple-600">GH₵{{ report.branch_balance|floatformat:2|intcomma }}</p>
+                <p class="text-xs text-gray-500 mt-1">Remaining funds</p>
+            </div>
+        </div>
+        
+        {% if report.mission_remittance_balance > 0 and can_approve %}
+        <!-- Payment Form -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 class="text-md font-medium text-gray-700 mb-4">Record Payment</h3>
+            <form method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="mark_paid">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                    <input type="date" name="payment_date" required class="form-input">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+                    <input type="text" name="payment_reference" placeholder="Payment reference" class="form-input">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Method</label>
+                    <input type="text" name="payment_method" placeholder="e.g., Bank Transfer" class="form-input">
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" class="btn-green w-full">
+                        <span class="material-icons-outlined text-lg mr-2">payments</span>
+                        Mark as Paid
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Notes & Attachments -->
+    {% if report.notes or report.attachment %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
+        
+        {% if report.notes %}
+        <div class="mb-4">
+            <h3 class="text-sm font-medium text-gray-700 mb-2">Notes</h3>
+            <p class="text-sm text-gray-600">{{ report.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+        
+        {% if report.attachment %}
+        <div>
+            <h3 class="text-sm font-medium text-gray-700 mb-2">Supporting Document</h3>
+            <a href="{{ report.attachment.url }}" target="_blank" 
+               class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                <span class="material-icons-outlined text-lg mr-1">attach_file</span>
+                {{ report.attachment.name }}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Audit Trail -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Audit Trail</h2>
+        
+        <div class="space-y-3">
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <span class="text-sm text-gray-600">Created</span>
+                <span class="text-sm text-gray-900">
+                    {{ report.created_at|date:"M d, Y H:i" }} by {{ report.created_by.get_full_name }}
+                </span>
+            </div>
+            
+            {% if report.submitted_at %}
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <span class="text-sm text-gray-600">Submitted</span>
+                <span class="text-sm text-gray-900">
+                    {{ report.submitted_at|date:"M d, Y H:i" }} by {{ report.submitted_by.get_full_name }}
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if report.approved_at %}
+            <div class="flex justify-between py-2 border-b border-gray-100">
+                <span class="text-sm text-gray-600">Approved</span>
+                <span class="text-sm text-gray-900">
+                    {{ report.approved_at|date:"M d, Y H:i" }} by {{ report.approved_by.get_full_name }}
+                </span>
+            </div>
+            {% endif %}
+            
+            <div class="flex justify-between py-2">
+                <span class="text-sm text-gray-600">Last Updated</span>
+                <span class="text-sm text-gray-900">
+                    {{ report.updated_at|date:"M d, Y H:i" }} by {{ report.updated_by.get_full_name }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

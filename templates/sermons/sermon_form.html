@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}{% if sermon %}Edit{% else %}Add{% endif %} Sermon{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if sermon %}Edit{% else %}Add New{% endif %} Sermon</h1>
+            <p class="text-sm text-gray-500">Share God's word with the congregation</p>
+        </div>
+        <a href="{% url 'sermons:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back to Sermons
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">menu_book</span>
+                    Sermon Details
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="space-y-6">
+                    <div class="form-group">
+                        <label class="form-label required">Sermon Title</label>
+                        <input type="text" name="title" value="{{ sermon.title|default:'' }}" required 
+                               class="form-input" placeholder="Enter sermon title">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label class="form-label required">Preacher Name</label>
+                            <input type="text" name="preacher" value="{{ sermon.preacher|default:request.user.get_full_name }}" required 
+                                   class="form-input" placeholder="Who delivered this sermon?">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label required">Date Preached</label>
+                            <input type="date" name="sermon_date" value="{{ sermon.sermon_date|default:today }}" required class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <div class="flex gap-2">
+                                <select name="category" class="form-input form-select flex-1">
+                                    <option value="">Select Category</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if sermon.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" onclick="openCategoryModal()" class="btn btn-secondary" title="Add New Category">
+                                    <span class="material-icons-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Scripture Reference</label>
+                            <input type="text" name="scripture_reference" value="{{ sermon.scripture_reference|default:'' }}" 
+                                   class="form-input" placeholder="e.g., John 3:16, Romans 8:28">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Summary</label>
+                        <textarea name="summary" rows="3" class="form-input" 
+                                  placeholder="Brief overview of the sermon message...">{{ sermon.summary|default:'' }}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">A short description that will appear in sermon listings</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Full Sermon Content</label>
+                        <textarea name="content" rows="10" class="form-input" 
+                                  placeholder="Enter the full sermon text or notes...">{{ sermon.content|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Media Files -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">perm_media</span>
+                    Media Attachments
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Add video, audio, or images to enhance the sermon</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Video URL</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <span class="material-icons-outlined text-xl">play_circle</span>
+                            </span>
+                            <input type="url" name="video_url" value="{{ sermon.video_url|default:'' }}" 
+                                   class="form-input pl-11" placeholder="YouTube or Vimeo link">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Paste a YouTube or Vimeo video URL</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Audio Recording</label>
+                        <input type="file" name="audio_file" accept="audio/*" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                        <p class="text-xs text-gray-500 mt-1">MP3, WAV, or other audio formats</p>
+                    </div>
+                    
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Thumbnail Image</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-32 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                {% if sermon.thumbnail %}
+                                <img src="{{ sermon.thumbnail.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                <span class="material-icons-outlined text-3xl text-gray-400">image</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" name="thumbnail" accept="image/*" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                                <p class="text-xs text-gray-500 mt-1">Recommended: 1280x720 pixels (16:9 ratio)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Publishing Options -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">publish</span>
+                    Publishing Options
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="flex items-center gap-4">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_published" value="1" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-900">Publish immediately</span>
+                    </label>
+                    <p class="text-sm text-gray-500">Make this sermon visible to all members</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex flex-col sm:flex-row justify-end gap-4">
+            <a href="{% url 'sermons:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                {% if sermon %}Update Sermon{% else %}Save Sermon{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Add Category Modal -->
+<div id="categoryModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeCategoryModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div class="p-6 border-b flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Add Sermon Category</h3>
+                <button type="button" onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_category">
+                
+                <div class="form-group">
+                    <label class="form-label required">Category Name</label>
+                    <input type="text" name="category_name" required class="form-input" placeholder="e.g., Youth Conference">
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closeCategoryModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">add</span>Add Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openCategoryModal() {
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+
+function closeCategoryModal() {
+    document.getElementById('categoryModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

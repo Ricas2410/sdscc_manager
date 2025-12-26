@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% block title %}Branch Statistics - Auditor View{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Branch Statistics - Auditor View</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                {% if period_type == 'monthly' %}
+                    {{ month_name }} {{ year }}
+                {% else %}
+                    {{ year }}
+                {% endif %}
+                - All Branches Overview
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex space-x-2">
+            <button onclick="exportPDF()" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">picture_as_pdf</span> Export PDF
+            </button>
+            <button onclick="exportExcel()" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">grid_on</span> Export Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select name="area" id="areaSelect" class="input-field">
+                    <option value="">All Areas</option>
+                    {% for area in areas %}
+                    <option value="{{ area.district__area__id }}" {% if selected_area == area.district__area__id|stringformat:"s" %}selected{% endif %}>
+                        {{ area.district__area__name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
+                <select name="district" id="districtSelect" class="input-field">
+                    <option value="">All Districts</option>
+                    {% for district in districts %}
+                    <option value="{{ district.district__id }}" {% if selected_district == district.district__id|stringformat:"s" %}selected{% endif %}>
+                        {{ district.district__name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                <select name="period" id="periodSelect" class="input-field">
+                    <option value="yearly" {% if period_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                    <option value="monthly" {% if period_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <select name="year" class="input-field">
+                    {% for y in available_years %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div id="monthFilter" {% if period_type == 'yearly' %}style="display:none"{% endif %}>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                <select name="month" class="input-field">
+                    {% for m in months %}
+                    <option value="{{ m.0 }}" {% if month == m.0 %}selected{% endif %}>{{ m.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="md:col-span-4 flex items-end">
+                <button type="submit" class="btn-primary">
+                    <span class="material-icons-outlined mr-1">filter_list</span> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Grand Totals -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-green-600 text-2xl">trending_up</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Contributions</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.contributions|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-red-600 text-2xl">trending_down</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Expenditures</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.expenditures|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-blue-600 text-2xl">account_balance_wallet</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Payroll</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.payroll|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-purple-600 text-2xl">church</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Remittances</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.remittances|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-yellow-600 text-2xl">account_balance</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Coffer Balance</p>
+                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.coffer_balance|floatformat:2|intcomma }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch Comparison Chart -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Branch Contributions Comparison</h3>
+        <canvas id="branchComparisonChart" height="100"></canvas>
+    </div>
+
+    <!-- Branch Details Table -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Branch Financial Details</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">District</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contributions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expenditures</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payroll</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remittances</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coffer Balance</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Net Position</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for stat in branches_stats %}
+                    <tr class="{% if stat.net_position < 0 %}bg-red-50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ stat.branch.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ stat.branch.district.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₦{{ stat.contributions|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₦{{ stat.expenditures|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₦{{ stat.payroll|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₦{{ stat.remittances|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₦{{ stat.coffer_balance|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full
+                                {% if stat.net_position >= 0 %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                ₦{{ stat.net_position|floatformat:2|intcomma }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{% url 'core:branch_financial_statistics' %}?branch={{ stat.branch.id }}&year={{ year }}{% if month %}&month={{ month }}{% endif %}"
+                               class="text-blue-600 hover:text-blue-900">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                            No branches found matching the selected criteria
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Top Performing Branches</h3>
+            <div class="space-y-3">
+                {% for stat in branches_stats|slice:":5" %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">{{ stat.branch.name }}</span>
+                    <span class="text-sm font-medium">₦{{ stat.contributions|floatformat:2|intcomma }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Branches with Negative Balance</h3>
+            <div class="space-y-3">
+                {% for stat in branches_stats %}
+                    {% if stat.net_position < 0 %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">{{ stat.branch.name }}</span>
+                        <span class="text-sm font-medium text-red-600">₦{{ stat.net_position|floatformat:2|intcomma }}</span>
+                    </div>
+                    {% endif %}
+                {% empty %}
+                <p class="text-sm text-gray-500">No branches with negative balance</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Summary</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Total Branches</span>
+                    <span class="text-sm font-medium">{{ branches_stats|length }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Average Contributions</span>
+                    <span class="text-sm font-medium">
+                        ₦{{ grand_total.contributions|div:branches_stats|length|floatformat:2|intcomma }}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Mission Remittance (10%)</span>
+                    <span class="text-sm font-medium">
+                        ₦{{ grand_total.contributions|mul:"0.1"|floatformat:2|intcomma }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Period filter toggle
+document.getElementById('periodSelect').addEventListener('change', function() {
+    const monthFilter = document.getElementById('monthFilter');
+    if (this.value === 'monthly') {
+        monthFilter.style.display = 'block';
+    } else {
+        monthFilter.style.display = 'none';
+        const monthSelect = monthFilter.querySelector('select');
+        monthSelect.value = '';
+    }
+});
+
+// Area/District filter interaction
+document.getElementById('areaSelect').addEventListener('change', function() {
+    const districtSelect = document.getElementById('districtSelect');
+    if (this.value) {
+        // Filter districts based on selected area
+        // This would need AJAX implementation for dynamic filtering
+        districtSelect.value = '';
+    }
+});
+
+// Branch Comparison Chart
+const ctx = document.getElementById('branchComparisonChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [{% for stat in branches_stats|slice:":10" %}'{{ stat.branch.name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Contributions',
+            data: [{% for stat in branches_stats|slice:":10" %}{{ stat.contributions }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        }, {
+            label: 'Expenditures',
+            data: [{% for stat in branches_stats|slice:":10" %}{{ stat.expenditures }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₦' + (value / 1000000).toFixed(1) + 'M';
+                    }
+                }
+            }
+        }
+    }
+});
+
+function exportPDF() {
+    window.print();
+}
+
+function exportExcel() {
+    const headers = ['Branch', 'District', 'Contributions', 'Expenditures', 'Payroll', 'Remittances', 'Coffer Balance', 'Net Position'];
+    const rows = [{% for stat in branches_stats %}
+        [
+            '{{ stat.branch.name }}',
+            '{{ stat.branch.district.name }}',
+            {{ stat.contributions }},
+            {{ stat.expenditures }},
+            {{ stat.payroll }},
+            {{ stat.remittances }},
+            {{ stat.coffer_balance }},
+            {{ stat.net_position }}
+        ]{% if not forloop.last %}, {% endif %}
+    {% endfor %}];
+    
+    let csvContent = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csvContent += row.join(',') + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `branch_statistics_{{ year }}_{{ month|default:'all' }}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

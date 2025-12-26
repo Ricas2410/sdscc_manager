@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Visitor Tracking{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Visitor Tracking</h1>
+                <p class="text-gray-500 mt-2">Track and follow up with church visitors</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'attendance:take' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-icons-outlined mr-2">add_circle</span>
+                    Take Attendance
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                <select name="branch" class="form-input" onchange="this.form.submit()">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+                <input type="date" name="date_from" value="{{ from_date }}" class="form-input" onchange="this.form.submit()">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+                <input type="date" name="date_to" value="{{ to_date }}" class="form-input" onchange="this.form.submit()">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" class="form-input" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    <option value="new" {% if selected_status == 'new' %}selected{% endif %}>First Time Visitor</option>
+                    <option value="returning" {% if selected_status == 'returning' %}selected{% endif %}>Returning Visitor</option>
+                    <option value="joined" {% if selected_status == 'joined' %}selected{% endif %}>Became Member</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Visitors Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">All Visitors</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visitor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Details</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invited By</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Follow-up</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for visitor in visitors %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ visitor.name }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ visitor.visit_date|date:"M d, Y" }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if visitor.phone %}{{ visitor.phone }}{% else %}N/A{% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {% if visitor.email %}{{ visitor.email }}{% else %}No email{% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {{ visitor.session.service_type.name }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ visitor.session.branch.name }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if visitor.invited_by %}
+                                {{ visitor.invited_by.get_full_name|default:visitor.invited_by.member_id }}
+                            {% else %}
+                                <span class="text-gray-400">Self</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if visitor.status == 'new' %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    First Time
+                                </span>
+                            {% elif visitor.status == 'returning' %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Returning
+                                </span>
+                            {% elif visitor.status == 'joined' %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Joined
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if visitor.is_follow_up_needed %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    Needed
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    Complete
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'attendance:visitor_detail' visitor.id %}" 
+                               class="text-blue-600 hover:text-blue-900 mr-3">
+                                View
+                            </a>
+                            <a href="{% url 'attendance:session_detail' visitor.session.id %}" 
+                               class="text-gray-600 hover:text-gray-900">
+                                Service
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300 mb-2">person_add</span>
+                            <p class="text-lg font-medium">No visitors found</p>
+                            <p class="text-sm">Start tracking visitors by taking attendance and adding visitors to services.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if visitors.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Showing {{ visitors.start_index }} to {{ visitors.end_index }} of {{ visitors.paginator.count }} visitors
+                </div>
+                <div class="flex gap-2">
+                    {% if visitors.has_previous %}
+                        <a href="?page={{ visitors.previous_page_number }}" 
+                           class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Previous
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in visitors.paginator.page_range %}
+                        {% if visitors.number == num %}
+                            <span class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md">
+                                {{ num }}
+                            </span>
+                        {% elif num > visitors.number|add:'-3' and num < visitors.number|add:'3' %}
+                            <a href="?page={{ num }}" 
+                               class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                {{ num }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if visitors.has_next %}
+                        <a href="?page={{ visitors.next_page_number }}" 
+                           class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Next
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block title %}Areas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Areas</h1>
+            <p class="mt-1 text-sm text-gray-500">Regional areas of the church</p>
+        </div>
+        {% if user.is_mission_admin %}
+        <button onclick="openAddAreaModal()" class="btn-primary">
+            <span class="material-icons-outlined mr-1">add</span> Add Area
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for area in areas %}
+        <div class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+            <div class="h-24 bg-gradient-to-r from-primary-500 to-primary-700 flex items-center justify-center relative">
+                <span class="material-icons-outlined text-5xl text-white/50">map</span>
+                {% if user.is_mission_admin %}
+                <div class="absolute top-2 right-2 flex gap-1">
+                    <button onclick="openEditAreaModal('{{ area.id }}', '{{ area.name }}', '{{ area.code }}')" 
+                        class="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                        <span class="material-icons-outlined text-white text-sm">edit</span>
+                    </button>
+                    <button onclick="openDeleteAreaModal('{{ area.id }}', '{{ area.name }}')" 
+                        class="p-1.5 bg-white/20 hover:bg-red-500/50 rounded-lg transition-colors">
+                        <span class="material-icons-outlined text-white text-sm">delete</span>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-900">{{ area.name }}</h3>
+                <p class="text-sm text-gray-500">Code: {{ area.code }}</p>
+                <div class="mt-4 grid grid-cols-2 gap-4 text-center">
+                    <div class="bg-gray-50 rounded-lg p-2">
+                        <p class="text-2xl font-bold text-primary-600">{{ area.num_districts|default:"0" }}</p>
+                        <p class="text-xs text-gray-500">Districts</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-2">
+                        <p class="text-2xl font-bold text-primary-600">{{ area.branch_count|default:"0" }}</p>
+                        <p class="text-xs text-gray-500">Branches</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t flex justify-between items-center">
+                    <span class="text-sm text-gray-500">{{ area.member_count|default:"0" }} members</span>
+                    <a href="{% url 'core:districts' %}?area={{ area.id }}" class="text-sm text-primary-600 hover:text-primary-500">View Districts →</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-white shadow rounded-lg p-12 text-center">
+            <span class="material-icons-outlined text-5xl text-gray-300">map</span>
+            <p class="mt-2 text-gray-500">No areas configured</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Area Modal -->
+<div id="addAreaModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeAddAreaModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 p-2 bg-blue-100 rounded-lg">
+                                <span class="material-icons-outlined text-blue-600">map</span>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-gray-900">Add New Area</h3>
+                        </div>
+                        <button type="button" onclick="closeAddAreaModal()" class="text-gray-400 hover:text-gray-500 transition-colors">
+                            <span class="material-icons-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="px-6 py-4 space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Area Name <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">location_on</span>
+                            </div>
+                            <input type="text" name="name" required 
+                                   class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                   placeholder="e.g., Greater Accra Area">
+                        </div>
+                        <p class="text-xs text-gray-500">Enter the full name of the church area</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Area Code <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">tag</span>
+                            </div>
+                            <input type="text" name="code" required maxlength="5" 
+                                   class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors uppercase" 
+                                   placeholder="e.g., GAA">
+                        </div>
+                        <p class="text-xs text-gray-500">Unique 2-5 letter code for this area</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Area Executive
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">person</span>
+                            </div>
+                            <select name="executive_id" 
+                                    class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="">Select Executive (Optional)</option>
+                                {% for executive in executives %}
+                                <option value="{{ executive.id }}">
+                                    {{ executive.get_full_name|default:executive.username }}
+                                    {% if executive.role == 'pastor' %}(Pastor - {{ executive.get_pastoral_rank_display }}){% else %}(Area Executive){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-500">Assign an area executive or pastor to manage this area</p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3 rounded-b-lg">
+                    <button type="button" onclick="closeAddAreaModal()" 
+                            class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <span class="material-icons-outlined text-sm mr-1">add</span>
+                        Add Area
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Area Modal -->
+<div id="editAreaModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeEditAreaModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="area_id" id="edit_area_id">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Edit Area</h3>
+                        <button type="button" onclick="closeEditAreaModal()" class="text-gray-400 hover:text-gray-500">
+                            <span class="material-icons-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="px-6 py-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Area Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" id="edit_area_name" required class="input-field">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Code <span class="text-red-500">*</span></label>
+                        <input type="text" name="code" id="edit_area_code" required class="input-field">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Area Executive</label>
+                        <select name="executive_id" id="edit_executive_id" class="input-field">
+                            <option value="">Select Executive (Optional)</option>
+                            {% for executive in executives %}
+                            <option value="{{ executive.id }}">
+                                {{ executive.get_full_name|default:executive.username }}
+                                {% if executive.role == 'pastor' %}(Pastor - {{ executive.get_pastoral_rank_display }}){% else %}(Area Executive){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3 rounded-b-lg">
+                    <button type="button" onclick="closeEditAreaModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Area Modal -->
+<div id="deleteAreaModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeDeleteAreaModal()"></div>
+        <div class="relative bg-white rounded-lg shadow-xl transform transition-all sm:max-w-md sm:w-full">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="area_id" id="delete_area_id">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+                        <span class="material-icons-outlined text-red-600">warning</span>
+                    </div>
+                    <h3 class="mt-4 text-lg font-semibold text-gray-900 text-center">Delete Area</h3>
+                    <p class="mt-2 text-sm text-gray-500 text-center">
+                        Are you sure you want to delete <span id="delete_area_name" class="font-medium text-gray-700"></span>? 
+                        This will also delete all districts and branches under this area. This action cannot be undone.
+                    </p>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3 rounded-b-lg">
+                    <button type="button" onclick="closeDeleteAreaModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openAddAreaModal() {
+    document.getElementById('addAreaModal').classList.remove('hidden');
+}
+function closeAddAreaModal() {
+    document.getElementById('addAreaModal').classList.add('hidden');
+}
+function openEditAreaModal(id, name, code) {
+    document.getElementById('edit_area_id').value = id;
+    document.getElementById('edit_area_name').value = name;
+    document.getElementById('edit_area_code').value = code;
+    document.getElementById('editAreaModal').classList.remove('hidden');
+}
+function closeEditAreaModal() {
+    document.getElementById('editAreaModal').classList.add('hidden');
+}
+function openDeleteAreaModal(id, name) {
+    document.getElementById('delete_area_id').value = id;
+    document.getElementById('delete_area_name').textContent = name;
+    document.getElementById('deleteAreaModal').classList.remove('hidden');
+}
+function closeDeleteAreaModal() {
+    document.getElementById('deleteAreaModal').classList.add('hidden');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAddAreaModal();
+        closeEditAreaModal();
+        closeDeleteAreaModal();
+    }
+});
+</script>
+{% endblock %}

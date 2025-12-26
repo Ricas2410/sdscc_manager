@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Weekly Contribution Entry{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Weekly Contribution Entry</h1>
+            <p class="text-gray-500 mt-1">Record general contributions for the week</p>
+        </div>
+        <a href="{% url 'contributions:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    {% if branch %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+        <span class="material-icons-outlined text-blue-600">church</span>
+        <div>
+            <p class="font-semibold text-blue-900">{{ branch.name }}</p>
+            <p class="text-sm text-blue-700">{{ branch.district.name }} • {{ branch.district.area.name }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">Entry Details</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Date</label>
+                        <input type="date" name="date" required class="form-input" id="weeklyDate">
+                    </div>
+                    {% if branches %}
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <select name="branch" class="form-input form-select" onchange="window.location='?branch='+this.value">
+                            <option value="">Select Branch</option>
+                            {% for b in branches %}
+                            <option value="{{ b.id }}" {% if branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">General Contributions</h2>
+                <p class="text-sm text-gray-500">Enter amounts for each contribution type</p>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Contribution Type</th>
+                            <th>Split</th>
+                            <th class="w-48">Amount (GH₵)</th>
+                            <th class="w-64">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ct in contribution_types %}
+                        <tr>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                        {% if ct.category == 'tithe' %}bg-blue-100 text-blue-600
+                                        {% elif ct.category == 'offering' %}bg-green-100 text-green-600
+                                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        <span class="material-icons-outlined">
+                                            {% if ct.category == 'tithe' %}savings{% elif ct.category == 'offering' %}volunteer_activism{% else %}paid{% endif %}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ ct.name }}</p>
+                                        <p class="text-xs text-gray-500">{{ ct.code }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="text-xs text-gray-500">M: {{ ct.mission_percentage }}% / B: {{ ct.branch_percentage }}%</span>
+                            </td>
+                            <td>
+                                <input type="number" name="amount_{{ ct.id }}" step="0.01" min="0" class="form-input" placeholder="0.00">
+                            </td>
+                            <td>
+                                <input type="text" name="notes_{{ ct.id }}" class="form-input text-sm" placeholder="Optional notes">
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-8 text-gray-500">No general contribution types configured</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'contributions:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                Submit Week
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Set default date to today
+document.getElementById('weeklyDate').value = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

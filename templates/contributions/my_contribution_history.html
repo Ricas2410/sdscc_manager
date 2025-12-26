@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Contribution History{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Contribution History</h1>
+            <p class="mt-1 text-sm text-gray-500">View your giving history by year</p>
+        </div>
+        <div class="mt-4 sm:mt-0">
+            <a href="{% url 'contributions:my_contributions' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-1">arrow_back</span> Current Year
+            </a>
+        </div>
+    </div>
+
+    <!-- Year Selection Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {% for year_data in years %}
+        <a href="?year={{ year_data.date__year }}" 
+           class="card hover:shadow-lg transition-shadow cursor-pointer {% if selected_year == year_data.date__year %}ring-2 ring-blue-500{% endif %}">
+            <div class="card-body text-center">
+                <p class="text-3xl font-bold {% if year_data.date__year == current_year %}text-blue-600{% else %}text-gray-900{% endif %}">
+                    {{ year_data.date__year }}
+                </p>
+                <p class="text-sm text-gray-500">{{ year_data.count }} records</p>
+                <p class="text-lg font-semibold text-green-600">GH₵{{ year_data.total|floatformat:2 }}</p>
+                {% if year_data.date__year == current_year %}
+                <span class="badge badge-primary mt-1">Current</span>
+                {% endif %}
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <span class="material-icons-outlined text-5xl text-gray-300">history</span>
+            <p class="mt-2 text-gray-500">No contribution history found</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if selected_year and year_stats %}
+    <!-- Selected Year Stats -->
+    <div class="card">
+        <div class="card-header bg-blue-50 border-b border-blue-200">
+            <h2 class="text-lg font-semibold text-blue-900">
+                <span class="material-icons-outlined mr-2 align-middle">calendar_month</span>
+                {{ selected_year }} Contributions Summary
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <p class="text-sm text-green-600 font-medium">Total Amount</p>
+                    <p class="text-3xl font-bold text-green-700">GH₵{{ year_stats.total|floatformat:2|default:"0.00" }}</p>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-600 font-medium">Total Records</p>
+                    <p class="text-3xl font-bold text-blue-700">{{ year_stats.count|default:0 }}</p>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <p class="text-sm text-purple-600 font-medium">Contribution Types</p>
+                    <p class="text-3xl font-bold text-purple-700">{{ year_stats.by_type|length|default:0 }}</p>
+                </div>
+            </div>
+            
+            {% if year_stats.by_type %}
+            <div class="mt-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Breakdown by Type</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {% for item in year_stats.by_type %}
+                    <div class="border rounded-lg p-3 text-center">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full mb-2
+                            {% if item.contribution_type__category == 'tithe' %}bg-blue-100 text-blue-800
+                            {% elif item.contribution_type__category == 'offering' %}bg-green-100 text-green-800
+                            {% elif item.contribution_type__category == 'special' %}bg-purple-100 text-purple-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ item.contribution_type__name }}
+                        </span>
+                        <p class="text-lg font-bold text-gray-900">GH₵{{ item.total|floatformat:2 }}</p>
+                        <p class="text-xs text-gray-500">{{ item.count }} records</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Contributions Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Contribution Records - {{ selected_year }}</h2>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Branch</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contribution in contributions %}
+                    <tr>
+                        <td>{{ contribution.date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                                {% if contribution.contribution_type.category == 'tithe' %}bg-blue-100 text-blue-800
+                                {% elif contribution.contribution_type.category == 'offering' %}bg-green-100 text-green-800
+                                {% elif contribution.contribution_type.category == 'special' %}bg-purple-100 text-purple-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ contribution.contribution_type.name }}
+                            </span>
+                        </td>
+                        <td class="text-sm text-gray-500">{{ contribution.branch.name }}</td>
+                        <td class="text-right font-semibold text-gray-900">GH₵{{ contribution.amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">
+                            <p>No contributions found for this year</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if contributions.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-600">
+                    Page {{ contributions.number }} of {{ contributions.paginator.num_pages }}
+                </p>
+                <div class="flex gap-2">
+                    {% if contributions.has_previous %}
+                    <a href="?year={{ selected_year }}&page={{ contributions.previous_page_number }}" class="btn btn-secondary btn-sm">Previous</a>
+                    {% endif %}
+                    {% if contributions.has_next %}
+                    <a href="?year={{ selected_year }}&page={{ contributions.next_page_number }}" class="btn btn-primary btn-sm">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% elif not selected_year and years %}
+    <!-- Prompt to select a year -->
+    <div class="card">
+        <div class="card-body text-center py-12">
+            <span class="material-icons-outlined text-5xl text-blue-300">touch_app</span>
+            <p class="mt-4 text-lg text-gray-600">Click on a year above to view your contribution details</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

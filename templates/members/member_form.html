@@ -1,0 +1,769 @@
+{% extends 'base.html' %}
+{% block title %}{% if member %}Edit Member{% else %}Add Member{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if member %}Edit Member{% else %}Add New Member{% endif %}
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">
+                {% if member %}Update member information{% else %}Register a new church member{% endif %}
+                {% if is_branch_admin and user_branch %} • {{ user_branch.name }}{% endif %}
+            </p>
+        </div>
+        <a href="{% url 'members:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Personal Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">person</span>
+                    Personal Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <!-- Profile Picture Section -->
+                <div class="mb-6">
+                    <label class="form-label">Passport Photograph</label>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:gap-6">
+                        <div class="flex-shrink-0 mb-4 sm:mb-0">
+                            {% if member.profile_picture %}
+                            <img id="photoPreview" src="{{ member.profile_picture.url }}" 
+                                 class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">
+                            {% else %}
+                            <div id="photoPreview" class="h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center">
+                                <span class="material-icons-outlined text-gray-400 text-3xl">person</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <button type="button" onclick="openCamera()" 
+                                        class="btn btn-secondary btn-sm">
+                                    <span class="material-icons-outlined mr-2">camera_alt</span>
+                                    Take Photo
+                                </button>
+                                <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
+                                        class="btn btn-secondary btn-sm">
+                                    <span class="material-icons-outlined mr-2">upload_file</span>
+                                    Upload
+                                </button>
+                                {% if member.profile_picture %}
+                                <button type="button" onclick="removePhoto()" 
+                                        class="btn btn-danger btn-sm">
+                                    <span class="material-icons-outlined mr-2">delete</span>
+                                    Remove
+                                </button>
+                                {% endif %}
+                            </div>
+                            <input type="file" id="profilePictureInput" name="profile_picture" 
+                                   accept="image/*" capture="environment" style="display: none;"
+                                   onchange="previewPhoto(this)">
+                            <p class="text-xs text-gray-500 mt-2">
+                                Use device camera or upload a passport-sized photo
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">First Name</label>
+                        <input type="text" name="first_name" value="{{ member.first_name|default:'' }}" required
+                            class="form-input" placeholder="Enter first name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Last Name</label>
+                        <input type="text" name="last_name" value="{{ member.last_name|default:'' }}" required
+                            class="form-input" placeholder="Enter last name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Other Names</label>
+                        <input type="text" name="other_names" value="{{ member.other_names|default:'' }}"
+                            class="form-input" placeholder="Middle name(s)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Gender</label>
+                        <select name="gender" required class="form-input form-select">
+                            <option value="">Select Gender</option>
+                            <option value="M" {% if member.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if member.gender == 'F' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="date_of_birth" value="{{ member.date_of_birth|date:'Y-m-d' }}"
+                            class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Marital Status</label>
+                        <select name="marital_status" class="form-input form-select">
+                            <option value="">Select Status</option>
+                            <option value="single" {% if profile.marital_status == 'single' %}selected{% endif %}>Single
+                            </option>
+                            <option value="married" {% if profile.marital_status == 'married' %}selected{% endif %}>
+                                Married</option>
+                            <option value="divorced" {% if profile.marital_status == 'divorced' %}selected{% endif %}>
+                                Divorced</option>
+                            <option value="widowed" {% if profile.marital_status == 'widowed' %}selected{% endif %}>
+                                Widowed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">contact_phone</span>
+                    Contact Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Phone Number</label>
+                        <input type="tel" name="phone" value="{{ member.phone|default:'' }}" required class="form-input"
+                            placeholder="+233 XX XXX XXXX">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" value="{{ member.email|default:'' }}" class="form-input"
+                            placeholder="email@example.com">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Residential Address</label>
+                        <textarea name="address" rows="2" class="form-input"
+                            placeholder="House number, street, town/city">{{ profile.address|default:'' }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">City/Town</label>
+                        <input type="text" name="city" value="{{ profile.city|default:'' }}"
+                            class="form-input" placeholder="e.g., Accra, Kumasi">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Region</label>
+                        <select name="region" class="form-input form-select">
+                            <option value="">Select Region</option>
+                            <option value="Greater Accra" {% if profile.region == 'Greater Accra' %}selected{% endif %}>Greater Accra</option>
+                            <option value="Ashanti" {% if profile.region == 'Ashanti' %}selected{% endif %}>Ashanti</option>
+                            <option value="Western" {% if profile.region == 'Western' %}selected{% endif %}>Western</option>
+                            <option value="Eastern" {% if profile.region == 'Eastern' %}selected{% endif %}>Eastern</option>
+                            <option value="Central" {% if profile.region == 'Central' %}selected{% endif %}>Central</option>
+                            <option value="Volta" {% if profile.region == 'Volta' %}selected{% endif %}>Volta</option>
+                            <option value="Northern" {% if profile.region == 'Northern' %}selected{% endif %}>Northern</option>
+                            <option value="Upper East" {% if profile.region == 'Upper East' %}selected{% endif %}>Upper East</option>
+                            <option value="Upper West" {% if profile.region == 'Upper West' %}selected{% endif %}>Upper West</option>
+                            <option value="Bono" {% if profile.region == 'Bono' %}selected{% endif %}>Bono</option>
+                            <option value="Bono East" {% if profile.region == 'Bono East' %}selected{% endif %}>Bono East</option>
+                            <option value="Ahafo" {% if profile.region == 'Ahafo' %}selected{% endif %}>Ahafo</option>
+                            <option value="Oti" {% if profile.region == 'Oti' %}selected{% endif %}>Oti</option>
+                            <option value="Western North" {% if profile.region == 'Western North' %}selected{% endif %}>Western North</option>
+                            <option value="North East" {% if profile.region == 'North East' %}selected{% endif %}>North East</option>
+                            <option value="Savannah" {% if profile.region == 'Savannah' %}selected{% endif %}>Savannah</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profession/Occupation</label>
+                        <input type="text" name="profession" value="{{ profile.profession|default:'' }}"
+                            class="form-input" placeholder="e.g., Teacher, Trader">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Employer/Business</label>
+                        <input type="text" name="employer" value="{{ profile.employer|default:'' }}"
+                            class="form-input" placeholder="e.g., Ghana Education Service, Self-employed">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills & Talents -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-green-600 align-middle mr-2">psychology</span>
+                    Skills & Talents
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Help us know how you can serve in the church</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Skills</label>
+                        <textarea name="skills" rows="2" class="form-input"
+                            placeholder="e.g., Accounting, Teaching, Driving, Carpentry">{{ profile.skills|default:'' }}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">List skills separated by commas</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Talents/Gifts</label>
+                        <textarea name="talents" rows="2" class="form-input"
+                            placeholder="e.g., Singing, Playing instruments, Public speaking">{{ profile.talents|default:'' }}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">List talents separated by commas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Church Journey -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-blue-600 align-middle mr-2">church</span>
+                    Church Journey
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Baptized</label>
+                        <select name="baptized" class="form-input form-select" onchange="toggleBaptismFields()">
+                            <option value="">Select Status</option>
+                            <option value="yes" {% if profile.baptism_date %}selected{% endif %}>Yes</option>
+                            <option value="no" {% if not profile.baptism_date %}selected{% endif %}>No</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="baptismDateGroup">
+                        <label class="form-label">Date of Baptism</label>
+                        <input type="date" name="baptism_date" value="{{ profile.baptism_date|date:'Y-m-d'|default:'' }}"
+                            class="form-input">
+                    </div>
+                    <div class="form-group" id="baptismByGroup">
+                        <label class="form-label">Baptized By (Minister)</label>
+                        <input type="text" name="baptism_by" value="{{ profile.baptism_by|default:'' }}"
+                            class="form-input" placeholder="Name of minister who performed baptism">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Membership Date</label>
+                        <input type="date" name="membership_date" value="{{ profile.membership_date|date:'Y-m-d'|default:'' }}"
+                            class="form-input">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Previous Church (if any)</label>
+                        <input type="text" name="previous_church" value="{{ profile.previous_church|default:'' }}"
+                            class="form-input" placeholder="Name of previous church attended">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-red-500 align-middle mr-2">emergency</span>
+                    Emergency Contact
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Contact Name</label>
+                        <input type="text" name="emergency_contact_name"
+                            value="{{ profile.emergency_contact_name|default:'' }}" class="form-input"
+                            placeholder="Full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="emergency_contact_phone"
+                            value="{{ profile.emergency_contact_phone|default:'' }}" class="form-input"
+                            placeholder="+233 XX XXX XXXX">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Relationship</label>
+                        <select name="emergency_contact_relationship" class="form-input form-select">
+                            <option value="">Select Relationship</option>
+                            <option value="Spouse" {% if profile.emergency_contact_relationship == 'Spouse' %}selected{% endif %}>Spouse</option>
+                            <option value="Parent" {% if profile.emergency_contact_relationship == 'Parent' %}selected{% endif %}>Parent</option>
+                            <option value="Sibling" {% if profile.emergency_contact_relationship == 'Sibling' %}selected{% endif %}>Sibling</option>
+                            <option value="Child" {% if profile.emergency_contact_relationship == 'Child' %}selected{% endif %}>Child</option>
+                            <option value="Friend" {% if profile.emergency_contact_relationship == 'Friend' %}selected{% endif %}>Friend</option>
+                            <option value="Other" {% if profile.emergency_contact_relationship == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branch Assignment (Mission Admin Only) -->
+        {% if not is_branch_admin %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">church</span>
+                    Branch Assignment
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Select the branch using the hierarchy below</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Area</label>
+                        <select id="areaSelect" class="form-input form-select" onchange="loadDistricts()">
+                            <option value="">Select Area</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}" {% if member.branch.district.area_id == area.id %}selected{% endif %}>
+                                {{ area.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">District</label>
+                        <select id="districtSelect" class="form-input form-select" onchange="loadBranches()" disabled>
+                            <option value="">Select District</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Branch</label>
+                        <select name="branch" id="branchSelect" class="form-input form-select" required disabled>
+                            <option value="">Select Branch</option>
+                            {% if member.branch %}
+                            <option value="{{ member.branch.id }}" selected>{{ member.branch.name }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Branch Admin Info -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">church</span>
+                    Branch Assignment
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+                    <span class="material-icons-outlined text-blue-600">info</span>
+                    <div>
+                        <p class="font-medium text-blue-800">{{ user_branch.name }}</p>
+                        <p class="text-sm text-blue-600">Member will be automatically assigned to your branch</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Role & Group Assignment (Mission Admin Only) -->
+        {% if not is_branch_admin %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-purple-600 align-middle mr-2">assignment_ind</span>
+                    Role & Group Assignment
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Assign user role and group membership</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">User Role</label>
+                        <select name="role" required class="form-input form-select" onchange="togglePastorFields()">
+                            <option value="">Select Role</option>
+                            <option value="member" {% if member.role == 'member' %}selected{% endif %}>Member</option>
+                            <option value="pastor" {% if member.role == 'pastor' %}selected{% endif %}>Pastor</option>
+                            <option value="staff" {% if member.role == 'staff' %}selected{% endif %}>Staff</option>
+                            <option value="branch_executive" {% if member.role == 'branch_executive' %}selected{% endif %}>Branch Executive</option>
+                            <option value="district_executive" {% if member.role == 'district_executive' %}selected{% endif %}>District Executive</option>
+                            <option value="area_executive" {% if member.role == 'area_executive' %}selected{% endif %}>Area Executive</option>
+                            <option value="auditor" {% if member.role == 'auditor' %}selected{% endif %}>Auditor</option>
+                            <option value="mission_admin" {% if member.role == 'mission_admin' %}selected{% endif %}>Mission Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="pastoralRankGroup" style="display: none;">
+                        <label class="form-label">Pastoral Rank</label>
+                        <select name="pastoral_rank" class="form-input form-select">
+                            <option value="">Select Rank</option>
+                            <option value="associate" {% if member.pastoral_rank == 'associate' %}selected{% endif %}>Associate Pastor</option>
+                            <option value="branch" {% if member.pastoral_rank == 'branch' %}selected{% endif %}>Branch Pastor</option>
+                            <option value="senior" {% if member.pastoral_rank == 'senior' %}selected{% endif %}>Senior Pastor</option>
+                            <option value="district" {% if member.pastoral_rank == 'district' %}selected{% endif %}>District Pastor</option>
+                            <option value="area" {% if member.pastoral_rank == 'area' %}selected{% endif %}>Area Pastor</option>
+                            <option value="mission" {% if member.pastoral_rank == 'mission' %}selected{% endif %}>Mission Pastor</option>
+                            <option value="overseer" {% if member.pastoral_rank == 'overseer' %}selected{% endif %}>General Overseer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Group Assignments</label>
+                        <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                            {% for group in available_groups %}
+                            <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                <input type="checkbox" name="groups" value="{{ group.id }}" 
+                                       {% if group.id in member_group_ids %}checked{% endif %}
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="text-sm">{{ group.name }}</span>
+                                <span class="text-xs text-gray-500 ml-auto">{{ group.branch.name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Select multiple groups as needed (ministries, departments, committees)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pastor Information (Conditional) -->
+        <div class="card" id="pastorInfoSection" style="display: none;">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-purple-600 align-middle mr-2">church</span>
+                    Pastor Information
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Additional information for pastoral roles</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Date of Ordination</label>
+                        <input type="date" name="ordination_date" 
+                               value="{{ member.ordination_date|date:'Y-m-d'|default:'' }}"
+                               class="form-input">
+                        <p class="text-xs text-gray-500 mt-1">Date ordained into ministry</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Place of Ordination</label>
+                        <input type="text" name="ordination_place" 
+                               value="{{ member.ordination_place|default:'' }}"
+                               class="form-input" placeholder="Church/Location of ordination">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ordaining Minister</label>
+                        <input type="text" name="ordaining_minister" 
+                               value="{{ member.ordaining_minister|default:'' }}"
+                               class="form-input" placeholder="Name of ordaining minister">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Salary Information (Mission Admin Only for Staff Roles) -->
+        {% if not is_branch_admin %}
+        <div class="card" id="salarySection">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-green-600 align-middle mr-2">payments</span>
+                    Staff Salary Information
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Only applicable for staff and pastoral roles</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" name="qualifies_for_salary" id="qualifiesForSalary" 
+                                {% if member.qualifies_for_salary %}checked{% endif %} 
+                                onchange="toggleSalaryFields()">
+                            Qualifies for Salary
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">Check if this member receives salary payments</p>
+                    </div>
+                    <div class="form-group" id="baseSalaryGroup">
+                        <label class="form-label">Base Salary (GHS)</label>
+                        <input type="number" name="base_salary" value="{{ member.base_salary|default:0 }}" 
+                            class="form-input" placeholder="0.00" step="0.01" min="0" id="baseSalaryField">
+                        <p class="text-xs text-gray-500 mt-1">Monthly base salary amount</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if member %}
+        <!-- Member ID Display (Edit Mode) -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">Account Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Member ID</p>
+                        <p class="font-mono font-bold text-primary-600">{{ member.member_id }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Date Joined</p>
+                        <p class="font-medium">{{ member.date_joined|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        {% if member.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">PIN Status</p>
+                        {% if member.pin_changed %}
+                        <span class="badge badge-success">Changed</span>
+                        {% else %}
+                        <span class="badge badge-warning">Default</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Auto-generated credentials preview (Add Mode) -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-green-600 align-middle mr-2">badge</span>
+                    Account Credentials
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">These will be auto-generated upon saving</p>
+            </div>
+            <div class="card-body">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-green-700">Member ID Format</p>
+                            <p class="font-mono font-bold text-green-800" id="memberIdPreview">
+                                {% if is_branch_admin and user_branch.code %}{{ user_branch.code }}{% else %}[BRANCH]{% endif %}XXX
+                            </p>
+                            <p class="text-xs text-green-600 mt-1">Auto-generated from branch code</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Password Reset Section for Mission Admins -->
+        {% if user.is_mission_admin and member %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-amber-600 align-middle mr-2">security</span>
+                    Password Management
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Reset user password if needed</p>
+            </div>
+            <div class="card-body">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0">
+                            <span class="material-icons-outlined text-amber-600">warning</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-amber-800">Password Reset</h4>
+                            <p class="text-sm text-amber-700 mt-1">Reset this user's password to the default (12345)</p>
+                            <div class="mt-3">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="reset_password" value="yes" 
+                                           class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded">
+                                    <span class="text-sm font-medium text-gray-700">Reset password to 12345</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">User will need to change password on next login</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit Buttons -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'members:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                {% if member %}Update Member{% else %}Add Member{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if not is_branch_admin %}
+<script>
+    function loadDistricts() {
+        const areaId = document.getElementById('areaSelect').value;
+        const districtSelect = document.getElementById('districtSelect');
+        const branchSelect = document.getElementById('branchSelect');
+
+        districtSelect.innerHTML = '<option value="">Loading...</option>';
+        districtSelect.disabled = true;
+        branchSelect.innerHTML = '<option value="">Select Branch</option>';
+        branchSelect.disabled = true;
+
+        if (!areaId) {
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+            return;
+        }
+
+        fetch(`/members/api/districts/${areaId}/`)
+            .then(res => res.json())
+            .then(data => {
+                districtSelect.innerHTML = '<option value="">Select District</option>';
+                data.districts.forEach(d => {
+                    districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                });
+                districtSelect.disabled = false;
+            });
+    }
+
+    function loadBranches() {
+        const districtId = document.getElementById('districtSelect').value;
+        const branchSelect = document.getElementById('branchSelect');
+
+        branchSelect.innerHTML = '<option value="">Loading...</option>';
+        branchSelect.disabled = true;
+
+        if (!districtId) {
+            branchSelect.innerHTML = '<option value="">Select Branch</option>';
+            return;
+        }
+
+        fetch(`/members/api/branches/${districtId}/`)
+            .then(res => res.json())
+            .then(data => {
+                branchSelect.innerHTML = '<option value="">Select Branch</option>';
+                data.branches.forEach(b => {
+                    branchSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                });
+                branchSelect.disabled = false;
+            });
+    }
+
+    function toggleSalaryFields() {
+        const checkbox = document.getElementById('qualifiesForSalary');
+        const salaryGroup = document.getElementById('baseSalaryGroup');
+        
+        if (checkbox.checked) {
+            salaryGroup.style.display = 'block';
+            document.getElementById('baseSalaryField').setAttribute('required', 'required');
+        } else {
+            salaryGroup.style.display = 'none';
+            document.getElementById('baseSalaryField').removeAttribute('required');
+        }
+    }
+
+    function toggleBaptismFields() {
+        const baptizedSelect = document.querySelector('select[name="baptized"]');
+        const baptismDateGroup = document.getElementById('baptismDateGroup');
+        const baptismByGroup = document.getElementById('baptismByGroup');
+        
+        if (baptizedSelect.value === 'yes') {
+            baptismDateGroup.style.display = 'block';
+            baptismByGroup.style.display = 'block';
+        } else {
+            baptismDateGroup.style.display = 'none';
+            baptismByGroup.style.display = 'none';
+            // Clear the fields if "No" is selected
+            document.querySelector('input[name="baptism_date"]').value = '';
+            document.querySelector('input[name="baptism_by"]').value = '';
+        }
+    }
+
+    function togglePastorFields() {
+        const roleSelect = document.querySelector('select[name="role"]');
+        const pastoralRankGroup = document.getElementById('pastoralRankGroup');
+        const pastorInfoSection = document.getElementById('pastorInfoSection');
+        
+        if (roleSelect.value === 'pastor') {
+            pastoralRankGroup.style.display = 'block';
+            pastorInfoSection.style.display = 'block';
+        } else {
+            pastoralRankGroup.style.display = 'none';
+            pastorInfoSection.style.display = 'none';
+            // Clear pastor fields if not pastor
+            document.querySelector('select[name="pastoral_rank"]').value = '';
+            document.querySelector('input[name="ordination_date"]').value = '';
+            document.querySelector('input[name="ordination_place"]').value = '';
+            document.querySelector('input[name="ordaining_minister"]').value = '';
+        }
+    }
+
+    function openCamera() {
+        const input = document.getElementById('profilePictureInput');
+        // Set capture to environment (back camera) by default
+        input.setAttribute('capture', 'environment');
+        input.click();
+    }
+
+    function previewPhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = `<img src="${e.target.result}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function removePhoto() {
+        const preview = document.getElementById('photoPreview');
+        const input = document.getElementById('profilePictureInput');
+        
+        // Clear the preview
+        preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
+        preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
+        
+        // Clear the input
+        input.value = '';
+        
+        // Add a hidden field to indicate photo removal
+        let removeField = document.getElementById('removePhotoField');
+        if (!removeField) {
+            removeField = document.createElement('input');
+            removeField.type = 'hidden';
+            removeField.id = 'removePhotoField';
+            removeField.name = 'remove_photo';
+            removeField.value = 'true';
+            input.parentNode.appendChild(removeField);
+        }
+    }
+
+    // Initialize salary fields visibility
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleSalaryFields();
+        
+        // Initialize pastor fields if editing a pastor
+        const roleSelect = document.querySelector('select[name="role"]');
+        if (roleSelect && roleSelect.value === 'pastor') {
+            togglePastorFields();
+        }
+        
+        // Initialize baptism fields
+        toggleBaptismFields();
+    });
+
+    // Load existing data for edit mode
+    {% if member.branch %}
+    document.addEventListener('DOMContentLoaded', function () {
+        const areaSelect = document.getElementById('areaSelect');
+        if (areaSelect && areaSelect.value) {
+            loadDistricts();
+            setTimeout(function() {
+                const districtSelect = document.getElementById('districtSelect');
+                if (districtSelect) {
+                    districtSelect.value = '{{ member.branch.district_id }}';
+                    loadBranches();
+                    setTimeout(function() {
+                        const branchSelect = document.getElementById('branchSelect');
+                        if (branchSelect) {
+                            branchSelect.value = '{{ member.branch_id }}';
+                        }
+                    }, 300);
+                }
+            }, 300);
+        }
+    });
+    {% endif %}
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
+            <p class="text-gray-500 mt-1">Manage system users and roles</p>
+        </div>
+        <a href="{% url 'accounts:add_user' %}" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">person_add</span>
+            Add User
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">groups</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Users</p>
+                    <p class="text-xl font-bold text-gray-900">{{ total_users|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Active</p>
+                    <p class="text-xl font-bold text-gray-900">{{ active_users|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">supervised_user_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Pastors</p>
+                    <p class="text-xl font-bold text-gray-900">{{ pastor_count|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">admin_panel_settings</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Admins</p>
+                    <p class="text-xl font-bold text-gray-900">{{ admin_count|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Name, ID, phone..." class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-input form-select">
+                        <option value="">All Roles</option>
+                        <option value="mission_admin" {% if request.GET.role == 'mission_admin' %}selected{% endif %}>Mission Admin</option>
+                        <option value="branch_executive" {% if request.GET.role == 'branch_executive' %}selected{% endif %}>Branch Executive</option>
+                        <option value="pastor" {% if request.GET.role == 'pastor' %}selected{% endif %}>Pastor</option>
+                        <option value="auditor" {% if request.GET.role == 'auditor' %}selected{% endif %}>Auditor</option>
+                        <option value="member" {% if request.GET.role == 'member' %}selected{% endif %}>Member</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Branch</label>
+                    <select name="branch" class="form-input form-select">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <span class="material-icons-outlined mr-1">search</span>
+                        Filter
+                    </button>
+                    <a href="{% url 'accounts:users' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>User ID</th>
+                        <th>Role</th>
+                        <th>Branch</th>
+                        <th>Phone</th>
+                        <th>Salary Info</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                {% if u.profile_picture %}
+                                <img src="{{ u.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover">
+                                {% else %}
+                                <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <span class="text-primary-600 font-medium">{{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}</span>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ u.get_full_name }}</p>
+                                    <p class="text-sm text-gray-500">{{ u.email|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-gray">{{ u.user_id }}</span>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if u.role == 'mission_admin' %}badge-primary
+                                {% elif u.role == 'pastor' %}badge-success
+                                {% elif u.role == 'auditor' %}badge-warning
+                                {% else %}badge-gray{% endif %}">
+                                {{ u.get_role_display }}
+                            </span>
+                        </td>
+                        <td class="text-gray-500">{{ u.branch.name|default:"-" }}</td>
+                        <td class="text-gray-500">{{ u.phone|default:"-" }}</td>
+                        <td>
+                            {% if u.role == 'pastor' or u.role == 'staff' %}
+                                {% with payroll=u.payroll_profiles|first %}
+                                {% if payroll %}
+                                <div class="text-sm">
+                                    <p class="font-medium text-green-600">GH₵{{ payroll.base_salary|floatformat:2 }}</p>
+                                    {% if u.is_commission_eligible %}
+                                    <p class="text-xs text-blue-500">+ Commission</p>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-xs text-gray-400">Not on payroll</span>
+                                {% endif %}
+                                {% endwith %}
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <a href="{% url 'accounts:user_detail' u.id %}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="View">
+                                    <span class="material-icons-outlined text-lg">visibility</span>
+                                </a>
+                                <a href="{% url 'accounts:edit_user' u.id %}" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Edit">
+                                    <span class="material-icons-outlined text-lg">edit</span>
+                                </a>
+                                {% if u != request.user %}
+                                <a href="{% url 'accounts:delete_user' u.id %}" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete" onclick="return confirm('Are you sure you want to delete {{ u.get_full_name }}?')">
+                                    <span class="material-icons-outlined text-lg">delete</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">person_search</span>
+                            <p class="mt-2 text-gray-500">No users found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if users.has_other_pages %}
+        <div class="card-body border-t">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500">
+                    Showing {{ users.start_index }} - {{ users.end_index }} of {{ users.paginator.count }} users
+                </p>
+                <nav class="flex items-center gap-1">
+                    {% if users.has_previous %}
+                    <a href="?page={{ users.previous_page_number }}&{{ request.GET.urlencode }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Previous</a>
+                    {% endif %}
+                    
+                    {% for num in users.paginator.page_range %}
+                        {% if users.number == num %}
+                        <span class="px-3 py-1 rounded-lg bg-primary-600 text-white">{{ num }}</span>
+                        {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+                        <a href="?page={{ num }}&{{ request.GET.urlencode }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if users.has_next %}
+                    <a href="?page={{ users.next_page_number }}&{{ request.GET.urlencode }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Next</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

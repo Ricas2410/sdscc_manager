@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Staff & Payroll{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Staff & Payroll</h1>
+            <p class="mt-1 text-sm text-gray-500">Manage staff salaries and payroll</p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex space-x-2">
+            <a href="{% url 'payroll:runs' %}" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">date_range</span> Payroll Runs
+            </a>
+            <a href="{% url 'payroll:commissions' %}" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">paid</span> Commissions
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Total Staff</p>
+            <p class="text-2xl font-bold text-gray-900">{{ total_staff|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Monthly Payroll</p>
+            <p class="text-2xl font-bold text-gray-900">GH₵ {{ monthly_payroll|default:"0"|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Pending Commissions</p>
+            <p class="text-2xl font-bold text-yellow-600">{{ pending_commissions|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Last Payroll Run</p>
+            <p class="text-2xl font-bold text-gray-900">{{ last_payroll|date:"M d"|default:"None" }}</p>
+        </div>
+    </div>
+
+    <!-- Staff Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b">
+            <h2 class="font-medium text-gray-900">Staff Members</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Basic Salary</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for profile in staff_profiles %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <span class="text-primary-600 font-medium">{{ profile.user.first_name|slice:":1" }}{{ profile.user.last_name|slice:":1" }}</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-900">{{ profile.user.get_full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ profile.user.member_id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ profile.position|default:"-" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ profile.user.branch.name|default:"Mission HQ" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">GH₵ {{ profile.basic_salary|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                                {% if profile.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if profile.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <a href="{% url 'payroll:payslip' profile.id %}" class="text-primary-600 hover:text-primary-900">View Payslips</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <span class="material-icons-outlined text-5xl text-gray-300">badge</span>
+                            <p class="mt-2 text-gray-500">No staff members found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

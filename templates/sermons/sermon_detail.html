@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ sermon.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center">
+        <a href="{% url 'sermons:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
+            <span class="material-icons-outlined">arrow_back</span>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">Sermon</h1>
+    </div>
+
+    <article class="bg-white shadow rounded-lg overflow-hidden">
+        {% if sermon.video_url %}
+        <div class="aspect-video bg-black">
+            <iframe src="{{ sermon.video_url }}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+        </div>
+        {% elif sermon.thumbnail %}
+        <img src="{{ sermon.thumbnail.url }}" class="w-full h-64 object-cover">
+        {% endif %}
+
+        <div class="p-6">
+            <div class="flex items-center space-x-2 mb-4">
+                {% if sermon.category %}
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800">{{ sermon.category.name }}</span>
+                {% endif %}
+                {% if sermon.scripture %}
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{{ sermon.scripture }}</span>
+                {% endif %}
+            </div>
+            
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ sermon.title }}</h1>
+            
+            <div class="flex items-center text-sm text-gray-500 mb-6">
+                <span class="material-icons-outlined text-base mr-1">person</span>
+                {{ sermon.preacher }}
+                <span class="mx-2">•</span>
+                <span class="material-icons-outlined text-base mr-1">calendar_today</span>
+                {{ sermon.sermon_date|date:"F d, Y" }}
+            </div>
+
+            {% if sermon.audio_file %}
+            <div class="mb-6 bg-gray-100 rounded-lg p-4">
+                <p class="text-sm font-medium text-gray-700 mb-2">Audio</p>
+                <audio controls class="w-full">
+                    <source src="{{ sermon.audio_file.url }}" type="audio/mpeg">
+                </audio>
+            </div>
+            {% endif %}
+
+            {% if sermon.summary %}
+            <div class="mb-6 p-4 bg-primary-50 border-l-4 border-primary-500 rounded-r-lg">
+                <p class="text-gray-700">{{ sermon.summary }}</p>
+            </div>
+            {% endif %}
+            
+            {% if sermon.content %}
+            <div class="prose max-w-none text-gray-700">
+                {{ sermon.content|linebreaks }}
+            </div>
+            {% endif %}
+        </div>
+    </article>
+</div>
+{% endblock %}

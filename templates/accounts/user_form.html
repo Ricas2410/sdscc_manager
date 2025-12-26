@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+{% block title %}{% if edit_user %}Edit{% else %}Add{% endif %} User{% endblock %}
+
+{% block content %}
+<!-- Error Modal -->
+{% if error %}
+<div id="errorModal" class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeErrorModal()"></div>
+        
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <span class="material-icons-outlined text-red-600">error_outline</span>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Error Creating User</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">{{ error }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeErrorModal()" 
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function closeErrorModal() {
+    // Keep form visible but hide modal
+    document.getElementById('errorModal').style.display = 'none';
+}
+</script>
+{% endif %}
+
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if edit_user %}Edit User{% else %}Add New User{% endif %}</h1>
+            <p class="text-gray-500 mt-1">{% if edit_user %}Update user information{% else %}Create a new system user{% endif %}</p>
+        </div>
+        <a href="{% url 'accounts:users' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Login Credentials -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">login</span>
+                    Login Credentials
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">User ID and PIN are required for system login</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">User ID / Member ID</label>
+                        <input type="text" name="user_id" value="{{ form_data.user_id|default:'' }}" 
+                            {% if edit_user %}readonly{% else %}placeholder="Leave blank for auto-generation"{% endif %}
+                            class="form-input {% if edit_user %}bg-gray-100{% endif %}" >
+                        {% if not edit_user %}
+                        <p class="text-xs text-gray-500 mt-1">Leave blank to auto-generate ID (cannot be changed later)</p>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label {% if not edit_user %}required{% endif %}">PIN</label>
+                        <input type="password" name="pin" 
+                            {% if not edit_user %}required{% endif %}
+                            class="form-input" placeholder="{% if edit_user %}Leave blank to keep current{% else %}5+ digit PIN{% endif %}">
+                        <p class="text-xs text-gray-500 mt-1">{% if edit_user %}Leave blank to keep current PIN{% else %}User will use this PIN to login{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">person</span>
+                    Personal Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">First Name</label>
+                        <input type="text" name="first_name" value="{% if form_data.first_name %}{{ form_data.first_name }}{% elif edit_user %}{{ edit_user.first_name }}{% else %}{% endif %}" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Other Names</label>
+                        <input type="text" name="other_names" value="{% if form_data.other_names %}{{ form_data.other_names }}{% elif edit_user %}{{ edit_user.other_names }}{% else %}{% endif %}" class="form-input" placeholder="Middle name(s)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Last Name</label>
+                        <input type="text" name="last_name" value="{% if form_data.last_name %}{{ form_data.last_name }}{% elif edit_user %}{{ edit_user.last_name }}{% else %}{% endif %}" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" name="email" value="{% if form_data.email %}{{ form_data.email }}{% elif edit_user %}{{ edit_user.email }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="phone" value="{% if form_data.phone %}{{ form_data.phone }}{% elif edit_user %}{{ edit_user.phone }}{% else %}{% endif %}" class="form-input" placeholder="+233...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-input form-select">
+                            <option value="">Select Gender</option>
+                            <option value="M" {% if form_data.gender == 'M' or edit_user.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if form_data.gender == 'F' or edit_user.gender == 'F' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="date_of_birth" value="{% if form_data.date_of_birth %}{{ form_data.date_of_birth }}{% elif edit_user and edit_user.date_of_birth %}{{ edit_user.date_of_birth|date:'Y-m-d' }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profile Picture</label>
+                        <input type="file" name="profile_picture" accept="image/*" class="form-input">
+                        {% if edit_user and edit_user.profile_picture %}
+                        <p class="text-xs text-gray-500 mt-1">Current: {{ edit_user.profile_picture.name }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pastoral Information (shown conditionally) -->
+        <div class="card" id="pastoral-section" style="display: none;">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-blue-600 align-middle">church</span>
+                    Pastoral Information
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Ministry-related information for pastors</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Pastoral Rank</label>
+                        <select name="pastoral_rank" class="form-input form-select">
+                            <option value="none" {% if form_data.pastoral_rank == 'none' %}selected{% endif %}>None</option>
+                            <option value="associate" {% if form_data.pastoral_rank == 'associate' %}selected{% endif %}>Associate Pastor</option>
+                            <option value="branch" {% if form_data.pastoral_rank == 'branch' %}selected{% endif %}>Branch Pastor</option>
+                            <option value="senior" {% if form_data.pastoral_rank == 'senior' %}selected{% endif %}>Senior Pastor</option>
+                            <option value="district" {% if form_data.pastoral_rank == 'district' %}selected{% endif %}>District Pastor</option>
+                            <option value="area" {% if form_data.pastoral_rank == 'area' %}selected{% endif %}>Area Pastor</option>
+                            <option value="mission" {% if form_data.pastoral_rank == 'mission' %}selected{% endif %}>Mission Pastor</option>
+                            <option value="overseer" {% if form_data.pastoral_rank == 'overseer' %}selected{% endif %}>General Overseer</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ordination Date</label>
+                        <input type="date" name="ordination_date" value="{% if form_data.ordination_date %}{{ form_data.ordination_date }}{% elif edit_user and edit_user.ordination_date %}{{ edit_user.ordination_date|date:'Y-m-d' }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ordination Place</label>
+                        <input type="text" name="ordination_place" value="{% if form_data.ordination_place %}{{ form_data.ordination_place }}{% elif edit_user %}{{ edit_user.ordination_place }}{% else %}{% endif %}" class="form-input" placeholder="Church/location">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ordaining Minister</label>
+                        <input type="text" name="ordaining_minister" value="{% if form_data.ordaining_minister %}{{ form_data.ordaining_minister }}{% elif edit_user %}{{ edit_user.ordaining_minister }}{% else %}{% endif %}" class="form-input" placeholder="Name of minister">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-green-600 align-middle">location_on</span>
+                    Address Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group md:col-span-3">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" rows="3" class="form-input" placeholder="Full address">{% if form_data.address %}{{ form_data.address }}{% elif profile %}{{ profile.address }}{% else %}{% endif %}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" value="{% if form_data.city %}{{ form_data.city }}{% elif profile %}{{ profile.city }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Region</label>
+                        <input type="text" name="region" value="{% if form_data.region %}{{ form_data.region }}{% elif profile %}{{ profile.region }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Marital Status</label>
+                        <select name="marital_status" class="form-input form-select">
+                            <option value="">Select Status</option>
+                            <option value="single" {% if form_data.marital_status == 'single' %}selected{% endif %}>Single</option>
+                            <option value="married" {% if form_data.marital_status == 'married' %}selected{% endif %}>Married</option>
+                            <option value="divorced" {% if form_data.marital_status == 'divorced' %}selected{% endif %}>Divorced</option>
+                            <option value="widowed" {% if form_data.marital_status == 'widowed' %}selected{% endif %}>Widowed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-purple-600 align-middle">work</span>
+                    Professional Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Profession</label>
+                        <input type="text" name="profession" value="{% if form_data.profession %}{{ form_data.profession }}{% elif profile %}{{ profile.profession }}{% else %}{% endif %}" class="form-input" placeholder="Occupation">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Employer</label>
+                        <input type="text" name="employer" value="{% if form_data.employer %}{{ form_data.employer }}{% elif profile %}{{ profile.employer }}{% else %}{% endif %}" class="form-input" placeholder="Company/organization">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Church Journey -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-orange-600 align-middle">timeline</span>
+                    Church Journey
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Important dates and milestones in the member's church journey</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Baptism Date</label>
+                        <input type="date" name="baptism_date" value="{% if form_data.baptism_date %}{{ form_data.baptism_date }}{% elif profile and profile.baptism_date %}{{ profile.baptism_date|date:'Y-m-d' }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Baptized By</label>
+                        <input type="text" name="baptism_by" value="{% if form_data.baptism_by %}{{ form_data.baptism_by }}{% elif profile %}{{ profile.baptism_by }}{% else %}{% endif %}" class="form-input" placeholder="Name of minister">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Membership Date</label>
+                        <input type="date" name="membership_date" value="{% if form_data.membership_date %}{{ form_data.membership_date }}{% elif profile and profile.membership_date %}{{ profile.membership_date|date:'Y-m-d' }}{% else %}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Previous Church</label>
+                        <input type="text" name="previous_church" value="{% if form_data.previous_church %}{{ form_data.previous_church }}{% elif profile %}{{ profile.previous_church }}{% else %}{% endif %}" class="form-input" placeholder="Previous church affiliation">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills & Talents -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-indigo-600 align-middle">star</span>
+                    Skills & Talents
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Comma-separated list of skills and talents for ministry service</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Skills</label>
+                        <textarea name="skills" rows="3" class="form-input" placeholder="e.g., Music, Teaching, Administration">{% if form_data.skills %}{{ form_data.skills }}{% elif profile %}{{ profile.skills }}{% else %}{% endif %}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Talents</label>
+                        <textarea name="talents" rows="3" class="form-input" placeholder="e.g., Singing, Public Speaking, Leadership">{% if form_data.talents %}{{ form_data.talents }}{% elif profile %}{{ profile.talents }}{% else %}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pastoral Notes (shown conditionally) -->
+        <div class="card" id="pastoral-notes-section" style="display: none;">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-gray-600 align-middle">notes</span>
+                    Pastoral Notes
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Internal notes for pastors and administrators</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Pastoral Notes</label>
+                        <textarea name="pastoral_notes" rows="4" class="form-input" placeholder="Internal pastoral notes">{% if form_data.pastoral_notes %}{{ form_data.pastoral_notes }}{% elif profile %}{{ profile.pastoral_notes }}{% else %}{% endif %}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Counseling Status</label>
+                        <input type="text" name="counseling_status" value="{% if form_data.counseling_status %}{{ form_data.counseling_status }}{% elif profile %}{{ profile.counseling_status }}{% else %}{% endif %}" class="form-input" placeholder="Current counseling status">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role & Assignment -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">badge</span>
+                    Role & Assignment
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Role</label>
+                        <select name="role" required class="form-input form-select">
+                            <option value="">Select Role</option>
+                            {% for value, label in roles %}
+                            <option value="{{ value }}" {% if form_data.role == value or edit_user.role == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <select name="branch" class="form-input form-select">
+                            <option value="">No Branch (Mission-level)</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if form_data.branch == branch.id|stringformat:"s" or edit_user.branch_id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                {% if edit_user %}
+                <div class="mt-6 pt-6 border-t">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="is_active" {% if edit_user.is_active %}checked{% endif %}
+                            class="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                        <div>
+                            <p class="font-medium text-gray-900">Active Account</p>
+                            <p class="text-sm text-gray-500">Uncheck to deactivate this user's account</p>
+                        </div>
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pastor/Staff Payroll Settings (shown conditionally) -->
+        <div class="card" id="payroll-section" style="display: none;">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-green-600 align-middle">payments</span>
+                    Payroll & Commission Settings
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Configure salary and commission eligibility for pastors and staff</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Base Salary (GH₵)</label>
+                        <input type="number" name="base_salary" step="0.01" min="0" 
+                            value="{{ payroll.base_salary|default:'0' }}" 
+                            class="form-input" placeholder="0.00">
+                        <p class="text-xs text-gray-500 mt-1">Monthly base salary amount</p>
+                    </div>
+                    <div class="form-group flex items-center pt-6">
+                        <label class="flex items-center gap-3 cursor-pointer" id="commission-label" style="display: none;">
+                            <input type="checkbox" name="is_commission_eligible" 
+                                {% if edit_user.is_commission_eligible %}checked{% endif %}
+                                class="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                            <div>
+                                <p class="font-medium text-gray-900">Commission Eligible</p>
+                                <p class="text-sm text-gray-500">Enable tithe commission for this pastor</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4" id="commission-info" style="display: none;">
+                    <div class="flex">
+                        <span class="material-icons-outlined text-blue-600 mr-2">info</span>
+                        <p class="text-sm text-blue-700">
+                            Commission eligible pastors receive a percentage of tithes collected at their branch based on the system commission rate.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-red-500 align-middle">emergency</span>
+                    Emergency Contact
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Contact information in case of emergency</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Contact Name</label>
+                        <input type="text" name="emergency_contact_name" value="{% if form_data.emergency_contact_name %}{{ form_data.emergency_contact_name }}{% else %}{% endif %}" class="form-input" placeholder="Full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="emergency_contact_phone" value="{% if form_data.emergency_contact_phone %}{{ form_data.emergency_contact_phone }}{% else %}{% endif %}" class="form-input" placeholder="Phone number">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Relationship</label>
+                        <select name="emergency_contact_relationship" class="form-input form-select">
+                            <option value="">Select Relationship</option>
+                            <option value="Spouse" {% if form_data.emergency_contact_relationship == 'Spouse' %}selected{% endif %}>Spouse</option>
+                            <option value="Parent" {% if form_data.emergency_contact_relationship == 'Parent' %}selected{% endif %}>Parent</option>
+                            <option value="Sibling" {% if form_data.emergency_contact_relationship == 'Sibling' %}selected{% endif %}>Sibling</option>
+                            <option value="Child" {% if form_data.emergency_contact_relationship == 'Child' %}selected{% endif %}>Child</option>
+                            <option value="Friend" {% if form_data.emergency_contact_relationship == 'Friend' %}selected{% endif %}>Friend</option>
+                            <option value="Other" {% if form_data.emergency_contact_relationship == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups & Ministries -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">diversity_3</span>
+                    Groups & Ministries
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">Select groups this user belongs to (can select multiple)</p>
+            </div>
+            <div class="card-body">
+                {% if groups %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto p-1">
+                    {% for group in groups %}
+                    <label class="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                        <input type="checkbox" name="groups" value="{{ group.id }}" 
+                            {% if group.id in user_groups %}checked{% endif %}
+                            class="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-gray-900 truncate">{{ group.name }}</p>
+                            <p class="text-xs text-gray-500">{{ group.category.name|default:"No Category" }}</p>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-4">No groups available. <a href="{% url 'groups:add' %}" class="text-primary-600 hover:underline">Create a group</a></p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if edit_user %}
+        <!-- Account Info -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">Account Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-500">Member ID</p>
+                        <p class="font-medium font-mono text-primary-600">{{ edit_user.member_id }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Member Since</p>
+                        <p class="font-medium">{{ edit_user.date_joined|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Last Login</p>
+                        <p class="font-medium">{{ edit_user.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Status</p>
+                        {% if edit_user.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Submit -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'accounts:users' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                {% if edit_user %}Update User{% else %}Create User{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const pastoralSection = document.getElementById('pastoral-section');
+    const pastoralNotesSection = document.getElementById('pastoral-notes-section');
+    const payrollSection = document.getElementById('payroll-section');
+    const commissionLabel = document.getElementById('commission-label');
+    const commissionInfo = document.getElementById('commission-info');
+
+    function updateSectionsVisibility() {
+        const role = roleSelect.value;
+
+        // Show pastoral section for pastors
+        if (role === 'pastor') {
+            pastoralSection.style.display = 'block';
+        } else {
+            pastoralSection.style.display = 'none';
+        }
+
+        // Show pastoral notes for pastors and staff
+        if (role === 'pastor' || role === 'staff') {
+            pastoralNotesSection.style.display = 'block';
+            payrollSection.style.display = 'block';
+
+            if (role === 'pastor') {
+                commissionLabel.style.display = 'flex';
+                commissionInfo.style.display = 'block';
+            } else {
+                commissionLabel.style.display = 'none';
+                commissionInfo.style.display = 'none';
+            }
+        } else {
+            pastoralNotesSection.style.display = 'none';
+            payrollSection.style.display = 'none';
+        }
+    }
+
+    roleSelect.addEventListener('change', updateSectionsVisibility);
+
+    // Initial check
+    updateSectionsVisibility();
+});
+</script>
+{% endblock %}

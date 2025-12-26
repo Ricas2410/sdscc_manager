@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Visitor Follow-up{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Visitor Follow-up</h1>
+            <p class="text-gray-500">Track and follow up with church visitors</p>
+        </div>
+        <a href="{% url 'core:visitor_add' %}" class="btn-primary">
+            <span class="material-icons-outlined text-lg mr-2">person_add</span>
+            Add Visitor
+        </a>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-blue-600">people</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
+                    <p class="text-xs text-gray-500">Total Visitors</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-yellow-600">person_add</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.new }}</p>
+                    <p class="text-xs text-gray-500">New Visitors</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-green-600">how_to_reg</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.converted }}</p>
+                    <p class="text-xs text-gray-500">Converted</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-red-600">schedule</span>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ stats.follow_up_due }}</p>
+                    <p class="text-xs text-gray-500">Follow-up Due</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">All Status</option>
+                    {% for status_val, status_label in status_choices %}
+                    <option value="{{ status_val }}" {% if request.GET.status == status_val %}selected{% endif %}>
+                        {{ status_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if branches %}
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Branch</label>
+                <select name="branch" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <button type="submit" class="btn-secondary text-sm">
+                <span class="material-icons-outlined text-lg">filter_list</span>
+                Filter
+            </button>
+        </form>
+    </div>
+    
+    <!-- Visitors Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="text-left text-xs font-medium text-gray-500 uppercase px-6 py-3">Visitor</th>
+                        <th class="text-left text-xs font-medium text-gray-500 uppercase px-6 py-3">Contact</th>
+                        <th class="text-left text-xs font-medium text-gray-500 uppercase px-6 py-3">First Visit</th>
+                        <th class="text-left text-xs font-medium text-gray-500 uppercase px-6 py-3">Status</th>
+                        <th class="text-left text-xs font-medium text-gray-500 uppercase px-6 py-3">Assigned To</th>
+                        <th class="text-left text-xs font-medium text-gray-500 uppercase px-6 py-3">Next Follow-up</th>
+                        <th class="text-center text-xs font-medium text-gray-500 uppercase px-6 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for visitor in visitors %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                                    <span class="text-white font-medium">{{ visitor.first_name.0 }}{{ visitor.last_name.0 }}</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ visitor.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ visitor.branch.name }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm text-gray-900">{{ visitor.phone|default:"-" }}</p>
+                            <p class="text-xs text-gray-500">{{ visitor.email|default:"" }}</p>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ visitor.first_visit_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if visitor.status == 'new' %}bg-yellow-100 text-yellow-800
+                                {% elif visitor.status == 'contacted' %}bg-blue-100 text-blue-800
+                                {% elif visitor.status == 'follow_up' %}bg-purple-100 text-purple-800
+                                {% elif visitor.status == 'returned' %}bg-indigo-100 text-indigo-800
+                                {% elif visitor.status == 'converted' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ visitor.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ visitor.assigned_to.get_full_name|default:"Unassigned" }}
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            {% if visitor.next_follow_up %}
+                            <span class="{% if visitor.next_follow_up <= today %}text-red-600 font-medium{% else %}text-gray-500{% endif %}">
+                                {{ visitor.next_follow_up|date:"M d" }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{% url 'core:visitor_detail' visitor.id %}" class="text-blue-600 hover:text-blue-800">
+                                <span class="material-icons-outlined">visibility</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <span class="material-icons-outlined text-5xl text-gray-300">people_outline</span>
+                            <p class="text-gray-500 mt-2">No visitors found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

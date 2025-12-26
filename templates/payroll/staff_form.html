@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}{% if staff %}Edit{% else %}Add{% endif %} Staff{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if staff %}Edit Staff{% else %}Add New Staff{% endif %}</h1>
+            <p class="text-gray-500 mt-1">{% if staff %}Update payroll information{% else %}Add staff to payroll{% endif %}</p>
+        </div>
+        <a href="{% url 'payroll:staff_list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Staff Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">Staff Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Select User</label>
+                        <select name="user" required class="form-input form-select">
+                            <option value="">Select User</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if staff.user_id == user.id %}selected{% endif %}>{{ user.get_full_name }} ({{ user.user_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Position</label>
+                        <input type="text" name="position" value="{{ staff.position|default:'' }}" required class="form-input" placeholder="e.g., Secretary, Accountant">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department</label>
+                        <input type="text" name="department" value="{{ staff.department|default:'' }}" class="form-input" placeholder="e.g., Administration, Finance">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <select name="branch" class="form-input form-select">
+                            <option value="">Mission Level</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if staff.branch_id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">Salary Information</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Base Salary (GH₵)</label>
+                        <input type="number" name="base_salary" step="0.01" value="{{ staff.base_salary|default:'' }}" required class="form-input" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Allowances (GH₵)</label>
+                        <input type="number" name="allowances" step="0.01" value="{{ staff.allowances|default:'0' }}" class="form-input" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Deductions (GH₵)</label>
+                        <input type="number" name="deductions" step="0.01" value="{{ staff.deductions|default:'0' }}" class="form-input" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" name="start_date" value="{{ staff.start_date|date:'Y-m-d' }}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bank Name</label>
+                        <input type="text" name="bank_name" value="{{ staff.bank_name|default:'' }}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Number</label>
+                        <input type="text" name="account_number" value="{{ staff.account_number|default:'' }}" class="form-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'payroll:staff_list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                {% if staff %}Update Staff{% else %}Add Staff{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

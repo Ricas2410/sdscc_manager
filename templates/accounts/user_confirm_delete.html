@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Delete User{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto space-y-6">
+    <div class="card">
+        <div class="card-body text-center py-8">
+            <div class="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <span class="material-icons-outlined text-3xl text-red-600">warning</span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mb-2">Delete User</h1>
+            <p class="text-gray-600 mb-6">
+                Are you sure you want to delete <strong>{{ delete_user.get_full_name }}</strong>?<br>
+                <span class="text-sm text-gray-500">User ID: {{ delete_user.user_id }}</span>
+            </p>
+            
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
+                <p class="text-sm text-red-800">
+                    <strong>Warning:</strong> This action cannot be undone. All data associated with this user will be permanently removed, including:
+                </p>
+                <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                    <li>Attendance records</li>
+                    <li>Contribution records</li>
+                    <li>Group memberships</li>
+                    <li>Login history</li>
+                </ul>
+            </div>
+
+            <form method="post" class="flex justify-center gap-4">
+                {% csrf_token %}
+                <a href="{% url 'accounts:users' %}" class="btn btn-secondary">
+                    <span class="material-icons-outlined mr-2">arrow_back</span>Cancel
+                </a>
+                <button type="submit" class="btn bg-red-600 hover:bg-red-700 text-white">
+                    <span class="material-icons-outlined mr-2">delete</span>Delete User
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

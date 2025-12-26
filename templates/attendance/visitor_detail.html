@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ visitor.first_name }} {{ visitor.last_name }} - Visitor Details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="{% url 'attendance:visitors' %}" 
+                   class="text-gray-500 hover:text-gray-700 mr-4">
+                    <span class="material-icons-outlined">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">{{ visitor.name }}</h1>
+                    <p class="text-gray-500 mt-2">
+                        Visitor since {{ visitor.visit_date|date:"F d, Y" }}
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'attendance:session_detail' visitor.session.id %}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    <span class="material-icons-outlined mr-2">event</span>
+                    View Service
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Visitor Information -->
+        <div class="lg:col-span-2">
+            <!-- Basic Info Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Visitor Information</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Full Name</h3>
+                            <p class="text-lg text-gray-900">{{ visitor.name }}</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Visit Date</h3>
+                            <p class="text-lg text-gray-900">{{ visitor.visit_date|date:"F d, Y" }}</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Phone Number</h3>
+                            <p class="text-lg text-gray-900">
+                                {% if visitor.phone %}{{ visitor.phone }}{% else %}<span class="text-gray-400">Not provided</span>{% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Email Address</h3>
+                            <p class="text-lg text-gray-900">
+                                {% if visitor.email %}
+                                    <a href="mailto:{{ visitor.email }}" class="text-blue-600 hover:text-blue-800">
+                                        {{ visitor.email }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-400">Not provided</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visit Details Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Visit Details</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Service Type</h3>
+                            <p class="text-lg text-gray-900">{{ visitor.session.service_type.name }}</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Church Branch</h3>
+                            <p class="text-lg text-gray-900">{{ visitor.session.branch.name }}</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Invited By</h3>
+                            <p class="text-lg text-gray-900">
+                                {% if visitor.invited_by %}
+                                    {{ visitor.invited_by.get_full_name|default:visitor.invited_by.member_id }}
+                                {% else %}
+                                    <span class="text-gray-400">Self-attended</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500 mb-1">Visitor Status</h3>
+                            <p class="text-lg">
+                                {% if visitor.status == 'new' %}
+                                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        First Time Visitor
+                                    </span>
+                                {% elif visitor.status == 'returning' %}
+                                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Returning Visitor
+                                    </span>
+                                {% elif visitor.status == 'joined' %}
+                                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Became Member
+                                    </span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Follow-up Information -->
+            {% if visitor.follow_up_notes %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Follow-up Notes</h2>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ visitor.follow_up_notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <!-- Follow-up Status -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-gray-200 bg-orange-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Follow-up Status</h2>
+                </div>
+                <div class="p-6">
+                    <div class="text-center">
+                        {% if visitor.is_follow_up_needed %}
+                            <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                <span class="material-icons-outlined text-red-600 text-2xl">pending_actions</span>
+                            </div>
+                            <p class="text-lg font-medium text-gray-900 mb-2">Follow-up Needed</p>
+                            <p class="text-sm text-gray-500">
+                                {% if visitor.follow_up_date %}
+                                    Follow-up by: {{ visitor.follow_up_date|date:"M d, Y" }}
+                                {% else %}
+                                    Schedule follow-up soon
+                                {% endif %}
+                            </p>
+                        {% else %}
+                            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                <span class="material-icons-outlined text-green-600 text-2xl">check_circle</span>
+                            </div>
+                            <p class="text-lg font-medium text-gray-900 mb-2">Follow-up Complete</p>
+                            <p class="text-sm text-gray-500">No further action needed</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                </div>
+                <div class="p-6 space-y-3">
+                    {% if visitor.phone %}
+                    <a href="tel:{{ visitor.phone }}" 
+                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-icons-outlined mr-2">phone</span>
+                        Call Visitor
+                    </a>
+                    {% endif %}
+                    
+                    {% if visitor.email %}
+                    <a href="mailto:{{ visitor.email }}" 
+                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-icons-outlined mr-2">email</span>
+                        Send Email
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'attendance:visitors' %}" 
+                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        <span class="material-icons-outlined mr-2">people</span>
+                        View All Visitors
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

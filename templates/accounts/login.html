@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login{% endblock %}
+
+{% block auth_content %}
+<div class="min-h-screen flex">
+    <!-- Left Panel - Branding with Background Image -->
+    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <!-- Background Image -->
+        <div class="absolute inset-0 bg-cover bg-top"
+            style="background-image: url('{% if site_settings and site_settings.get_login_background_url %}{{ site_settings.get_login_background_url }}{% else %}https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=1920{% endif %}');">
+        </div>
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-900/30 to-primary-700/25"></div>
+
+        <!-- Content -->
+        <div class="relative z-10 p-12 flex flex-col justify-between w-full">
+            <div>
+                <div class="flex items-center gap-3">
+                    {% if site_settings and site_settings.get_logo_url %}
+                    <img src="{{ site_settings.get_logo_url }}" alt="{{ site_settings.site_name }}"
+                        class="h-20 object-contain">
+                    {% else %}
+                    <div class="h-20 w-20 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                        <span class="text-white font-bold text-3xl">S</span>
+                    </div>
+                    {% endif %}
+                    <span class="text-white text-3xl font-bold">{{ site_settings.site_name|default:'SDSCC' }}</span>
+                </div>
+            </div>
+
+            <div class="text-white">
+                <h1 class="text-4xl font-bold mb-4">{{ site_settings.tagline|default:'Seventh Day Sabbath Church of Christ'|linebreaksbr }}</h1>
+                <p class="text-white/90 text-lg">Church Management System</p>
+                <p class="text-white/70 mt-4">Managing Faith, Building Community</p>
+            </div>
+
+            <div class="text-white/70 text-sm">
+                <p>A unified digital platform for managing church members, finances, attendance, and communication.</p>
+                {% if site_settings.website %}
+                <p class="mt-2"><a href="{{ site_settings.website }}" class="hover:text-white transition-colors">{{
+                        site_settings.website }}</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel - Login Form -->
+    <div class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-gray-50">
+        <div class="mx-auto w-full max-w-sm">
+            <!-- Mobile Logo -->
+            <div class="lg:hidden flex items-center justify-center gap-3 mb-8">
+                {% if site_settings and site_settings.get_logo_url %}
+                <img src="{{ site_settings.get_logo_url }}" alt="{{ site_settings.site_name }}"
+                    class="h-16 object-contain">
+                {% else %}
+                <div class="h-16 w-16 rounded-xl bg-primary-600 flex items-center justify-center">
+                    <span class="text-white font-bold text-3xl">S</span>
+                </div>
+                {% endif %}
+                <span class="text-gray-900 text-3xl font-bold">{{ site_settings.site_name|default:'SDSCC' }}</span>
+            </div>
+
+            <!-- Login Card -->
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Welcome back</h2>
+                    <p class="mt-2 text-sm text-gray-600">Sign in to access your church dashboard</p>
+                </div>
+
+                <div class="mt-8">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div
+                        class="mb-4 rounded-lg p-4 {% if message.tags == 'error' %}bg-red-50 text-red-700{% else %}bg-blue-50 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form class="space-y-6" method="POST" action="{% url 'accounts:login' %}">
+                        {% csrf_token %}
+
+                        <div>
+                            <label for="member_id" class="block text-sm font-medium text-gray-700">Member ID</label>
+                            <div class="mt-1 relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons-outlined text-gray-400 text-lg">badge</span>
+                                </div>
+                                <input id="member_id" name="member_id" type="text" required
+                                    class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                                    placeholder="Enter your Member ID" value="{{ form.member_id.value|default:'' }}">
+                            </div>
+                            {% if form.member_id.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.member_id.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="password" class="block text-sm font-medium text-gray-700"
+                                    id="password-label">Password or PIN</label>
+                                <button type="button" onclick="toggleLoginMode()"
+                                    class="text-sm text-primary-600 hover:text-primary-500 font-medium"
+                                    id="mode-toggle" style="display: none;">
+                                    Use Password
+                                </button>
+                            </div>
+                            <div class="mt-1 relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="material-icons-outlined text-gray-400 text-lg"
+                                        id="password-icon">lock</span>
+                                </div>
+                                <input id="password" name="password" type="password"
+                                    required
+                                    class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                                    placeholder="Enter your password or PIN">
+                                <button type="button" onclick="togglePasswordVisibility()"
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <span id="eye-icon"
+                                        class="material-icons-outlined text-gray-400 text-lg">visibility_off</span>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <input id="remember" name="remember" type="checkbox"
+                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                <label for="remember" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                            </div>
+
+                            <div class="text-sm">
+                                <a href="{% url 'accounts:password_reset' %}"
+                                    class="font-medium text-primary-600 hover:text-primary-500">
+                                    Forgot password?
+                                </a>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit"
+                                class="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+                                <span class="material-icons text-lg">login</span>
+                                Sign in
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-6 text-center text-sm text-gray-500">
+                        <p>Need help signing in?</p>
+                        <p class="mt-1">Contact your branch administrator for assistance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eye-icon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.textContent = 'visibility';
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.textContent = 'visibility_off';
+        }
+    }
+
+    function toggleLoginMode() {
+        const passwordInput = document.getElementById('password');
+        const label = document.getElementById('password-label');
+        const toggleBtn = document.getElementById('mode-toggle');
+        const icon = document.getElementById('password-icon');
+
+        if (toggleBtn.textContent.trim() === 'Use Password') {
+            // Switch to Password mode
+            label.textContent = 'Password';
+            toggleBtn.textContent = 'Use PIN';
+            passwordInput.placeholder = 'Enter your password';
+            passwordInput.removeAttribute('pattern');
+            passwordInput.removeAttribute('inputmode');
+            icon.textContent = 'vpn_key';
+        } else {
+            // Switch to PIN mode
+            label.textContent = 'Enter PIN';
+            toggleBtn.textContent = 'Use Password';
+            passwordInput.placeholder = 'Enter your 5-digit PIN';
+            passwordInput.setAttribute('pattern', '[0-9]*');
+            passwordInput.setAttribute('inputmode', 'numeric');
+            icon.textContent = 'lock';
+        }
+    }
+</script>
+{% endblock %}

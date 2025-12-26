@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Expenditure Report{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Expenditure Report</h1>
+            <p class="text-gray-500 mt-1">Detailed expenditure analysis</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">print</span>Print
+            </button>
+            <a href="{% url 'reports:index' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">arrow_back</span>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}">{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-input form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">Generate Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Total Expenditure</p>
+            <p class="text-2xl font-bold text-red-600">GH₵{{ total_expenditure|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Mission Level</p>
+            <p class="text-2xl font-bold text-gray-900">GH₵{{ mission_expenditure|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Branch Level</p>
+            <p class="text-2xl font-bold text-gray-900">GH₵{{ branch_expenditure|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Pending Approval</p>
+            <p class="text-2xl font-bold text-yellow-600">{{ pending_count|default:"0" }}</p>
+        </div>
+    </div>
+
+    <!-- Category Breakdown Chart -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Expenditure by Category</h2>
+        </div>
+        <div class="card-body">
+            <canvas id="expenditureChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Category Breakdown</h2>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-center">Count</th>
+                        <th class="text-right">Total Amount</th>
+                        <th class="text-right">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in category_breakdown %}
+                    <tr>
+                        <td class="font-medium">{{ item.category }}</td>
+                        <td class="text-center">{{ item.count }}</td>
+                        <td class="text-right font-semibold">GH₵{{ item.amount|floatformat:2 }}</td>
+                        <td class="text-right text-gray-500">{{ item.percentage|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">No data for selected period</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('expenditureChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Utilities', 'Maintenance', 'Salaries', 'Welfare', 'Transport', 'Other'],
+            datasets: [{
+                label: 'Amount (GH₵)',
+                data: [{{ utilities|default:1500 }}, {{ maintenance|default:800 }}, {{ salaries|default:5000 }}, {{ welfare|default:600 }}, {{ transport|default:400 }}, {{ other|default:300 }}],
+                backgroundColor: '#ef4444'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+});
+</script>
+{% endblock %}

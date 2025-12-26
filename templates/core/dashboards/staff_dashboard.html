@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center">
+            <div class="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" class="h-16 w-16 rounded-full object-cover">
+                {% else %}
+                <span class="material-icons-outlined text-4xl">badge</span>
+                {% endif %}
+            </div>
+            <div class="ml-4">
+                <p class="text-indigo-100">Welcome back,</p>
+                <h1 class="text-2xl font-bold">{{ user.get_full_name }}</h1>
+                <p class="text-indigo-100 text-sm">Staff Member • {{ user.branch.name|default:"Mission HQ" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="card p-5">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-green-100">
+                    <span class="material-icons-outlined text-green-600">payments</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Earnings (YTD)</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵ {{ total_earnings|default:"0.00"|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-5">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">receipt</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Pay Slips</p>
+                    <p class="text-xl font-bold text-gray-900">{{ payslip_count|default:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card p-5">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-lg bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">calendar_today</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Next Payday</p>
+                    <p class="text-xl font-bold text-gray-900">End of Month</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payslips -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">Recent Pay Slips</h3>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Gross</th>
+                        <th>Deductions</th>
+                        <th class="text-right">Net Pay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slip in recent_payslips %}
+                    <tr>
+                        <td class="font-medium">{{ slip.payroll_run.month }}/{{ slip.payroll_run.year }}</td>
+                        <td>GH₵ {{ slip.gross_pay|floatformat:2 }}</td>
+                        <td>GH₵ {{ slip.total_deductions|floatformat:2 }}</td>
+                        <td class="text-right font-bold text-green-600">GH₵ {{ slip.net_pay|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">No pay slips yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

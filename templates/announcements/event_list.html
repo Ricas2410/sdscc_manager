@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Events{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Church Events</h1>
+            <p class="mt-1 text-sm text-gray-500">Upcoming events and activities</p>
+        </div>
+        {% if user.role != 'member' %}
+        <a href="{% url 'announcements:event_add' %}" class="btn-primary">
+            <span class="material-icons-outlined mr-1">add</span> Add Event
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for event in events %}
+        {% with today|date:"Y-m-d" as today_date %}
+        <div
+            class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow {% if event.start_date|date:'Y-m-d' < today_date %}opacity-75{% endif %}">
+            {% if event.image %}
+            <img src="{{ event.image.url }}" class="w-full h-40 object-cover">
+            {% else %}
+            <div class="w-full h-40 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                <span class="material-icons-outlined text-6xl text-white/50">event</span>
+            </div>
+            {% endif %}
+            <div class="p-4">
+                <div class="flex items-start justify-between">
+                    <div
+                        class="flex-shrink-0 {% if event.start_date|date:'Y-m-d' < today_date %}bg-gray-100{% else %}bg-primary-100{% endif %} rounded-lg p-2 text-center min-w-[50px]">
+                        <p
+                            class="text-xs {% if event.start_date|date:'Y-m-d' < today_date %}text-gray-600{% else %}text-primary-600{% endif %} font-medium">
+                            {{ event.start_date|date:"M" }}</p>
+                        <p
+                            class="text-xl font-bold {% if event.start_date|date:'Y-m-d' < today_date %}text-gray-700{% else %}text-primary-700{% endif %}">
+                            {{ event.start_date|date:"d" }}</p>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h3 class="font-semibold text-gray-900">
+                            <a href="{% url 'announcements:event_detail' event.id %}" class="hover:text-primary-600">{{
+                                event.title }}</a>
+                        </h3>
+                        <p class="text-sm text-gray-500 mt-1">
+                            <span class="material-icons-outlined text-base align-middle mr-1">schedule</span>
+                            {{ event.start_time|time:"g:i A" }}
+                        </p>
+                        {% if event.location %}
+                        <p class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-base align-middle mr-1">location_on</span>
+                            {{ event.location|truncatewords:5 }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="{% url 'announcements:event_detail' event.id %}"
+                            class="text-green-600 hover:text-green-800 p-1 transition-colors" title="View Details">
+                            <span class="material-icons-outlined text-xl">visibility</span>
+                        </a>
+                        {% if user.is_mission_admin or event.created_by == user %}
+                        <a href="{% url 'announcements:event_edit' event.id %}"
+                            class="text-blue-600 hover:text-blue-800 p-1 transition-colors" title="Edit">
+                            <span class="material-icons-outlined text-xl">edit</span>
+                        </a>
+                        <form method="post" action="{% url 'announcements:event_delete' event.id %}" class="inline"
+                            onsubmit="return confirm('Are you sure you want to delete this event?')">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:text-red-800 p-1 transition-colors"
+                                title="Delete">
+                                <span class="material-icons-outlined text-xl">delete</span>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="col-span-full bg-white shadow rounded-lg p-12 text-center">
+            <span class="material-icons-outlined text-5xl text-gray-300">event</span>
+            <p class="mt-2 text-gray-500">No events found</p>
+            <p class="mt-1 text-sm text-gray-400">Create your first event to get started</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

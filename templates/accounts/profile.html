@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <h1 class="text-2xl font-bold text-gray-900">My Profile</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Profile Card -->
+        <div class="bg-white shadow rounded-lg p-6 text-center">
+            <div class="h-24 w-24 mx-auto rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" class="h-24 w-24 object-cover">
+                {% else %}
+                <span class="text-4xl text-primary-600 font-bold">{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
+                {% endif %}
+            </div>
+            <h2 class="mt-4 text-xl font-bold text-gray-900">{{ user.get_full_name }}</h2>
+            <p class="text-gray-500">{{ user.member_id }}</p>
+            <span class="mt-2 inline-flex px-3 py-1 text-sm font-medium rounded-full bg-primary-100 text-primary-800">
+                {{ user.get_role_display }}
+            </span>
+            {% if user.branch %}
+            <p class="mt-4 text-sm text-gray-500">{{ user.branch.name }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Profile Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-500">Email</dt>
+                        <dd class="font-medium">{{ user.email|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Phone</dt>
+                        <dd class="font-medium">{{ user.phone|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Gender</dt>
+                        <dd class="font-medium">{{ user.get_gender_display|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-500">Date of Birth</dt>
+                        <dd class="font-medium">{{ user.date_of_birth|date:"F d, Y"|default:"-" }}</dd>
+                    </div>
+                    <div class="md:col-span-2">
+                        <dt class="text-sm text-gray-500">Address</dt>
+                        <dd class="font-medium">{{ user.address|default:"-" }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Account Actions</h3>
+                <div class="space-y-3">
+                    {% if user.is_any_admin %}
+                    <a href="{% url 'accounts:profile_edit' %}" class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                        <span class="material-icons-outlined text-gray-400 mr-3">edit</span>
+                        <div>
+                            <p class="font-medium text-gray-900">Edit Profile</p>
+                            <p class="text-sm text-gray-500">Update your personal information</p>
+                        </div>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'accounts:change_password' %}" class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                        <span class="material-icons-outlined text-gray-400 mr-3">lock</span>
+                        <div>
+                            <p class="font-medium text-gray-900">Change Password</p>
+                            <p class="text-sm text-gray-500">Update your password</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

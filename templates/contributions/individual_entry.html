@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Individual Contribution Entry{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Individual Contribution Entry</h1>
+            <p class="text-sm text-gray-500">Record contributions per member</p>
+        </div>
+        <a href="{% url 'contributions:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    {% if branch %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+        <span class="material-icons-outlined text-blue-600">church</span>
+        <div>
+            <p class="font-semibold text-blue-900">{{ branch.name }}</p>
+            <p class="text-sm text-blue-700">{{ branch.district.name }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">Entry Details</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Contribution Type</label>
+                        <select name="contribution_type" required class="form-input form-select" onchange="window.location='?type='+this.value">
+                            <option value="">Select Type</option>
+                            {% for ct in contribution_types %}
+                            <option value="{{ ct.id }}" {% if selected_type.id == ct.id %}selected{% endif %}>{{ ct.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Date</label>
+                        <input type="date" name="date" required class="form-input" id="individualDate">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if selected_type and members %}
+        <div class="card">
+            <div class="card-header flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h2 class="font-semibold text-gray-900">Members - {{ selected_type.name }}</h2>
+                    <p class="text-sm text-gray-500">Enter amount for each contributing member</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="text" id="memberFilter" class="form-input py-2" placeholder="Search members..." onkeyup="filterMembers()">
+                    <span class="badge badge-primary whitespace-nowrap">{{ members|length }} Members</span>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="membersTable">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th class="hidden md:table-cell">Member ID</th>
+                            <th class="w-40">Amount (GH₵)</th>
+                            <th class="hidden md:table-cell w-48">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members %}
+                        <tr class="member-row" data-name="{{ member.get_full_name|lower }}" data-id="{{ member.member_id|lower }}">
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <span class="text-sm font-medium text-primary-600">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">{{ member.get_full_name }}</p>
+                                        <p class="text-xs text-gray-500 md:hidden">{{ member.member_id }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="hidden md:table-cell">
+                                <span class="font-mono text-sm text-gray-500">{{ member.member_id }}</span>
+                            </td>
+                            <td>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">GH₵</span>
+                                    <input type="number" name="amount_{{ member.id }}" step="0.01" min="0" class="form-input pl-10 py-1" placeholder="0.00">
+                                </div>
+                            </td>
+                            <td class="hidden md:table-cell">
+                                <input type="text" name="notes_{{ member.id }}" class="form-input py-1 text-sm" placeholder="Optional">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'contributions:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>
+                Submit Contributions
+            </button>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-12">
+                <span class="material-icons-outlined text-5xl text-gray-300">group</span>
+                <p class="mt-2 text-gray-500">Select a contribution type to view members</p>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+// Set default date to today
+document.getElementById('individualDate').value = new Date().toISOString().split('T')[0];
+
+// Filter members by name or ID
+function filterMembers() {
+    const query = document.getElementById('memberFilter').value.toLowerCase().trim();
+    document.querySelectorAll('.member-row').forEach(row => {
+        const name = row.dataset.name;
+        const memberId = row.dataset.id;
+        const matches = name.includes(query) || memberId.includes(query);
+        row.style.display = matches ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

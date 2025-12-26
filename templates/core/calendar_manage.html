@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %}Manage Calendar - {{ year }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Manage Church Calendar</h1>
+            <p class="text-gray-500 mt-1">Add and manage events for {{ year }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <select onchange="location.href='?year='+this.value" class="form-input form-select">
+                {% for y in years %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            <a href="{% url 'core:calendar' %}?year={{ year }}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">visibility</span>View Calendar
+            </a>
+        </div>
+    </div>
+
+    <!-- Yearly Theme -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">{{ year }} Year Theme</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_yearly">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group mb-0">
+                        <label class="form-label">Theme Title</label>
+                        <input type="text" name="theme" value="{{ yearly_cal.theme }}" class="form-input" placeholder="e.g., Year of Restoration">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Published</label>
+                        <label class="flex items-center gap-2 mt-2">
+                            <input type="checkbox" name="is_published" {% if yearly_cal.is_published %}checked{% endif %} class="rounded text-primary-600">
+                            <span class="text-sm text-gray-700">Make calendar visible to all members</span>
+                        </label>
+                    </div>
+                    <div class="form-group mb-0 md:col-span-2">
+                        <label class="form-label">Theme Verse</label>
+                        <textarea name="theme_verse" rows="2" class="form-input" placeholder="Enter the theme scripture...">{{ yearly_cal.theme_verse }}</textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="btn btn-primary">Save Theme</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Event -->
+    <div class="card">
+        <div class="card-header flex items-center justify-between">
+            <h2 class="font-semibold text-gray-900">Add New Event</h2>
+            <button type="button" onclick="toggleEventForm()" class="btn btn-sm btn-primary" id="toggleBtn">
+                <span class="material-icons-outlined text-sm mr-1">add</span>Add Event
+            </button>
+        </div>
+        <div class="card-body hidden" id="eventForm">
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_event">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group mb-0 md:col-span-2">
+                        <label class="form-label required">Event Title</label>
+                        <input type="text" name="title" required class="form-input" placeholder="e.g., Easter Convention">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Event Type</label>
+                        <select name="event_type" class="form-input form-select">
+                            {% for value, label in event_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label required">Start Date</label>
+                        <input type="date" name="start_date" required class="form-input">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">End Date</label>
+                        <input type="date" name="end_date" class="form-input">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">
+                            <input type="checkbox" name="is_all_day" class="rounded text-primary-600 mr-2">
+                            All Day Event
+                        </label>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" name="start_time" class="form-input">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">End Time</label>
+                        <input type="time" name="end_time" class="form-input">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Scope</label>
+                        <select name="scope" class="form-input form-select">
+                            {% for value, label in scopes %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" class="form-input" placeholder="e.g., Main Auditorium">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label">Color</label>
+                        <input type="color" name="color" value="#3B82F6" class="form-input h-10">
+                    </div>
+                    <div class="form-group mb-0 md:col-span-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" rows="2" class="form-input" placeholder="Event details..."></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="toggleEventForm()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">add</span>Add Event
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Events List -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">{{ year }} Events ({{ events|length }})</h2>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Event</th>
+                        <th>Type</th>
+                        <th>Scope</th>
+                        <th>Location</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ event.start_date|date:"M d" }}</div>
+                            {% if event.end_date and event.end_date != event.start_date %}
+                            <div class="text-xs text-gray-500">to {{ event.end_date|date:"M d" }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: {{ event.color }};"></div>
+                                <span class="font-medium text-gray-900">{{ event.title }}</span>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-secondary">{{ event.get_event_type_display }}</span></td>
+                        <td class="text-gray-500">{{ event.get_scope_display }}</td>
+                        <td class="text-gray-500">{{ event.location|default:"-" }}</td>
+                        <td class="text-right">
+                            <form method="post" class="inline" onsubmit="return confirm('Delete this event?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_event">
+                                <input type="hidden" name="event_id" value="{{ event.id }}">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <span class="material-icons-outlined text-sm">delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-gray-500">
+                            No events scheduled for {{ year }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleEventForm() {
+    const form = document.getElementById('eventForm');
+    const btn = document.getElementById('toggleBtn');
+    form.classList.toggle('hidden');
+    if (form.classList.contains('hidden')) {
+        btn.innerHTML = '<span class="material-icons-outlined text-sm mr-1">add</span>Add Event';
+    } else {
+        btn.innerHTML = '<span class="material-icons-outlined text-sm mr-1">close</span>Cancel';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">System Settings</h1>
+            <p class="text-gray-500">Configure system preferences and features</p>
+        </div>
+        <span class="text-sm text-gray-500">
+            Last modified: {{ site_settings.last_modified|date:"M d, Y H:i" }}
+            {% if site_settings.modified_by %}by {{ site_settings.modified_by.get_full_name }}{% endif %}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Settings Navigation -->
+        <div class="lg:col-span-1">
+            <nav class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-4">
+                <div class="p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="font-semibold text-gray-900 text-sm">Settings</h3>
+                </div>
+                <div class="p-2">
+                    <a href="#branding" class="settings-nav-link active" onclick="showSection('branding')">
+                        <span class="material-icons-outlined text-lg">palette</span>
+                        Branding & Logo
+                    </a>
+                    <a href="#images" class="settings-nav-link" onclick="showSection('images')">
+                        <span class="material-icons-outlined text-lg">image</span>
+                        Images
+                    </a>
+                    <a href="#contact" class="settings-nav-link" onclick="showSection('contact')">
+                        <span class="material-icons-outlined text-lg">contact_mail</span>
+                        Contact Info
+                    </a>
+                    <a href="#social" class="settings-nav-link" onclick="showSection('social')">
+                        <span class="material-icons-outlined text-lg">share</span>
+                        Social Media
+                    </a>
+                    <a href="#financial" class="settings-nav-link" onclick="showSection('financial')">
+                        <span class="material-icons-outlined text-lg">account_balance</span>
+                        Financial
+                    </a>
+                    <a href="#features" class="settings-nav-link" onclick="showSection('features')">
+                        <span class="material-icons-outlined text-lg">toggle_on</span>
+                        Features
+                    </a>
+                    <a href="#security" class="settings-nav-link" onclick="showSection('security')">
+                        <span class="material-icons-outlined text-lg">security</span>
+                        Security
+                    </a>
+                    <a href="#maintenance" class="settings-nav-link" onclick="showSection('maintenance')">
+                        <span class="material-icons-outlined text-lg">build</span>
+                        Maintenance
+                    </a>
+                    <a href="#backup" class="settings-nav-link" onclick="showSection('backup')">
+                        <span class="material-icons-outlined text-lg">backup</span>
+                        Backup & Restore
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Settings Content -->
+        <div class="lg:col-span-3 space-y-6">
+            <!-- Branding Section -->
+            <section id="branding-section" class="settings-section">
+                <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="branding">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-purple-600">palette</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Branding</h2>
+                                <p class="text-sm text-gray-500">Customize appearance</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                                <input type="text" name="site_name" value="{{ site_settings.site_name }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tagline</label>
+                                <input type="text" name="tagline" value="{{ site_settings.tagline }}" class="input-field">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color" name="primary_color" value="{{ site_settings.primary_color }}" class="w-12 h-10 rounded border cursor-pointer">
+                                    <span class="text-sm text-gray-500">{{ site_settings.primary_color }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color" name="secondary_color" value="{{ site_settings.secondary_color }}" class="w-12 h-10 rounded border cursor-pointer">
+                                    <span class="text-sm text-gray-500">{{ site_settings.secondary_color }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Branding</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Images Section -->
+            <section id="images-section" class="settings-section hidden">
+                <form method="POST" enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="images">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-pink-600">image</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Images & Branding</h2>
+                                <p class="text-sm text-gray-500">Logo, favicon, and background images</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Logo -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Site Logo (Upload)</label>
+                                {% if site_settings.site_logo %}
+                                <div class="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
+                                    <img src="{{ site_settings.site_logo.url }}" alt="Current Logo" class="h-16 object-contain">
+                                </div>
+                                {% endif %}
+                                <input type="file" name="site_logo" accept="image/*" class="input-field">
+                                <p class="text-xs text-gray-500 mt-1">Recommended: PNG with transparent background, 200x60px</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Logo URL (Fallback)</label>
+                                <input type="url" name="site_logo_url" value="{{ site_settings.site_logo_url }}" class="input-field" placeholder="https://example.com/logo.png">
+                                <p class="text-xs text-gray-500 mt-1">Used if no logo is uploaded</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Favicon -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Favicon (Upload)</label>
+                                {% if site_settings.site_favicon %}
+                                <div class="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
+                                    <img src="{{ site_settings.site_favicon.url }}" alt="Current Favicon" class="h-8">
+                                </div>
+                                {% endif %}
+                                <input type="file" name="site_favicon" accept="image/*,.ico" class="input-field">
+                                <p class="text-xs text-gray-500 mt-1">Recommended: ICO or PNG, 32x32px</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Favicon URL (Fallback)</label>
+                                <input type="url" name="site_favicon_url" value="{{ site_settings.site_favicon_url }}" class="input-field" placeholder="https://example.com/favicon.ico">
+                            </div>
+                        </div>
+                        
+                        <!-- Login Background -->
+                        <div class="pt-4 border-t border-gray-200">
+                            <h3 class="font-medium text-gray-900 mb-4">Login Page Background</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Background Image (Upload)</label>
+                                    {% if site_settings.login_background %}
+                                    <div class="mb-3 rounded-lg overflow-hidden inline-block border">
+                                        <img src="{{ site_settings.login_background.url }}" alt="Login Background" class="h-24 object-cover">
+                                    </div>
+                                    {% endif %}
+                                    <input type="file" name="login_background" accept="image/*" class="input-field">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Background URL (Fallback)</label>
+                                    <input type="url" name="login_background_url" value="{{ site_settings.login_background_url }}" class="input-field" placeholder="https://example.com/bg.jpg">
+                                    <p class="text-xs text-gray-500 mt-1">Default: Unsplash church image</p>
+                                    {% if site_settings.get_login_background_url %}
+                                    <div class="mt-2 rounded-lg overflow-hidden inline-block border">
+                                        <img src="{{ site_settings.get_login_background_url }}" alt="Preview" class="h-16 object-cover">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer Text -->
+                        <div class="pt-4 border-t border-gray-200">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Footer Text</label>
+                            <input type="text" name="footer_text" value="{{ site_settings.footer_text }}" class="input-field" placeholder=" 2024 Your Church. All rights reserved.">
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Images</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Contact Section -->
+            <section id="contact-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="contact">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-blue-600">contact_mail</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Contact Info</h2>
+                                <p class="text-sm text-gray-500">Church contact details</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input type="email" name="email" value="{{ site_settings.email }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                <input type="tel" name="phone" value="{{ site_settings.phone }}" class="input-field">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                            <textarea name="address" rows="2" class="input-field">{{ site_settings.address }}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                            <input type="url" name="website" value="{{ site_settings.website }}" class="input-field">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Alternate Phone</label>
+                                <input type="tel" name="alternate_phone" value="{{ site_settings.alternate_phone }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Postal Address</label>
+                                <input type="text" name="postal_address" value="{{ site_settings.postal_address }}" class="input-field">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Contact</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Social Media Section -->
+            <section id="social-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="social">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-cyan-600">share</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Social Media</h2>
+                                <p class="text-sm text-gray-500">Social media links & accounts</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle text-blue-600">facebook</span>
+                                    Facebook
+                                </label>
+                                <input type="url" name="facebook_url" value="{{ site_settings.facebook_url }}" class="input-field" placeholder="https://facebook.com/...">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle text-red-600">smart_display</span>
+                                    YouTube
+                                </label>
+                                <input type="url" name="youtube_url" value="{{ site_settings.youtube_url }}" class="input-field" placeholder="https://youtube.com/...">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle text-pink-600">camera_alt</span>
+                                    Instagram
+                                </label>
+                                <input type="url" name="instagram_url" value="{{ site_settings.instagram_url }}" class="input-field" placeholder="https://instagram.com/...">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle text-blue-400">tag</span>
+                                    Twitter / X
+                                </label>
+                                <input type="url" name="twitter_url" value="{{ site_settings.twitter_url }}" class="input-field" placeholder="https://twitter.com/...">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle text-green-600">chat</span>
+                                    WhatsApp Number
+                                </label>
+                                <input type="text" name="whatsapp_number" value="{{ site_settings.whatsapp_number }}" class="input-field" placeholder="+233201234567">
+                                <p class="text-xs text-gray-500 mt-1">Include country code</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle text-gray-800">music_note</span>
+                                    TikTok
+                                </label>
+                                <input type="url" name="tiktok_url" value="{{ site_settings.tiktok_url }}" class="input-field" placeholder="https://tiktok.com/@...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Social Media</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Financial Section -->
+            <section id="financial-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="financial">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-green-600">account_balance</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Financial</h2>
+                                <p class="text-sm text-gray-500">Currency and fiscal settings</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Currency Symbol</label>
+                                <input type="text" name="currency_symbol" value="{{ site_settings.currency_symbol }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Currency Code</label>
+                                <input type="text" name="currency_code" value="{{ site_settings.currency_code }}" class="input-field" maxlength="3">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Commission %</label>
+                                <input type="number" name="commission_percentage" value="{{ site_settings.commission_percentage }}" step="0.01" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Fiscal Year</label>
+                                <input type="number" name="current_fiscal_year" value="{{ site_settings.current_fiscal_year }}" class="input-field">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Financial</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Features Section -->
+            <section id="features-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="features">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-indigo-600">toggle_on</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Features</h2>
+                                <p class="text-sm text-gray-500">Toggle system modules</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <label class="flex items-center gap-2 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="enable_pwa" {% if site_settings.enable_pwa %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm font-medium">PWA</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="enable_contributions" {% if site_settings.enable_contributions %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm font-medium">Contributions</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="enable_expenditure" {% if site_settings.enable_expenditure %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm font-medium">Expenditure</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="enable_attendance" {% if site_settings.enable_attendance %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm font-medium">Attendance</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="enable_sermons" {% if site_settings.enable_sermons %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm font-medium">Sermons</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="enable_payroll" {% if site_settings.enable_payroll %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm font-medium">Payroll</span>
+                            </label>
+                        </div>
+                        <div class="pt-4 border-t border-gray-100">
+                            <label class="flex items-center gap-3 p-4 rounded-lg border hover:bg-blue-50 cursor-pointer">
+                                <input type="checkbox" name="allow_auditor_payroll_access" {% if site_settings.allow_auditor_payroll_access %}checked{% endif %} class="w-4 h-4 rounded">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-900">Allow Auditor Payroll Oversight</span>
+                                    <p class="text-xs text-gray-500">Grants auditors read-only access to payroll dashboards when enabled.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Features</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Security Section -->
+            <section id="security-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="security">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-red-600">security</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Security</h2>
+                                <p class="text-sm text-gray-500">Authentication settings</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Session Timeout (min)</label>
+                                <input type="number" name="session_timeout_minutes" value="{{ site_settings.session_timeout_minutes }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Login Attempts</label>
+                                <input type="number" name="max_login_attempts" value="{{ site_settings.max_login_attempts }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Lockout Duration (min)</label>
+                                <input type="number" name="lockout_duration_minutes" value="{{ site_settings.lockout_duration_minutes }}" class="input-field">
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="require_strong_password" {% if site_settings.require_strong_password %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm">Require Strong Password</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="enable_two_factor_auth" {% if site_settings.enable_two_factor_auth %}checked{% endif %} class="w-4 h-4 rounded">
+                                <span class="text-sm">Two-Factor Auth</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Security</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Maintenance Section -->
+            <section id="maintenance-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="maintenance">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-yellow-600">build</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Maintenance</h2>
+                                <p class="text-sm text-gray-500">System availability</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <label class="flex items-center gap-3 p-4 rounded-lg border-2 {% if site_settings.maintenance_mode %}border-yellow-400 bg-yellow-50{% else %}border-gray-200{% endif %} cursor-pointer">
+                            <input type="checkbox" name="maintenance_mode" {% if site_settings.maintenance_mode %}checked{% endif %} class="w-5 h-5 rounded">
+                            <span class="font-medium">Enable Maintenance Mode</span>
+                        </label>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                            <textarea name="maintenance_message" rows="2" class="input-field">{{ site_settings.maintenance_message }}</textarea>
+                        </div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Maintenance</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Backup Section -->
+            <section id="backup-section" class="settings-section hidden">
+                <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="backup">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                                <span class="material-icons-outlined text-cyan-600">backup</span>
+                            </div>
+                            <div>
+                                <h2 class="font-semibold text-gray-900">Backup</h2>
+                                <p class="text-sm text-gray-500">Data retention</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <label class="flex items-center gap-3 p-4 rounded-lg border cursor-pointer">
+                            <input type="checkbox" name="auto_backup_enabled" {% if site_settings.auto_backup_enabled %}checked{% endif %} class="w-5 h-5 rounded">
+                            <span class="font-medium">Auto Backup</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Frequency (days)</label>
+                                <input type="number" name="backup_frequency_days" value="{{ site_settings.backup_frequency_days }}" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Retention (years)</label>
+                                <input type="number" name="data_retention_years" value="{{ site_settings.data_retention_years }}" class="input-field">
+                            </div>
+                        </div>
+                        <a href="{% url 'core:data_backup' %}" class="btn-secondary inline-flex">
+                            <span class="material-icons-outlined mr-2">download</span>
+                            Manual Backup
+                        </a>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                        <button type="submit" class="btn-primary">Save Backup</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+.settings-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+.settings-nav-link:hover { background: #f3f4f6; color: #374151; }
+.settings-nav-link.active { background: #eff6ff; color: #2563eb; }
+.settings-section.hidden { display: none; }
+</style>
+
+<script>
+function showSection(id) {
+    document.querySelectorAll('.settings-section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id + '-section').classList.remove('hidden');
+    document.querySelectorAll('.settings-nav-link').forEach(l => l.classList.remove('active'));
+    event.target.closest('.settings-nav-link').classList.add('active');
+}
+</script>
+{% endblock %}

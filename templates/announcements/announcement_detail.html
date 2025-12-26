@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load tz %}
+
+{% block title %}{{ announcement.title }} - Announcement{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
+    <!-- Header with Back Button -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="{% url 'announcements:list' %}" class="mr-4 text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                <span class="material-icons-outlined text-2xl">arrow_back</span>
+                <span class="sr-only">Back to Announcements</span>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Announcement Details</h1>
+                <p class="text-sm text-gray-500">Viewing announcement details</p>
+            </div>
+        </div>
+        
+        {% if user.is_authenticated and user.role != 'member' %}
+        {% if user == announcement.created_by or user.is_mission_admin %}
+        <div class="flex items-center space-x-2">
+            <a href="{% url 'announcements:edit' announcement.id %}" 
+               class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <span class="material-icons-outlined text-base mr-1">edit</span>
+                Edit
+            </a>
+            <button type="button" 
+                    onclick="openDeleteModal('{% url 'announcements:delete' announcement.id %}', '{{ announcement.title|escapejs }}')"
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                <span class="material-icons-outlined text-base mr-1">delete</span>
+                Delete
+            </button>
+        </div>
+        {% endif %}
+    {% endif %}
+    </div>
+
+    <!-- Announcement Card -->
+    <article class="bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+        <!-- Announcement Image -->
+        {% if announcement.image %}
+        <div class="h-64 md:h-80 w-full overflow-hidden">
+            <img src="{{ announcement.image.url }}" 
+                 alt="{{ announcement.title }}" 
+                 class="w-full h-full object-cover transition-transform duration-700 hover:scale-105">
+        </div>
+        {% endif %}
+        
+        <!-- Announcement Content -->
+        <div class="p-6 md:p-8">
+            <!-- Badges -->
+            <div class="flex flex-wrap items-center gap-2 mb-4">
+                {% if announcement.priority == 'high' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    <span class="material-icons-outlined text-sm mr-1">priority_high</span>
+                    Urgent Announcement
+                </span>
+                {% elif announcement.priority == 'medium' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <span class="material-icons-outlined text-sm mr-1">warning_amber</span>
+                    Important
+                </span>
+                {% endif %}
+                
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span class="material-icons-outlined text-sm mr-1">
+                        {% if announcement.scope == 'mission' %}public
+                        {% elif announcement.scope == 'area' %}location_city
+                        {% elif announcement.scope == 'district' %}account_balance
+                        {% else %}location_on{% endif %}
+                    </span>
+                    {{ announcement.scope|title }} Level
+                </span>
+                
+                {% if announcement.expiry_date %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <span class="material-icons-outlined text-sm mr-1">schedule</span>
+                    Expires {{ announcement.expiry_date|date:"M d, Y" }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <!-- Title -->
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                {{ announcement.title }}
+            </h1>
+            
+            <!-- Meta Information -->
+            <div class="flex flex-wrap items-center text-sm text-gray-500 mb-6 gap-x-4 gap-y-2">
+                <div class="flex items-center">
+                    <span class="material-icons-outlined text-base mr-1">person_outline</span>
+                    <span>Posted by <span class="font-medium text-gray-700">{{ announcement.created_by.get_full_name|default:"System" }}</span></span>
+                </div>
+                <div class="flex items-center">
+                    <span class="material-icons-outlined text-base mr-1">schedule</span>
+                    <span>Published on <span class="font-medium text-gray-700">{{ announcement.publish_date|date:"F d, Y" }}</span> at {{ announcement.publish_date|time:"g:i A" }}</span>
+                </div>
+                {% if announcement.branch %}
+                <div class="flex items-center">
+                    <span class="material-icons-outlined text-base mr-1">church</span>
+                    <span>Branch: <span class="font-medium text-gray-700">{{ announcement.branch.name }}</span></span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Content -->
+            <div class="prose prose-lg max-w-none text-gray-700 mb-8">
+                {{ announcement.content|linebreaks }}
+            </div>
+            
+            <!-- Attachments (if any) -->
+            {% if announcement.attachments.exists %}
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <h3 class="text-sm font-medium text-gray-500 mb-3">ATTACHMENTS</h3>
+                <ul class="space-y-2">
+                    {% for attachment in announcement.attachments.all %}
+                    <li>
+                        <a href="{{ attachment.file.url }}" 
+                           target="_blank" 
+                           class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
+                            <span class="material-icons-outlined text-gray-400 mr-3">
+                                {% if attachment.file.name|lower|slice:'-4:' == '.pdf' %}picture_as_pdf
+                                {% elif attachment.file.name|lower|slice:'-4:' in '.doc,.docx,.odt' %}description
+                                {% elif attachment.file.name|lower|slice:'-4:' in '.xls,.xlsx,.csv' %}table_chart
+                                {% else %}insert_drive_file{% endif %}
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">
+                                    {{ attachment.get_filename }}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    {{ attachment.file.size|filesizeformat }} • {{ attachment.file.name|slice:'-3:'|upper }}
+                                </p>
+                            </div>
+                            <span class="material-icons-outlined text-gray-400">download</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- View Count -->
+            <div class="mt-8 pt-6 border-t border-gray-200 flex items-center justify-between">
+                <div class="flex items-center text-sm text-gray-500">
+                    <span class="material-icons-outlined text-base mr-1">visibility</span>
+                    <span>Viewed {{ announcement.view_count }} time{{ announcement.view_count|pluralize }}</span>
+                </div>
+                <a href="{% url 'announcements:list' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">
+                    Back to all announcements <span aria-hidden="true">&rarr;</span>
+                </a>
+            </div>
+        </div>
+    </article>
+</div>
+
+<!-- Delete Confirmation Modal (reusing the same modal from list view) -->
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 z-50 overflow-y-auto hidden" 
+     aria-labelledby="modal-title" 
+     role="dialog" 
+     aria-modal="true">
+    <div class="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeDeleteModal()"></div>
+
+        <span class="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="modal-title">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <span class="material-icons-outlined text-red-600">warning</span>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Delete Announcement</h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">
+                                Are you sure you want to delete this announcement? This action cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Delete
+                    </button>
+                </form>
+                <button type="button" onclick="closeDeleteModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDeleteModal(url, title) {
+    const modal = document.getElementById('deleteModal');
+    const form = document.getElementById('deleteForm');
+    form.action = url;
+    modal.classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.add('hidden');
+}
+</script>
+{% endblock %}

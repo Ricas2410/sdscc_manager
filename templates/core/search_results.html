@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Search Header -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Search Results</h1>
+                    {% if query %}
+                    <p class="mt-2 text-sm text-gray-600">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">search</span>
+                        Showing results for: <span class="font-semibold">"{{ query }}"</span>
+                    </p>
+                    {% else %}
+                    <p class="mt-2 text-sm text-gray-600">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                        Enter a search term (minimum 2 characters)
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="flex gap-3">
+                    <a href="javascript:history.back()" class="btn btn-secondary">
+                        <span class="material-icons-outlined mr-2">arrow_back</span>Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if query and query|length >= 2 %}
+    <!-- Search Statistics -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <span class="material-icons-outlined text-3xl text-blue-600">people</span>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ results.members|length }}</p>
+                <p class="text-sm text-gray-500">Members</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <span class="material-icons-outlined text-3xl text-green-600">campaign</span>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ results.announcements|length }}</p>
+                <p class="text-sm text-gray-500">Announcements</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <span class="material-icons-outlined text-3xl text-purple-600">menu_book</span>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ results.sermons|length }}</p>
+                <p class="text-sm text-gray-500">Sermons</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <span class="material-icons-outlined text-3xl text-orange-600">groups</span>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ results.groups|length }}</p>
+                <p class="text-sm text-gray-500">Groups</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body text-center">
+                <span class="material-icons-outlined text-3xl text-teal-600">church</span>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ results.branches|length }}</p>
+                <p class="text-sm text-gray-500">Branches</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Results -->
+    {% if results.members %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">people</span>
+                Members ({{ results.members|length }})
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for member in results.members %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                            {% if member.profile_picture %}
+                            <img class="w-12 h-12 rounded-full object-cover" src="{{ member.profile_picture.url }}" alt="{{ member.get_full_name }}">
+                            {% else %}
+                            <span class="text-sm font-medium text-primary-600">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ member.get_full_name }}</p>
+                            <p class="text-sm text-gray-500">
+                                <span class="font-mono">{{ member.member_id }}</span>
+                                {% if member.branch %} • {{ member.branch.name }}{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if member.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-secondary">Inactive</span>
+                        {% endif %}
+                        <a href="{% url 'members:detail' member.id %}" class="btn btn-sm btn-secondary">View</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if results.members|length >= 10 %}
+            <div class="mt-4 text-center">
+                <a href="{% url 'members:list' %}?q={{ query }}" class="text-primary-600 hover:text-primary-800 text-sm font-medium">
+                    View all members matching "{{ query }}" →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Announcements Results -->
+    {% if results.announcements %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">campaign</span>
+                Announcements ({{ results.announcements|length }})
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for announcement in results.announcements %}
+                <div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-900">{{ announcement.title }}</h3>
+                            <p class="text-sm text-gray-600 mt-1">{{ announcement.content|truncatewords:20 }}</p>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <span class="material-icons-outlined text-xs align-middle mr-1">calendar_today</span>
+                                {{ announcement.created_at|date:"F d, Y" }}
+                            </p>
+                        </div>
+                        <a href="{% url 'announcements:detail' announcement.id %}" class="btn btn-sm btn-secondary">View</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sermons Results -->
+    {% if results.sermons %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">menu_book</span>
+                Sermons ({{ results.sermons|length }})
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for sermon in results.sermons %}
+                <div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-medium text-gray-900">{{ sermon.title }}</h3>
+                            <p class="text-sm text-gray-600 mt-1">{{ sermon.summary|truncatewords:15 }}</p>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <span class="material-icons-outlined text-xs align-middle mr-1">person</span>
+                                {% if sermon.preacher %}{{ sermon.preacher.get_full_name }}{% elif sermon.preacher_name %}{{ sermon.preacher_name }}{% else %}Unknown{% endif %} • 
+                                <span class="material-icons-outlined text-xs align-middle mr-1">menu_book</span>
+                                {{ sermon.scripture_reference }} •
+                                <span class="material-icons-outlined text-xs align-middle mr-1">calendar_today</span>
+                                {{ sermon.date_preached|date:"M d, Y"|default:"No date" }}
+                            </p>
+                        </div>
+                        <a href="{% url 'sermons:detail' sermon.id %}" class="btn btn-sm btn-secondary">View</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Groups Results -->
+    {% if results.groups %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">groups</span>
+                Groups ({{ results.groups|length }})
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for group in results.groups %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                            <span class="material-icons-outlined text-orange-600">groups</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ group.name }}</p>
+                            <p class="text-sm text-gray-500">
+                                {{ group.category|default:"No category" }}{% if group.branch %} • {{ group.branch.name }}{% endif %}
+                            </p>
+                            {% if group.leader %}
+                            <p class="text-xs text-gray-400">Leader: {{ group.leader.get_full_name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a href="{% url 'groups:detail' group.id %}" class="btn btn-sm btn-secondary">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Branches Results -->
+    {% if results.branches %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">church</span>
+                Branches ({{ results.branches|length }})
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for branch in results.branches %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                            <span class="material-icons-outlined text-teal-600">church</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ branch.name }}</p>
+                            <p class="text-sm text-gray-500">
+                                {{ branch.code|default:"No code" }} • {{ branch.district.name }} • {{ branch.district.area.name }}
+                            </p>
+                            {% if branch.pastor %}
+                            <p class="text-xs text-gray-400">Pastor: {{ branch.pastor.get_full_name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a href="{% url 'core:branches' %}" class="btn btn-sm btn-secondary">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Results -->
+    {% if not search_stats.has_results %}
+    <div class="card">
+        <div class="card-body text-center py-12">
+            <span class="material-icons-outlined text-5xl text-gray-300">search_off</span>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No results found</h3>
+            <p class="mt-2 text-gray-500">No members, announcements, sermons, groups, or branches match your search for "{{ query }}"</p>
+            <div class="mt-6 space-y-2">
+                <p class="text-sm text-gray-400">Try:</p>
+                <ul class="text-sm text-gray-400 space-y-1">
+                    <li>• Checking your spelling</li>
+                    <li>• Using more general terms</li>
+                    <li>• Searching for member names, IDs, sermon titles, or branch names</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Search Prompt -->
+    <div class="card">
+        <div class="card-body text-center py-12">
+            <span class="material-icons-outlined text-5xl text-gray-300">search</span>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Start a search</h3>
+            <p class="mt-2 text-gray-500">Enter at least 2 characters to search for members, announcements, and contributions</p>
+            <div class="mt-6 max-w-md mx-auto">
+                <form method="get" action="{% url 'core:search' %}">
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <span class="material-icons-outlined">search</span>
+                        </span>
+                        <input type="text" name="q" 
+                            placeholder="Search members, announcements..." 
+                            class="form-input pl-10 w-full"
+                            autofocus>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full mt-3">
+                        <span class="material-icons-outlined mr-2">search</span>Search
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

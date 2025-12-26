@@ -1,0 +1,1154 @@
+<!-- Desktop Sidebar -->
+<div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+    <div class="flex grow flex-col overflow-y-auto bg-slate-800">
+        <!-- Logo -->
+        <div class="flex h-16 shrink-0 items-center px-6 border-b border-slate-700">
+            <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3">
+                <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-lg">S</span>
+                </div>
+                <div>
+                    <span class="text-lg font-bold text-white">SDSCC</span>
+                    <p class="text-[10px] text-slate-400 -mt-1">Church Management</p>
+                </div>
+            </a>
+        </div>
+        
+        {% if user.is_mission_admin or user.is_auditor or user.is_pastor or user.is_branch_executive %}
+        <!-- Sidebar Search -->
+        <div class="px-4 py-3 border-b border-slate-700">
+            <div class="relative">
+                <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                <input type="text" id="sidebarSearch" placeholder="Search menu..." 
+                    class="w-full bg-slate-700/50 text-white text-sm pl-10 pr-4 py-2 rounded-lg border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none placeholder-slate-400">
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Navigation -->
+        <nav class="flex flex-1 flex-col py-4 overflow-y-auto" id="sidebarNav">
+            <!-- Dashboard - All Users -->
+            <a href="{% url 'core:dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">dashboard</span>
+                Dashboard
+            </a>
+            <a href="{% url 'core:calendar' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+                Church Calendar
+            </a>
+            
+            {% if user.is_mission_admin %}
+            <!-- ============ MISSION ADMIN NAVIGATION ============ -->
+            <div class="sidebar-section">Church Structure</div>
+            <a href="{% url 'core:areas' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">public</span>
+                Areas
+            </a>
+            <a href="{% url 'core:districts' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">location_city</span>
+                Districts
+            </a>
+            <a href="{% url 'core:branches' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">church</span>
+                Branches
+            </a>
+            
+            <div class="sidebar-section">Financial Setup</div>
+            <a href="{% url 'contributions:types' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">category</span>
+                Contribution Types
+            </a>
+            <a href="{% url 'expenditure:categories' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">folder</span>
+                Expense Categories
+            </a>
+            <a href="{% url 'core:tithe_targets' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+                Monthly Tithe Targets
+            </a>
+            
+            <div class="sidebar-section">Contributions</div>
+            <a href="{% url 'contributions:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                All Contributions
+            </a>
+            <a href="{% url 'contributions:weekly_entry' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_today</span>
+                Weekly Entry
+            </a>
+            <a href="{% url 'contributions:individual_entry' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person</span>
+                Individual Entry
+            </a>
+            <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+                Tithe Performance
+            </a>
+            <a href="{% url 'contributions:commission_management' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">paid</span>
+                Commission Management
+            </a>
+            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittances
+            </a>
+            <a href="{% url 'contributions:mission_returns' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+                Mission Returns
+            </a>
+            
+            <div class="sidebar-section">Expenditures</div>
+            <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                All Expenditures
+            </a>
+            <a href="{% url 'expenditure:add' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+                Add Expenditure
+            </a>
+            <a href="{% url 'expenditure:utilities' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">bolt</span>
+                Utility Bills
+            </a>
+            <a href="{% url 'expenditure:welfare' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Welfare Payments
+            </a>
+            <a href="{% url 'expenditure:assets' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">inventory_2</span>
+                Assets & Inventory
+            </a>
+            
+            <div class="sidebar-section">Staff & Payroll</div>
+            <a href="{% url 'payroll:staff_management' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">badge</span>
+                Staff Management
+            </a>
+            <a href="{% url 'payroll:payroll_processing' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+                Payroll Processing
+            </a>
+            <a href="{% url 'payroll:commissions' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">paid</span>
+                Pastor Commissions
+            </a>
+            
+            <div class="sidebar-section">Users & Members</div>
+            <a href="{% url 'accounts:users' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">manage_accounts</span>
+                User Management
+            </a>
+            <a href="{% url 'accounts:pastors_list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">church</span>
+                Pastors
+            </a>
+            <a href="{% url 'members:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                All Members
+            </a>
+            <a href="{% url 'members:add' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person_add</span>
+                Add Member
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                Groups & Ministries
+            </a>
+            <a href="{% url 'attendance:tracking' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">people</span>
+                Attendance Tracking
+            </a>
+            
+            <div class="sidebar-section">Reports & Audit</div>
+            <a href="{% url 'reports:index' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">dashboard</span>Reports Dashboard
+            </a>
+            <a href="{% url 'reports:comprehensive_statistics' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">analytics</span>Comprehensive Statistics
+            </a>
+            <a href="{% url 'reports:member_contributions' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">people</span>Member Contributions
+            </a>
+            <a href="{% url 'reports:contributions' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">trending_up</span>Contribution Reports
+            </a>
+            <a href="{% url 'reports:expenditure' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">trending_down</span>Expenditure Reports
+            </a>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">calendar_month</span>Monthly Reports
+            </a>
+            <a href="{% url 'auditing:logs' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">history</span>Audit Logs
+            </a>
+            <a href="{% url 'auditing:flags' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">flag</span>Audit Flags
+            </a>
+            
+            <div class="sidebar-section">Communication</div>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Prayer Requests
+            </a>
+            
+            <div class="sidebar-section">Outreach</div>
+            <a href="{% url 'core:visitors' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person_add</span>
+                Visitor Follow-up
+            </a>
+            <a href="{% url 'core:celebrations' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">cake</span>
+                Celebrations
+            </a>
+            
+            <div class="sidebar-section">System</div>
+            <a href="{% url 'core:calendar_manage' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">edit_calendar</span>
+                Manage Calendar
+            </a>
+            <a href="{% url 'core:import_members' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">upload_file</span>
+                Import Members
+            </a>
+            <a href="{% url 'core:data_backup' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">backup</span>
+                Data Backup
+            </a>
+            <a href="{% url 'core:month_close' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">lock</span>
+                Month Close
+            </a>
+            <a href="{% url 'core:settings' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">settings</span>
+                System Settings
+            </a>
+            
+            {% elif user.is_branch_executive or user.is_district_executive or user.is_area_executive %}
+            <!-- ============ BRANCH/DISTRICT/AREA EXECUTIVE ============ -->
+            <div class="sidebar-section">Branch Operations</div>
+            <a href="{% url 'members:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                Members
+            </a>
+            <a href="{% url 'attendance:take' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">fact_check</span>
+                Take Attendance
+            </a>
+            <a href="{% url 'attendance:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Attendance History
+            </a>
+            <a href="{% url 'attendance:visitors' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person_add</span>
+                Visitor Tracking
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                Groups
+            </a>
+            
+            <div class="sidebar-section">Financial Reports</div>
+            <a href="{% url 'core:branch_financial_statistics' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+                Financial Statistics
+            </a>
+            
+            <div class="sidebar-section">Contributions</div>
+            <a href="{% url 'contributions:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                Contributions
+            </a>
+            <a href="{% url 'contributions:weekly_entry' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_today</span>
+                Weekly Entry
+            </a>
+            <a href="{% url 'contributions:individual_entry' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person_add</span>
+                Individual Entry
+            </a>
+            <a href="{% url 'contributions:add' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+                Add Contribution
+            </a>
+            <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">analytics</span>
+                Tithe Performance
+            </a>
+            
+            <div class="sidebar-section">Expenditures</div>
+            <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                Expenditures
+            </a>
+            <a href="{% url 'expenditure:add' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+                Add Expense
+            </a>
+            <a href="{% url 'expenditure:utilities' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">bolt</span>
+                Utility Bills
+            </a>
+            <a href="{% url 'expenditure:welfare' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Welfare Payments
+            </a>
+            <a href="{% url 'expenditure:assets' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">inventory_2</span>
+                Assets
+            </a>
+            
+            <div class="sidebar-section">Remittance</div>
+            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittances
+            </a>
+            <a href="{% url 'contributions:remittance_add' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">send</span>
+                Submit Remittance
+            </a>
+            
+            <div class="sidebar-section">Communication</div>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Prayer Requests
+            </a>
+            
+            <div class="sidebar-section">Outreach</div>
+            <a href="{% url 'core:visitors' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person_add</span>
+                Visitor Follow-up
+            </a>
+            <a href="{% url 'core:celebrations' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">cake</span>
+                Celebrations
+            </a>
+            
+            <div class="sidebar-section">Reports</div>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Monthly Reports
+            </a>
+            <a href="{% url 'reports:index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
+                Other Reports
+            </a>
+            
+            {% elif user.is_pastor %}
+            <!-- ============ PASTOR ============ -->
+            <div class="sidebar-section">My Church</div>
+            <a href="{% url 'members:pastor_manage' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">manage_accounts</span>
+                Manage Members
+            </a>
+            <a href="{% url 'members:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                My Flock
+            </a>
+            <a href="{% url 'attendance:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">fact_check</span>
+                Attendance
+            </a>
+            
+            <div class="sidebar-section">Ministry</div>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                Groups
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Prayer Requests
+            </a>
+            
+            <div class="sidebar-section">Outreach</div>
+            <a href="{% url 'core:visitors' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">person_add</span>
+                Visitor Follow-up
+            </a>
+            <a href="{% url 'core:celebrations' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">cake</span>
+                Celebrations
+            </a>
+            
+            <div class="sidebar-section">Finance</div>
+            <a href="{% url 'contributions:my_commission' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">paid</span>
+                My Commission
+            </a>
+            <a href="{% url 'payroll:my_payroll' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+                My Payroll
+            </a>
+            
+            {% elif user.is_auditor %}
+            <!-- ============ AUDITOR ============ -->
+            <div class="sidebar-section">Financial Management</div>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Monthly Reports
+            </a>
+            <a href="{% url 'contributions:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                Contributions
+            </a>
+            <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                Expenditures
+            </a>
+            {% if site_settings.allow_auditor_payroll_access %}
+            <a href="{% url 'payroll:runs' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">people</span>
+                Payroll
+            </a>
+            {% endif %}
+            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittances
+            </a>
+            
+            <div class="sidebar-section">Audit & Compliance</div>
+            <a href="{% url 'auditing:logs' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Audit Logs
+            </a>
+            <a href="{% url 'auditing:flags' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">flag</span>
+                Audit Flags
+            </a>
+            <a href="{% url 'core:auditor_branch_statistics' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">account_balance</span>
+                Branch Statistics
+            </a>
+            <a href="{% url 'attendance:tracking' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                Attendance Tracking
+            </a>
+            
+            <div class="sidebar-section">Reports & Analytics</div>
+            <a href="{% url 'reports:index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
+                Financial Reports
+            </a>
+            <a href="{% url 'reports:contributions' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+                Contribution Analysis
+            </a>
+            <a href="{% url 'reports:expenditure' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">trending_down</span>
+                Expenditure Analysis
+            </a>
+            <a href="{% url 'reports:attendance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">group_work</span>
+                Attendance Reports
+            </a>
+            
+            {% else %}
+            <!-- ============ MEMBER ============ -->
+            <div class="sidebar-section">My Giving</div>
+            <a href="{% url 'contributions:my_contributions' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                My Contributions
+            </a>
+            <a href="{% url 'contributions:my_history' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Contribution History
+            </a>
+            <a href="{% url 'core:my_statement' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">description</span>
+                Get Statement
+            </a>
+            
+            <div class="sidebar-section">My Church</div>
+            <a href="{% url 'attendance:my_attendance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">event_available</span>
+                My Attendance
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                My Groups
+            </a>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">favorite</span>
+                Prayer Requests
+            </a>
+            
+            <div class="sidebar-section">Financial Reports</div>
+            <a href="{% url 'core:branch_financial_statistics' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+                Financial Statistics
+            </a>
+            {% if site_settings.show_archives %}
+            <a href="{% url 'core:archives' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">archive</span>
+                Archives
+            </a>
+            {% endif %}
+            {% endif %}
+            
+            <!-- Profile & Logout - All Users -->
+            <div class="mt-auto pt-4 border-t border-slate-700 mx-4">
+                <a href="{% url 'accounts:profile' %}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700 transition-colors">
+                    {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" class="h-10 w-10 rounded-full object-cover border-2 border-slate-600">
+                    {% else %}
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                        <span class="text-white font-medium">{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ user.get_full_name }}</p>
+                        <p class="text-xs text-slate-400 truncate">{{ user.get_role_display }}</p>
+                    </div>
+                </a>
+                <a href="{% url 'accounts:logout' %}" class="flex items-center gap-3 px-3 py-2 mt-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                    <span class="material-icons-outlined text-xl">logout</span>
+                    <span class="text-sm">Sign Out</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<!-- Mobile Menu Button (in topbar) handled separately -->
+<!-- Mobile Sidebar -->
+<div id="mobile-sidebar" class="sidebar-mobile fixed inset-y-0 left-0 z-50 w-72 bg-slate-800 transform -translate-x-full lg:hidden shadow-2xl flex flex-col">
+    <div class="flex h-16 items-center justify-between px-6 border-b border-slate-700 flex-shrink-0">
+        <span class="text-lg font-bold text-white">SDSCC</span>
+        <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700">
+            <span class="material-icons">close</span>
+        </button>
+    </div>
+    
+    {% if user.is_mission_admin or user.is_auditor or user.is_pastor or user.is_branch_executive %}
+    <!-- Sidebar Search -->
+    <div class="px-4 py-3 border-b border-slate-700 flex-shrink-0">
+        <div class="relative">
+            <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+            <input type="text" id="mobileSidebarSearch" placeholder="Search menu..." 
+                class="w-full bg-slate-700/50 text-white text-sm pl-10 pr-4 py-2 rounded-lg border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none placeholder-slate-400">
+        </div>
+    </div>
+    {% endif %}
+    
+    <nav class="flex-1 overflow-y-auto px-4 py-4" id="mobileSidebarNav">
+        <!-- Dashboard - All Users -->
+        <a href="{% url 'core:dashboard' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">dashboard</span>
+            Dashboard
+        </a>
+        <a href="{% url 'core:calendar' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+            Church Calendar
+        </a>
+        
+        {% if user.is_mission_admin %}
+        <!-- ============ MISSION ADMIN NAVIGATION ============ -->
+        <div class="sidebar-section">Church Structure</div>
+        <a href="{% url 'core:areas' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">public</span>
+            Areas
+        </a>
+        <a href="{% url 'core:districts' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">location_city</span>
+            Districts
+        </a>
+        <a href="{% url 'core:branches' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">church</span>
+            Branches
+        </a>
+        
+        <div class="sidebar-section">Financial Setup</div>
+        <a href="{% url 'contributions:types' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">category</span>
+            Contribution Types
+        </a>
+        <a href="{% url 'expenditure:categories' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">folder</span>
+            Expense Categories
+        </a>
+        <a href="{% url 'core:tithe_targets' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+            Monthly Tithe Targets
+        </a>
+        
+        <div class="sidebar-section">Contributions</div>
+        <a href="{% url 'contributions:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">payments</span>
+            All Contributions
+        </a>
+        <a href="{% url 'contributions:weekly_entry' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">calendar_today</span>
+            Weekly Entry
+        </a>
+        <a href="{% url 'contributions:individual_entry' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">person</span>
+            Individual Entry
+        </a>
+        <a href="{% url 'contributions:add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+            Add Contribution
+        </a>
+        <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+            Tithe Performance
+        </a>
+        <a href="{% url 'contributions:commission_management' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">paid</span>
+            Commission Management
+        </a>
+        <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+            Remittances
+        </a>
+        <a href="{% url 'contributions:remittance_add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">send</span>
+            Submit Remittance
+        </a>
+        <a href="{% url 'contributions:mission_returns' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+            Mission Returns
+        </a>
+        
+        <div class="sidebar-section">Expenditures</div>
+        <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+            All Expenditures
+        </a>
+        <a href="{% url 'expenditure:add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+            Add Expenditure
+        </a>
+        <a href="{% url 'expenditure:utilities' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">bolt</span>
+            Utility Bills
+        </a>
+        <a href="{% url 'expenditure:welfare' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            Welfare Payments
+        </a>
+        <a href="{% url 'expenditure:assets' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">inventory_2</span>
+            Assets & Inventory
+        </a>
+        
+        <div class="sidebar-section">Staff & Payroll</div>
+        <a href="{% url 'payroll:staff_management' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">badge</span>
+            Staff Management
+        </a>
+        <a href="{% url 'payroll:payroll_processing' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+            Payroll Processing
+        </a>
+        <a href="{% url 'payroll:commissions' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">paid</span>
+            Pastor Commissions
+        </a>
+        
+        <div class="sidebar-section">Users & Members</div>
+        <a href="{% url 'accounts:users' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">manage_accounts</span>
+            User Management
+        </a>
+        <a href="{% url 'accounts:pastors_list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">church</span>
+            Pastors
+        </a>
+        <a href="{% url 'members:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">groups</span>
+            All Members
+        </a>
+        <a href="{% url 'members:add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">person_add</span>
+            Add Member
+        </a>
+        <a href="{% url 'groups:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+            Groups & Ministries
+        </a>
+        <a href="{% url 'attendance:tracking' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">people</span>
+            Attendance Tracking
+        </a>
+        
+        <div class="sidebar-section">Reports & Audit</div>
+        <a href="{% url 'reports:index' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">assessment</span>
+            Reports
+        </a>
+        <a href="{% url 'auditing:logs' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">history</span>
+            Audit Logs
+        </a>
+        
+        <div class="sidebar-section">Communication</div>
+        <a href="{% url 'announcements:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">campaign</span>
+            Announcements
+        </a>
+        <a href="{% url 'sermons:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+            Sermons
+        </a>
+        <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            Prayer Requests
+        </a>
+        
+        <div class="sidebar-section">Outreach</div>
+        <a href="{% url 'core:visitors' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">person_add</span>
+            Visitor Follow-up
+        </a>
+        <a href="{% url 'core:celebrations' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">cake</span>
+            Celebrations
+        </a>
+        
+        <div class="sidebar-section">System</div>
+        <a href="{% url 'core:calendar_manage' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">edit_calendar</span>
+            Manage Calendar
+        </a>
+        <a href="{% url 'core:import_members' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">upload_file</span>
+            Import Members
+        </a>
+        <a href="{% url 'core:data_backup' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">backup</span>
+            Data Backup
+        </a>
+        <a href="{% url 'core:settings' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">settings</span>
+            System Settings
+        </a>
+        
+        {% elif user.is_branch_executive or user.is_district_executive or user.is_area_executive %}
+        <!-- ============ BRANCH/DISTRICT/AREA EXECUTIVE ============ -->
+        <div class="sidebar-section">Branch Operations</div>
+        <a href="{% url 'members:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">groups</span>
+            Members
+        </a>
+        <a href="{% url 'attendance:take' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">fact_check</span>
+            Take Attendance
+        </a>
+        <a href="{% url 'attendance:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">history</span>
+            Attendance History
+        </a>
+        <a href="{% url 'groups:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+            Groups
+        </a>
+        
+        <div class="sidebar-section">Contributions</div>
+        <a href="{% url 'contributions:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">payments</span>
+            Contributions
+        </a>
+        <a href="{% url 'contributions:weekly_entry' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">calendar_today</span>
+            Weekly Entry
+        </a>
+        <a href="{% url 'contributions:individual_entry' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">person_add</span>
+            Individual Entry
+        </a>
+        <a href="{% url 'contributions:add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+            Add Contribution
+        </a>
+        <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">analytics</span>
+            Tithe Performance
+        </a>
+        
+        <div class="sidebar-section">Expenditures</div>
+        <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+            Expenditures
+        </a>
+        <a href="{% url 'expenditure:add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+            Add Expense
+        </a>
+        <a href="{% url 'expenditure:utilities' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">bolt</span>
+            Utility Bills
+        </a>
+        <a href="{% url 'expenditure:welfare' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            Welfare Payments
+        </a>
+        <a href="{% url 'expenditure:assets' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">inventory_2</span>
+            Assets
+        </a>
+        
+        <div class="sidebar-section">Remittance</div>
+        <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+            Remittances
+        </a>
+        <a href="{% url 'contributions:remittance_add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">send</span>
+            Submit Remittance
+        </a>
+        
+        <div class="sidebar-section">Communication</div>
+        <a href="{% url 'announcements:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">campaign</span>
+            Announcements
+        </a>
+        <a href="{% url 'sermons:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+            Sermons
+        </a>
+        <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            Prayer Requests
+        </a>
+        
+        <div class="sidebar-section">Outreach</div>
+        <a href="{% url 'core:visitors' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">person_add</span>
+            Visitor Follow-up
+        </a>
+        <a href="{% url 'core:celebrations' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">cake</span>
+            Celebrations
+        </a>
+        
+        <div class="sidebar-section">Reports</div>
+        <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">assessment</span>
+            Monthly Reports
+        </a>
+        <a href="{% url 'reports:index' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
+            Other Reports
+        </a>
+        
+        {% elif user.is_pastor %}
+        <!-- ============ PASTOR ============ -->
+        <div class="sidebar-section">My Church</div>
+        <a href="{% url 'members:pastor_manage' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">manage_accounts</span>
+            Manage Members
+        </a>
+        <a href="{% url 'members:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">groups</span>
+            My Flock
+        </a>
+        <a href="{% url 'attendance:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">fact_check</span>
+            Attendance
+        </a>
+        
+        <div class="sidebar-section">Ministry</div>
+        <a href="{% url 'sermons:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+            Sermons
+        </a>
+        <a href="{% url 'sermons:add' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+            Add Sermon
+        </a>
+        <a href="{% url 'announcements:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">campaign</span>
+            Announcements
+        </a>
+        <a href="{% url 'groups:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+            Groups
+        </a>
+        <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            Prayer Requests
+        </a>
+        
+        <div class="sidebar-section">Outreach</div>
+        <a href="{% url 'core:visitors' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">person_add</span>
+            Visitor Follow-up
+        </a>
+        <a href="{% url 'core:celebrations' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">cake</span>
+            Celebrations
+        </a>
+        
+        <div class="sidebar-section">Finance</div>
+        <a href="{% url 'contributions:my_commission' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">paid</span>
+            My Commission
+        </a>
+        <a href="{% url 'payroll:my_payroll' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+            My Payroll
+        </a>
+        
+        {% elif user.is_auditor %}
+        <!-- ============ AUDITOR ============ -->
+        <div class="sidebar-section">Financial Management</div>
+        <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">assessment</span>
+            Monthly Reports
+        </a>
+        <a href="{% url 'contributions:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">payments</span>
+            Contributions
+        </a>
+        <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+            Expenditures
+        </a>
+        {% if site_settings.allow_auditor_payroll_access %}
+        <a href="{% url 'payroll:runs' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">people</span>
+            Payroll
+        </a>
+        {% endif %}
+        <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+            Remittances
+        </a>
+        
+        <div class="sidebar-section">Audit & Compliance</div>
+        <a href="{% url 'auditing:logs' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">history</span>
+            Audit Logs
+        </a>
+        <a href="{% url 'auditing:flags' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">flag</span>
+            Audit Flags
+        </a>
+        <a href="{% url 'attendance:tracking' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">groups</span>
+            Attendance Tracking
+        </a>
+        
+        <div class="sidebar-section">Reports & Analytics</div>
+        <a href="{% url 'reports:index' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
+            Financial Reports
+        </a>
+        <a href="{% url 'reports:contributions' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">trending_up</span>
+            Contribution Analysis
+        </a>
+        <a href="{% url 'reports:expenditure' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">trending_down</span>
+            Expenditure Analysis
+        </a>
+        <a href="{% url 'reports:attendance' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">group_work</span>
+            Attendance Reports
+        </a>
+        
+        {% else %}
+        <!-- ============ MEMBER ============ -->
+        <div class="sidebar-section">My Giving</div>
+        <a href="{% url 'contributions:my_contributions' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            My Contributions
+        </a>
+        <a href="{% url 'contributions:my_history' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">history</span>
+            Contribution History
+        </a>
+        <a href="{% url 'core:my_statement' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">description</span>
+            Get Statement
+        </a>
+        
+        <div class="sidebar-section">My Church</div>
+        <a href="{% url 'attendance:my_attendance' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">event_available</span>
+            My Attendance
+        </a>
+        <a href="{% url 'groups:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+            My Groups
+        </a>
+        <a href="{% url 'announcements:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">campaign</span>
+            Announcements
+        </a>
+        <a href="{% url 'sermons:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+            Sermons
+        </a>
+        <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">favorite</span>
+            Prayer Requests
+        </a>
+        {% endif %}
+        
+        <!-- Profile & Logout - All Users -->
+        <div class="border-t border-slate-700 mx-4 pt-4 pb-2">
+            <a href="{% url 'accounts:profile' %}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700 transition-colors">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" class="h-10 w-10 rounded-full object-cover border-2 border-slate-600">
+                {% else %}
+                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <span class="text-white font-medium">{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
+                </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-white truncate">{{ user.get_full_name }}</p>
+                    <p class="text-xs text-slate-400 truncate">{{ user.get_role_display }}</p>
+                </div>
+            </a>
+            <a href="{% url 'accounts:logout' %}" class="flex items-center gap-3 px-3 py-2 mt-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                <span class="material-icons-outlined text-xl">logout</span>
+                <span class="text-sm">Sign Out</span>
+            </a>
+        </div>
+    </nav>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight active sidebar link
+    const currentPath = window.location.pathname;
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    
+    sidebarLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && currentPath.startsWith(href) && href !== '/') {
+            link.classList.add('active', 'bg-blue-600/20', 'text-blue-400', 'border-l-2', 'border-blue-500');
+        } else if (href === '/' && currentPath === '/') {
+            link.classList.add('active', 'bg-blue-600/20', 'text-blue-400', 'border-l-2', 'border-blue-500');
+        }
+    });
+    
+    // Desktop sidebar search functionality
+    const searchInput = document.getElementById('sidebarSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase().trim();
+            const nav = document.getElementById('sidebarNav');
+            const links = nav.querySelectorAll('.sidebar-link');
+            const sections = nav.querySelectorAll('.sidebar-section');
+            
+            if (query === '') {
+                // Show all
+                links.forEach(link => link.style.display = '');
+                sections.forEach(section => section.style.display = '');
+                return;
+            }
+            
+            // Hide sections during search
+            sections.forEach(section => section.style.display = 'none');
+            
+            // Filter links
+            links.forEach(link => {
+                const text = link.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    link.style.display = '';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+        });
+        
+        // Clear search on Escape
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.target.value = '';
+                e.target.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+    
+    // Mobile sidebar search functionality
+    const mobileSearchInput = document.getElementById('mobileSidebarSearch');
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase().trim();
+            const nav = document.getElementById('mobileSidebarNav');
+            const links = nav.querySelectorAll('.sidebar-link');
+            const sections = nav.querySelectorAll('.sidebar-section');
+            
+            if (query === '') {
+                // Show all
+                links.forEach(link => link.style.display = '');
+                sections.forEach(section => section.style.display = '');
+                return;
+            }
+            
+            // Hide sections during search
+            sections.forEach(section => section.style.display = 'none');
+            
+            // Filter links
+            links.forEach(link => {
+                const text = link.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    link.style.display = '';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+        });
+        
+        // Clear search on Escape
+        mobileSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                e.target.value = '';
+                e.target.dispatchEvent(new Event('input'));
+            }
+        });
+    }
+});
+
+// Toggle mobile sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('mobile-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('-translate-x-full');
+    }
+}
+
+// Close mobile sidebar when clicking outside
+document.addEventListener('click', function(e) {
+    const sidebar = document.getElementById('mobile-sidebar');
+    const menuButton = e.target.closest('[onclick*="toggleSidebar"]');
+    
+    if (sidebar && !sidebar.contains(e.target) && !menuButton) {
+        sidebar.classList.add('-translate-x-full');
+    }
+});
+</script>

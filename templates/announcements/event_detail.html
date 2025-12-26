@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{% url 'announcements:events' %}" class="inline-flex items-center text-gray-600 hover:text-primary-600">
+            <span class="material-icons-outlined mr-2">arrow_back</span>
+            Back to Events
+        </a>
+    </div>
+
+    <!-- Event Header -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        {% if event.banner_image %}
+        <div class="h-64 overflow-hidden">
+            <img src="{{ event.banner_image.url }}" alt="{{ event.title }}" 
+                 class="w-full h-full object-cover">
+        </div>
+        {% else %}
+        <div class="h-64 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+            <span class="material-icons-outlined text-6xl text-white/50">event</span>
+        </div>
+        {% endif %}
+        
+        <div class="p-6 sm:p-8">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <h1 class="text-3xl font-bold text-gray-900">{{ event.title }}</h1>
+                    <div class="mt-2 flex flex-wrap items-center gap-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
+                            <span class="material-icons-outlined text-sm mr-1">public</span>
+                            {{ event.scope|title }}
+                        </span>
+                        {% if event.event_type %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                            {{ event.get_event_type_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Edit/Delete Buttons -->
+                {% if user.is_mission_admin or event.created_by == user %}
+                <div class="flex items-center space-x-2 ml-4">
+                    <a href="{% url 'announcements:event_edit' event.id %}" 
+                       class="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                       title="Edit Event">
+                        <span class="material-icons-outlined">edit</span>
+                    </a>
+                    <form method="post" action="{% url 'announcements:event_delete' event.id %}" class="inline" 
+                          onsubmit="return confirm('Are you sure you want to delete this event?')">
+                        {% csrf_token %}
+                        <button type="submit" class="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-red-50"
+                                title="Delete Event">
+                            <span class="material-icons-outlined">delete</span>
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Event Details -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <span class="material-icons-outlined text-gray-400 mr-3 mt-1">event</span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Date</p>
+                            <p class="text-gray-600">{{ event.start_date|date:"l, F d, Y" }}
+                                {% if event.end_date and event.end_date != event.start_date %}
+                                - {{ event.end_date|date:"l, F d, Y" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <span class="material-icons-outlined text-gray-400 mr-3 mt-1">schedule</span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Time</p>
+                            <p class="text-gray-600">
+                                {% if event.start_time %}{{ event.start_time|time:"g:i A" }}{% else %}All day{% endif %}
+                                {% if event.end_time and event.end_time != event.start_time %}
+                                - {{ event.end_time|time:"g:i A" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    {% if event.location %}
+                    <div class="flex items-start">
+                        <span class="material-icons-outlined text-gray-400 mr-3 mt-1">location_on</span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Location</p>
+                            <p class="text-gray-600">{{ event.location }}</p>
+                            {% if event.address %}
+                            <p class="text-sm text-gray-500 mt-1">{{ event.address }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if event.organizer %}
+                    <div class="flex items-start">
+                        <span class="material-icons-outlined text-gray-400 mr-3 mt-1">person</span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Organizer</p>
+                            <p class="text-gray-600">{{ event.organizer.get_full_name|default:event.organizer.username }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Description -->
+            {% if event.description %}
+            <div class="mt-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">About this Event</h2>
+                <div class="prose prose-gray max-w-none">
+                    {{ event.description|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Event Meta -->
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <div class="flex items-center justify-between text-sm text-gray-500">
+                    <div>
+                        <span class="material-icons-outlined text-sm align-middle mr-1">person_outline</span>
+                        Created by {{ event.created_by.get_full_name|default:"System" }}
+                    </div>
+                    <div>
+                        <span class="material-icons-outlined text-sm align-middle mr-1">schedule</span>
+                        {{ event.created_at|date:"M d, Y g:i A" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

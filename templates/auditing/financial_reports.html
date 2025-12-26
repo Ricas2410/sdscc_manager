@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Financial Reports - Auditing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Financial Reports</h1>
+            <p class="text-gray-500 mt-1">Comprehensive financial reports for branches, districts, areas, and individuals</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-1">print</span>Print
+            </button>
+            <a href="{% url 'auditing:reports' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-1">arrow_back</span>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Report Filters</h2>
+        </div>
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- Report Level -->
+                <div class="form-group">
+                    <label class="form-label">Report Level</label>
+                    <select name="level" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="branch" {% if report_level == 'branch' %}selected{% endif %}>Branch</option>
+                        <option value="district" {% if report_level == 'district' %}selected{% endif %}>District</option>
+                        <option value="area" {% if report_level == 'area' %}selected{% endif %}>Area</option>
+                        <option value="individual" {% if report_level == 'individual' %}selected{% endif %}>Individual</option>
+                    </select>
+                </div>
+
+                <!-- Time Period -->
+                <div class="form-group">
+                    <label class="form-label">Time Period</label>
+                    <select name="period" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="monthly" {% if time_period == 'monthly' %}selected{% endif %}>Monthly</option>
+                        <option value="quarterly" {% if time_period == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                        <option value="yearly" {% if time_period == 'yearly' %}selected{% endif %}>Yearly</option>
+                    </select>
+                </div>
+
+                <!-- Year -->
+                <div class="form-group">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-input form-select" onchange="this.form.submit()">
+                        {% for y in "2020,2021,2022,2023,2024,2025"|split:"," %}
+                        <option value="{{ y }}" {% if year|stringformat:"s" == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Month (for monthly reports) -->
+                {% if time_period == 'monthly' %}
+                <div class="form-group">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-input form-select" onchange="this.form.submit()">
+                        {% for m, name in "1,January,2,February,3,March,4,April,5,May,6,June,7,July,8,August,9,September,10,October,11,November,12,December"|split:"," %}
+                            {% if forloop.counter|divisibleby:"2" %}
+                        <option value="{{ m }}" {% if month|stringformat:"s" == m %}selected{% endif %}>{{ name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Quarter (for quarterly reports) -->
+                {% if time_period == 'quarterly' %}
+                <div class="form-group">
+                    <label class="form-label">Quarter</label>
+                    <select name="quarter" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="1" {% if quarter == "1" %}selected{% endif %}>Q1</option>
+                        <option value="2" {% if quarter == "2" %}selected{% endif %}>Q2</option>
+                        <option value="3" {% if quarter == "3" %}selected{% endif %}>Q3</option>
+                        <option value="4" {% if quarter == "4" %}selected{% endif %}>Q4</option>
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Member ID Lookup (for individual reports) -->
+                {% if report_level == 'individual' %}
+                <div class="form-group">
+                    <label class="form-label">Member ID</label>
+                    <input type="text" name="member_id" value="{{ request.GET.member_id|default:'' }}"
+                        class="form-input" placeholder="e.g., AN001">
+                    <p class="text-xs text-gray-500 mt-1">Enter member ID to lookup</p>
+                </div>
+                {% endif %}
+
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">
+                        <span class="material-icons-outlined">search</span>Generate Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    {% if reports %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Contributions</p>
+                        <p class="text-2xl font-bold text-primary-600">GH₵{{ total_contributions|floatformat:2 }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-primary-600 text-4xl">trending_up</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Expenditure</p>
+                        <p class="text-2xl font-bold text-red-600">GH₵{{ total_expenditure|floatformat:2 }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-red-600 text-4xl">trending_down</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Net Balance</p>
+                        <p class="text-2xl font-bold {% if total_balance > 0 %}text-green-600{% else %}text-red-600{% endif %}">GH₵{{ total_balance|floatformat:2 }}</p>
+                    </div>
+                    <span class="material-icons-outlined {% if total_balance > 0 %}text-green-600{% else %}text-red-600{% endif %} text-4xl">account_balance</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">
+                {% if report_level == 'branch' %}Branch Financial Reports{% endif %}
+                {% if report_level == 'district' %}District Financial Reports{% endif %}
+                {% if report_level == 'area' %}Area Financial Reports{% endif %}
+                {% if report_level == 'individual' %}Individual Contribution Reports{% endif %}
+                - {{ period_label }}
+            </h2>
+        </div>
+        <div class="card-body overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 font-semibold text-gray-900">Entity</th>
+                        <th class="text-right py-3 px-4 font-semibold text-gray-900">Contributions</th>
+                        {% if report_level != 'individual' %}
+                        <th class="text-right py-3 px-4 font-semibold text-gray-900">Expenditure</th>
+                        {% endif %}
+                        <th class="text-right py-3 px-4 font-semibold text-gray-900">Net Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="py-3 px-4 text-gray-900 font-medium">{{ report.entity_name }}</td>
+                        <td class="py-3 px-4 text-right text-primary-600 font-semibold">GH₵{{ report.total_contributions|floatformat:2 }}</td>
+                        {% if report_level != 'individual' %}
+                        <td class="py-3 px-4 text-right text-red-600 font-semibold">GH₵{{ report.total_expenditure|floatformat:2 }}</td>
+                        {% endif %}
+                        <td class="py-3 px-4 text-right font-semibold {% if report.net_balance > 0 %}text-green-600{% else %}text-red-600{% endif %}">GH₵{{ report.net_balance|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-8 px-4 text-center text-gray-500">No data available for selected period</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    <!-- Total Row -->
+                    {% if reports %}
+                    <tr class="border-t-2 border-gray-300 bg-gray-50">
+                        <td class="py-3 px-4 font-bold text-gray-900">TOTAL</td>
+                        <td class="py-3 px-4 text-right font-bold text-lg text-primary-600">GH₵{{ total_contributions|floatformat:2 }}</td>
+                        {% if report_level != 'individual' %}
+                        <td class="py-3 px-4 text-right font-bold text-lg text-red-600">GH₵{{ total_expenditure|floatformat:2 }}</td>
+                        {% endif %}
+                        <td class="py-3 px-4 text-right font-bold text-lg {% if total_balance > 0 %}text-green-600{% else %}text-red-600{% endif %}">GH₵{{ total_balance|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Export Options</h2>
+        </div>
+        <div class="card-body flex gap-4">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <span class="material-icons-outlined">print</span>Print
+            </button>
+            <a href="#" class="btn btn-secondary" title="Coming soon">
+                <span class="material-icons-outlined">download</span>Download PDF
+            </a>
+            <a href="#" class="btn btn-secondary" title="Coming soon">
+                <span class="material-icons-outlined">table_chart</span>Export Excel
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No Reports Message -->
+    <div class="card">
+        <div class="card-body text-center py-12">
+            <span class="material-icons-outlined text-gray-400 text-6xl mx-auto block mb-4">assessment</span>
+            <p class="text-gray-500 text-lg">No financial data available for selected period</p>
+            <p class="text-gray-400 mt-2">Try selecting a different time period or report level</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    @media print {
+        .btn, .form-input, .form-select {
+            display: none !important;
+        }
+        .card {
+            page-break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}

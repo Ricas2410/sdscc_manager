@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Members{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Import Members</h1>
+            <p class="text-gray-500">Bulk import members using a CSV file with proper formatting</p>
+        </div>
+        <a href="{% url 'core:download_member_template' %}" class="btn-secondary">
+            <span class="material-icons-outlined text-lg mr-2">download</span>
+            Download Template
+        </a>
+    </div>
+    
+    <!-- Import Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="branch" class="block text-sm font-medium text-gray-700 mb-2">
+                    Target Branch <span class="text-red-500">*</span>
+                </label>
+                <select name="branch" id="branch" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select Branch</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}">{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-gray-500 mt-1">All imported members will be assigned to this branch</p>
+            </div>
+            
+            <div>
+                <label for="csv_file" class="block text-sm font-medium text-gray-700 mb-2">
+                    CSV File <span class="text-red-500">*</span>
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <span class="material-icons-outlined text-4xl text-gray-400">upload_file</span>
+                    <p class="text-gray-600 mt-2">Drag and drop your CSV file here, or</p>
+                    <input type="file" name="csv_file" id="csv_file" accept=".csv" required 
+                           class="mt-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
+                <button type="submit" class="btn-primary">
+                    <span class="material-icons-outlined text-lg mr-2">upload</span>
+                    Import Members
+                </button>
+                <a href="{% url 'members:list' %}" class="btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- CSV Format Guide -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4 flex items-center">
+            <span class="material-icons-outlined text-blue-600 mr-2">description</span>
+            CSV Format Requirements
+        </h3>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-4 py-3 font-medium text-gray-700">Column Name</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-700">Required</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-700">Format</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-700">Example</th>
+                        <th class="text-left px-4 py-3 font-medium text-gray-700">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">first_name</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Required</span></td>
+                        <td class="px-4 py-3">Text</td>
+                        <td class="px-4 py-3 text-gray-600">John</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Member's first name</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">last_name</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Required</span></td>
+                        <td class="px-4 py-3">Text</td>
+                        <td class="px-4 py-3 text-gray-600">Doe</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Member's last name</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">phone</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">Text</td>
+                        <td class="px-4 py-3 text-gray-600">0241234567</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Ghanaian phone number</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">email</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">Email</td>
+                        <td class="px-4 py-3 text-gray-600">john@example.com</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Valid email address</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">date_of_birth</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">YYYY-MM-DD</td>
+                        <td class="px-4 py-3 text-gray-600">1990-05-15</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Date of birth</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">gender</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">M or F</td>
+                        <td class="px-4 py-3 text-gray-600">M</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Male or Female</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">address</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">Text</td>
+                        <td class="px-4 py-3 text-gray-600">123 Main St, Accra</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Full address</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">occupation</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">Text</td>
+                        <td class="px-4 py-3 text-gray-600">Teacher</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Job title/occupation</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">marital_status</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">Text</td>
+                        <td class="px-4 py-3 text-gray-600">Married</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Single, Married, Divorced, Widowed</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">baptism_date</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">YYYY-MM-DD</td>
+                        <td class="px-4 py-3 text-gray-600">2010-06-12</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Date of baptism</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">membership_date</td>
+                        <td class="px-4 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Optional</span></td>
+                        <td class="px-4 py-3">YYYY-MM-DD</td>
+                        <td class="px-4 py-3 text-gray-600">2010-06-15</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Date joined church</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm font-medium text-blue-900 mb-2 flex items-center">
+                    <span class="material-icons-outlined text-blue-600 mr-2">code</span>
+                    Sample CSV Format:
+                </p>
+                <code class="text-xs text-blue-700 block whitespace-pre-wrap font-mono">first_name,last_name,phone,email,date_of_birth,gender,address,occupation,marital_status,baptism_date,membership_date
+John,Doe,0241234567,john@example.com,1990-05-15,M,"123 Main Street, Accra, Ghana",Teacher,Married,2010-06-12,2010-06-15
+Jane,Smith,0209876543,jane.smith@example.com,1985-03-20,F,"456 Oak Avenue, Kumasi, Ghana",Nurse,Single,2015-09-10,2015-09-15</code>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex items-start gap-2 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg">
+                    <span class="material-icons-outlined text-amber-600 mt-0.5">warning</span>
+                    <div>
+                        <p class="font-medium text-amber-800">Important Notes:</p>
+                        <ul class="list-disc list-inside mt-1 space-y-1 text-amber-700">
+                            <li>First row must contain exact column headers</li>
+                            <li>File must be UTF-8 encoded</li>
+                            <li>Use commas to separate values</li>
+                            <li>Wrap text containing commas in quotes</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flex items-start gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg">
+                    <span class="material-icons-outlined text-green-600 mt-0.5">info</span>
+                    <div>
+                        <p class="font-medium text-green-800">After Import:</p>
+                        <ul class="list-disc list-inside mt-1 space-y-1 text-green-700">
+                            <li>Secure password will be automatically generated</li>
+                            <li>Member IDs will be auto-generated</li>
+                            <li>Members will be assigned to selected branch</li>
+                            <li>Status will be set to "Active"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

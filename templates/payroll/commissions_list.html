@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% block title %}Pastor Commissions{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Pastor Commissions</h1>
+            <p class="text-gray-500 mt-1">Tithe-based commission payments to pastors</p>
+        </div>
+        {% if user.is_mission_admin %}
+        <button onclick="openModal('calculateModal')" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">calculate</span>
+            Calculate Commissions
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">people</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Eligible Pastors</p>
+                    <p class="text-xl font-bold text-gray-900">{{ eligible_pastors|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">pending</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Pending Payments</p>
+                    <p class="text-xl font-bold text-gray-900">{{ pending_count|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">payments</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Monthly Total</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵{{ monthly_total|floatformat:2|default:"0.00" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">percent</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Commission Rate</p>
+                    <p class="text-xl font-bold text-gray-900">{{ commission_rate|default:"10" }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-input form-select">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-input form-select">
+                        <option value="">All Months</option>
+                        <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
+                        <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
+                        <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
+                        <option value="4" {% if selected_month == 4 %}selected{% endif %}>April</option>
+                        <option value="5" {% if selected_month == 5 %}selected{% endif %}>May</option>
+                        <option value="6" {% if selected_month == 6 %}selected{% endif %}>June</option>
+                        <option value="7" {% if selected_month == 7 %}selected{% endif %}>July</option>
+                        <option value="8" {% if selected_month == 8 %}selected{% endif %}>August</option>
+                        <option value="9" {% if selected_month == 9 %}selected{% endif %}>September</option>
+                        <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
+                        <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
+                        <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select" onchange="filterDistricts(this.value)">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-input form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="paid" {% if request.GET.status == 'paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-1">Filter</button>
+                    <a href="{% url 'payroll:commissions' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Commissions Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Pastor</th>
+                        <th>Branch</th>
+                        <th>Period</th>
+                        <th class="text-right">Tithe Target</th>
+                        <th class="text-right">Achieved</th>
+                        <th class="text-center">%</th>
+                        <th class="text-right">Commission</th>
+                        <th>Status</th>
+                        {% if user.is_mission_admin %}
+                        <th class="text-right">Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in commissions %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-purple-600">person</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ c.recipient.get_full_name }}</p>
+                                    <p class="text-sm text-gray-500">{{ c.recipient.phone|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-gray-500">{{ c.branch.name|default:"-" }}</td>
+                        <td class="text-gray-500">{{ c.get_month_display }} {{ c.year }}</td>
+                        <td class="text-right">GH₵{{ c.tithe_target|floatformat:2 }}</td>
+                        <td class="text-right font-medium">GH₵{{ c.tithe_achieved|floatformat:2 }}</td>
+                        <td class="text-center">
+                            <span class="badge {% if c.achievement_percentage >= 100 %}badge-success{% elif c.achievement_percentage >= 70 %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ c.achievement_percentage|floatformat:0 }}%
+                            </span>
+                        </td>
+                        <td class="text-right font-semibold text-green-600">GH₵{{ c.amount|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if c.status == 'paid' %}badge-success
+                                {% elif c.status == 'approved' %}badge-primary
+                                {% else %}badge-warning{% endif %}">
+                                {{ c.get_status_display }}
+                            </span>
+                        </td>
+                        {% if user.is_mission_admin %}
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                {% if c.status == 'pending' %}
+                                <button class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Approve">
+                                    <span class="material-icons-outlined text-lg">check</span>
+                                </button>
+                                {% endif %}
+                                {% if c.status == 'approved' %}
+                                <button class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Mark Paid">
+                                    <span class="material-icons-outlined text-lg">payments</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_mission_admin %}9{% else %}8{% endif %}" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">payments</span>
+                            <p class="mt-2 text-gray-500">No commission records found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if commissions.has_other_pages %}
+        <div class="card-body border-t">
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500">
+                    Showing {{ commissions.start_index }} - {{ commissions.end_index }} of {{ commissions.paginator.count }}
+                </p>
+                <nav class="flex items-center gap-1">
+                    {% if commissions.has_previous %}
+                    <a href="?page={{ commissions.previous_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Previous</a>
+                    {% endif %}
+                    {% if commissions.has_next %}
+                    <a href="?page={{ commissions.next_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Next</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Calculate Modal -->
+<div id="calculateModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('calculateModal')"></div>
+    <div class="modal-content">
+        <div class="p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Calculate Commissions</h2>
+            <form method="post" action="{% url 'payroll:calculate_commissions' %}">
+                {% csrf_token %}
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Year</label>
+                        <select name="year" class="form-input form-select">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Month</label>
+                        <select name="month" class="form-input form-select">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11" selected>November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeModal('calculateModal')" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Calculate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+</script>
+{% endblock %}

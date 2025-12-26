@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Payroll Runs{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Payroll Runs</h1>
+            <p class="text-gray-500 mt-1">Monthly payroll processing history</p>
+        </div>
+        <button onclick="openModal('newPayrollModal')" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">add</span>Run Payroll
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">people</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Staff</p>
+                    <p class="text-xl font-bold text-gray-900">{{ total_staff|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">payments</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Monthly Payroll</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵{{ monthly_total|floatformat:0|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">pending</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Pending Runs</p>
+                    <p class="text-xl font-bold text-gray-900">{{ pending_runs|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Completed Runs</p>
+                    <p class="text-xl font-bold text-gray-900">{{ completed_runs|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payroll Runs Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Run Date</th>
+                        <th class="text-right">Total Amount</th>
+                        <th class="text-center">Staff Count</th>
+                        <th>Status</th>
+                        <th>Processed By</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in runs %}
+                    <tr>
+                        <td>
+                            <span class="font-medium text-gray-900">{{ run.get_month_display }} {{ run.year }}</span>
+                        </td>
+                        <td class="text-gray-500">{{ run.run_date|date:"M d, Y" }}</td>
+                        <td class="text-right font-semibold">GH₵{{ run.total_amount|floatformat:2 }}</td>
+                        <td class="text-center">
+                            <span class="badge badge-gray">{{ run.payslips.count }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {% if run.status == 'completed' %}badge-success{% elif run.status == 'processing' %}badge-warning{% else %}badge-gray{% endif %}">
+                                {{ run.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-gray-500">{{ run.processed_by.get_full_name|default:"-" }}</td>
+                        <td class="text-right">
+                            <a href="#" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg inline-block" title="View">
+                                <span class="material-icons-outlined text-lg">visibility</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">payments</span>
+                            <p class="mt-2 text-gray-500">No payroll runs found</p>
+                            <button onclick="openModal('newPayrollModal')" class="btn btn-primary mt-4">Run First Payroll</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- New Payroll Modal -->
+<div id="newPayrollModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('newPayrollModal')"></div>
+    <div class="modal-content">
+        <div class="p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Run New Payroll</h2>
+            <form method="post" action="{% url 'payroll:runs' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="run">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Year</label>
+                        <select name="year" class="form-input form-select" required>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Month</label>
+                        <select name="month" class="form-input form-select" required>
+                            {% for value, label in month_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeModal('newPayrollModal')" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Process Payroll</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

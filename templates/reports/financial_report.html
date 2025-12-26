@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}Financial Report{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Financial Report</h1>
+            <p class="mt-1 text-sm text-gray-500">Income and expenditure summary</p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex space-x-2">
+            <button onclick="window.print()" class="btn-secondary">
+                <span class="material-icons-outlined mr-1">print</span> Print
+            </button>
+            <a href="?export=pdf" class="btn-primary">
+                <span class="material-icons-outlined mr-1">download</span> Export PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-6 gap-4" id="filterForm">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select name="area" id="areaFilter" class="input-field">
+                    <option value="">All Areas</option>
+                    {% for area in areas %}
+                    <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
+                        {{ area.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
+                <select name="district" id="districtFilter" class="input-field">
+                    <option value="">All Districts</option>
+                    {% for district in districts %}
+                    <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>
+                        {{ district.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <select name="branch" class="input-field">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input type="date" name="from_date" value="{{ request.GET.from_date }}" class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input type="date" name="to_date" value="{{ request.GET.to_date }}" class="input-field">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="btn-primary w-full">Generate</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white shadow rounded-lg p-4 border-l-4 border-green-500">
+            <p class="text-sm text-gray-500">Total Income</p>
+            <p class="text-2xl font-bold text-green-600">GH₵{{ total_income|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 border-l-4 border-red-500">
+            <p class="text-sm text-gray-500">Total Expenditure</p>
+            <p class="text-2xl font-bold text-red-600">GH₵{{ total_expense|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 border-l-4 border-blue-500">
+            <p class="text-sm text-gray-500">Net Balance</p>
+            <p class="text-2xl font-bold {% if net_balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+                GH₵{{ net_balance|floatformat:2 }}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Income Breakdown -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b">
+                <h3 class="font-medium text-gray-900">Income by Category</h3>
+            </div>
+            <div class="p-6">
+                <canvas id="incomeChart" height="250"></canvas>
+            </div>
+            <div class="border-t divide-y">
+                {% for item in income_by_type %}
+                <div class="px-6 py-3 flex justify-between">
+                    <span class="text-sm text-gray-600">{{ item.contribution_type__name }}</span>
+                    <span class="text-sm font-medium">GH₵{{ item.total|floatformat:2 }}</span>
+                </div>
+                {% empty %}
+                <div class="px-6 py-3 text-center text-gray-500">No income data</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Expenditure Breakdown -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b">
+                <h3 class="font-medium text-gray-900">Expenditure by Category</h3>
+            </div>
+            <div class="p-6">
+                <canvas id="expenseChart" height="250"></canvas>
+            </div>
+            <div class="border-t divide-y">
+                {% for item in expense_by_category %}
+                <div class="px-6 py-3 flex justify-between">
+                    <span class="text-sm text-gray-600">{{ item.category__name }}</span>
+                    <span class="text-sm font-medium">GH₵{{ item.total|floatformat:2 }}</span>
+                </div>
+                {% empty %}
+                <div class="px-6 py-3 text-center text-gray-500">No expenditure data</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parse data from Django
+    const incomeData = {{ income_chart_data|safe }};
+    const expenseData = {{ expense_chart_data|safe }};
+    
+    // Income Chart with percentages
+    if (incomeData.labels.length > 0) {
+        new Chart(document.getElementById('incomeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: incomeData.labels,
+                datasets: [{
+                    data: incomeData.data,
+                    backgroundColor: ['#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6']
+                }]
+            },
+            options: { 
+                plugins: { 
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': GH₵' + value.toFixed(2) + ' (' + percentage + '%)';
+                            }
+                        }
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return percentage + '%';
+                        },
+                        color: '#fff',
+                        font: { weight: 'bold', size: 14 }
+                    }
+                } 
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    // Expense Chart with percentages
+    if (expenseData.labels.length > 0) {
+        new Chart(document.getElementById('expenseChart'), {
+            type: 'doughnut',
+            data: {
+                labels: expenseData.labels,
+                datasets: [{
+                    data: expenseData.data,
+                    backgroundColor: ['#EF4444', '#F97316', '#EC4899', '#6366F1', '#8B5CF6', '#F59E0B']
+                }]
+            },
+            options: { 
+                plugins: { 
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': GH₵' + value.toFixed(2) + ' (' + percentage + '%)';
+                            }
+                        }
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return percentage + '%';
+                        },
+                        color: '#fff',
+                        font: { weight: 'bold', size: 14 }
+                    }
+                } 
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+    
+    // Hierarchical filtering
+    document.getElementById('areaFilter').addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+    document.getElementById('districtFilter').addEventListener('change', function() {
+        document.getElementById('filterForm').submit();
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

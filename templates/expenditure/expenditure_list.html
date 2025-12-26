@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block title %}Branch Expenditures{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Branch Expenditures</h1>
+            <p class="mt-1 text-sm text-gray-500">Track and manage branch expenses across the mission</p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex gap-2">
+            <a href="{% url 'expenditure:utilities' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">bolt</span> Utilities
+            </a>
+            <a href="{% url 'expenditure:add' %}" class="btn btn-primary">
+                <span class="material-icons-outlined mr-2">add</span> Add Expenditure
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Expenditures</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">GH₵ {{ totals.total_amount|default:"0"|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-red-600">receipt_long</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Approved/Paid</p>
+                        <p class="text-2xl font-bold text-green-600 mt-1">GH₵ {{ totals.approved_amount|default:"0"|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-green-600">check_circle</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Pending Approval</p>
+                        <p class="text-2xl font-bold text-yellow-600 mt-1">GH₵ {{ totals.pending_amount|default:"0"|floatformat:2 }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-yellow-600">pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hierarchical Filters -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Filters</h2>
+        </div>
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {% if user.is_mission_admin %}
+                <div>
+                    <label class="form-label">Area</label>
+                    <select name="area" id="areaFilter" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if selected_area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                {% if user.is_mission_admin or user.is_area_executive %}
+                <div>
+                    <label class="form-label">District</label>
+                    <select name="district" id="districtFilter" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" {% if selected_district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="form-label">Branch</label>
+                    <select name="branch" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-input form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-input form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if selected_status == "pending" %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if selected_status == "approved" %}selected{% endif %}>Approved</option>
+                        <option value="paid" {% if selected_status == "paid" %}selected{% endif %}>Paid</option>
+                        <option value="rejected" {% if selected_status == "rejected" %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <span class="material-icons-outlined mr-1">filter_list</span> Filter
+                    </button>
+                    <a href="{% url 'expenditure:list' %}" class="btn btn-secondary">
+                        <span class="material-icons-outlined">clear</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Expenditures Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Expenditure Records ({{ expenditures.paginator.count }} total)</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for exp in expenditures %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ exp.date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            <p class="font-medium text-gray-900">{{ exp.title }}</p>
+                            {% if exp.description %}
+                            <p class="text-gray-500 text-xs mt-1">{{ exp.description|truncatewords:10 }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <p class="text-gray-900">{{ exp.branch.name }}</p>
+                            <p class="text-gray-500 text-xs">{{ exp.branch.district.name }}</p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge badge-secondary">{{ exp.category.name }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if exp.status == 'paid' %}
+                            <span class="badge badge-success">Paid</span>
+                            {% elif exp.status == 'approved' %}
+                            <span class="badge badge-info">Approved</span>
+                            {% elif exp.status == 'pending' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% else %}
+                            <span class="badge badge-danger">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-600">
+                            GH₵ {{ exp.amount|floatformat:2 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <a href="{% url 'expenditure:detail' exp.id %}" class="text-primary-600 hover:text-primary-800 font-medium">
+                                View →
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <span class="material-icons-outlined text-5xl text-gray-300">receipt_long</span>
+                            <p class="mt-2 text-gray-500">No expenditures found</p>
+                            <a href="{% url 'expenditure:add' %}" class="btn btn-primary mt-4 inline-flex items-center">
+                                <span class="material-icons-outlined mr-2">add</span> Add First Expenditure
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if expenditures.has_other_pages %}
+        <div class="card-footer">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Showing {{ expenditures.start_index }} to {{ expenditures.end_index }} of {{ expenditures.paginator.count }} results
+                </div>
+                <div class="flex gap-2">
+                    {% if expenditures.has_previous %}
+                    <a href="?page={{ expenditures.previous_page_number }}{% if selected_area %}&area={{ selected_area }}{% endif %}{% if selected_district %}&district={{ selected_district }}{% endif %}{% if selected_branch %}&branch={{ selected_branch }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" class="btn btn-secondary btn-sm">
+                        <span class="material-icons-outlined">chevron_left</span>
+                    </a>
+                    {% endif %}
+                    <span class="px-4 py-2 text-sm text-gray-700">
+                        Page {{ expenditures.number }} of {{ expenditures.paginator.num_pages }}
+                    </span>
+                    {% if expenditures.has_next %}
+                    <a href="?page={{ expenditures.next_page_number }}{% if selected_area %}&area={{ selected_area }}{% endif %}{% if selected_district %}&district={{ selected_district }}{% endif %}{% if selected_branch %}&branch={{ selected_branch }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" class="btn btn-secondary btn-sm">
+                        <span class="material-icons-outlined">chevron_right</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

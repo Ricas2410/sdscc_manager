@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% block title %}Pastors Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Pastors Management</h1>
+            <p class="mt-1 text-sm text-gray-500">Manage all pastors across branches</p>
+        </div>
+        <div class="mt-4 sm:mt-0">
+            <a href="{% url 'accounts:add_user' %}" class="btn-primary">
+                <span class="material-icons-outlined mr-1">person_add</span> Add Pastor
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-blue-600 text-2xl">church</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Pastors</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ pastors.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-green-600 text-2xl">account_balance_wallet</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">On Salary</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ pastors_with_salary }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-purple-600 text-2xl">paid</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Commission Eligible</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ commission_eligible }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
+                    <span class="material-icons-outlined text-yellow-600 text-2xl">star</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Executives</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ executives_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-4">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select name="area" class="input-field">
+                    <option value="">All Areas</option>
+                    {% for area in areas %}
+                    <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
+                        {{ area.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
+                <select name="district" class="input-field">
+                    <option value="">All Districts</option>
+                    {% for district in districts %}
+                    <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>
+                        {{ district.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <select name="branch" class="input-field">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Salary Status</label>
+                <select name="salary_status" class="input-field">
+                    <option value="">All</option>
+                    <option value="with_salary" {% if request.GET.salary_status == "with_salary" %}selected{% endif %}>With Salary</option>
+                    <option value="without_salary" {% if request.GET.salary_status == "without_salary" %}selected{% endif %}>Without Salary</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="btn-primary w-full">Apply Filters</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Pastors Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pastor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">District</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Additional Positions</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Salary</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commission</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for pastor in pastors %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
+                                    {{ pastor.first_name|slice:":1" }}{{ pastor.last_name|slice:":1" }}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900">{{ pastor.get_full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ pastor.member_id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ pastor.branch.name|default:"Unassigned" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ pastor.branch.district.name|default:"N/A" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex flex-wrap gap-1">
+                                {% if pastor.is_area_executive %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                                    Area Executive
+                                </span>
+                                {% endif %}
+                                {% if pastor.is_district_executive %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                    District Executive
+                                </span>
+                                {% endif %}
+                                {% if pastor.is_branch_executive %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                    Branch Executive
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            {% if pastor.payroll_profile %}
+                            <span class="font-semibold text-gray-900">GH₵{{ pastor.payroll_profile.gross_salary|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="text-gray-400">No Salary</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if pastor.qualifies_for_commission %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                <span class="material-icons-outlined text-xs mr-1">check_circle</span> Eligible
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                Not Eligible
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{% url 'accounts:user_detail' pastor.id %}" class="text-primary-600 hover:text-primary-900">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <span class="material-icons-outlined text-5xl text-gray-300">church</span>
+                            <p class="mt-2 text-gray-500">No pastors found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

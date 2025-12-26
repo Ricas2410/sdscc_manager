@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Branch Dashboard - {{ user.branch.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-2xl font-bold text-gray-900">Branch Dashboard</h1>
+            <p class="mt-1 text-sm text-gray-500">{{ user.branch.name }} - {{ user.branch.district.name }}</p>
+            {% if user.branch.pastor %}
+            <p class="mt-1 text-sm text-gray-500">
+                <span class="material-icons-outlined text-sm align-middle mr-1">person</span>
+                Pastor: {{ user.branch.pastor.get_full_name }}
+            </p>
+            {% endif %}
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0 gap-2">
+            <a href="{% url 'contributions:add' %}" class="btn-primary">
+                <span class="material-icons-outlined mr-1 text-lg">add</span>
+                Record Contribution
+            </a>
+        </div>
+    </div>
+
+    <!-- Tithe Target Progress -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-semibold opacity-90">Monthly Tithe Target</h3>
+                <p class="text-3xl font-bold mt-1">GH₵ {{ tithe_collected|default:"0.00"|floatformat:2 }} <span class="text-lg font-normal opacity-75">/ GH₵ {{ tithe_target|default:"0.00"|floatformat:2 }}</span></p>
+            </div>
+            <div class="text-right">
+                <span class="text-4xl font-bold">{{ target_percentage|default:"0" }}%</span>
+                <p class="text-sm opacity-75">Achievement</p>
+            </div>
+        </div>
+        <div class="w-full bg-white/20 rounded-full h-3">
+            <div class="bg-white rounded-full h-3 transition-all duration-500" style="width: {{ target_percentage|default:0 }}%"></div>
+        </div>
+        <div class="flex justify-between mt-2 text-sm opacity-75">
+            <span>{{ days_remaining|default:"0" }} days remaining</span>
+            <span>{% if target_percentage >= 100 %}Target Achieved!{% else %}GH₵ {{ amount_remaining|default:"0.00"|floatformat:2 }} to go{% endif %}</span>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Members -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-blue-100 p-3">
+                            <span class="material-icons-outlined text-blue-600">people</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Members</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ total_members|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <a href="{% url 'members:list' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">View members →</a>
+            </div>
+        </div>
+
+        <!-- Weekly Contributions -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-green-100 p-3">
+                            <span class="material-icons-outlined text-green-600">payments</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">This Week</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ weekly_contributions|default:"0.00"|floatformat:2 }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <a href="{% url 'contributions:list' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">View contributions →</a>
+            </div>
+        </div>
+
+        <!-- Attendance -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-purple-100 p-3">
+                            <span class="material-icons-outlined text-purple-600">fact_check</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Last Sabbath</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ last_attendance|default:"0" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <a href="{% url 'attendance:list' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">View attendance →</a>
+            </div>
+        </div>
+
+        <!-- Branch Balance -->
+        <div class="card-hover bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-md bg-yellow-100 p-3">
+                            <span class="material-icons-outlined text-yellow-600">account_balance</span>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Branch Balance</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ branch_balance|default:"0.00"|floatformat:2 }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <a href="{% url 'reports:financial' %}" class="text-sm font-medium text-primary-600 hover:text-primary-500">View report →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Recent Contributions -->
+        <div class="lg:col-span-2 bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">Recent Contributions</h3>
+                <a href="{% url 'contributions:add' %}" class="text-sm text-primary-600 hover:text-primary-500">+ Add New</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for contribution in recent_contributions %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ contribution.date|date:"M d" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ contribution.contribution_type.name }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if contribution.member %}{{ contribution.member.get_full_name }}{% else %}General{% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">GH₵ {{ contribution.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                <span class="material-icons-outlined text-4xl text-gray-300">inbox</span>
+                                <p class="mt-2">No contributions recorded yet</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Announcements -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'contributions:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">add_card</span>
+                        <span class="text-sm font-medium text-gray-700">Record Contribution</span>
+                    </a>
+                    <a href="{% url 'attendance:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">how_to_reg</span>
+                        <span class="text-sm font-medium text-gray-700">Take Attendance</span>
+                    </a>
+                    <a href="{% url 'members:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">person_add</span>
+                        <span class="text-sm font-medium text-gray-700">Add New Member</span>
+                    </a>
+                    <a href="{% url 'expenditure:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">receipt_long</span>
+                        <span class="text-sm font-medium text-gray-700">Record Expenditure</span>
+                    </a>
+                    <a href="{% url 'announcements:add' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-primary-600 mr-3">campaign</span>
+                        <span class="text-sm font-medium text-gray-700">Create Announcement</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Announcements -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Announcements</h3>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for announcement in recent_announcements %}
+                    <div class="p-4 hover:bg-gray-50">
+                        <p class="text-sm font-medium text-gray-900">{{ announcement.title }}</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ announcement.created_at|timesince }} ago</p>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-gray-500">
+                        <p class="text-sm">No announcements</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

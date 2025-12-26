@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Reports</h1>
+        <p class="text-gray-500 mt-1">Generate and view various reports</p>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Financial Reports -->
+        <div class="card hover:shadow-lg transition-shadow">
+            <div class="card-body">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-green-600 text-3xl">account_balance</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Financial Reports</h3>
+                        <p class="text-sm text-gray-500">Contributions, expenditure & balance</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <a href="{% url 'reports:financial' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Financial Summary</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    <a href="{% url 'reports:contributions' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Contribution Report</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    <a href="{% url 'reports:expenditure' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Expenditure Report</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Reports -->
+        <div class="card hover:shadow-lg transition-shadow">
+            <div class="card-body">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-14 h-14 rounded-xl bg-purple-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-purple-600 text-3xl">fact_check</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Attendance Reports</h3>
+                        <p class="text-sm text-gray-500">Service attendance & trends</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <a href="{% url 'reports:attendance' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Attendance Summary</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reports -->
+        <div class="card hover:shadow-lg transition-shadow">
+            <div class="card-body">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-blue-600 text-3xl">summarize</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Quick Access</h3>
+                        <p class="text-sm text-gray-500">Commonly used reports</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <a href="{% url 'contributions:list' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">All Contributions</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    <a href="{% url 'expenditure:list' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">All Expenditures</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    <a href="{% url 'members:list' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">All Members</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Report Generator -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Quick Report Generator</h2>
+            <p class="text-sm text-gray-500">Generate a report with custom filters</p>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'reports:financial' %}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Report Type</label>
+                    <select name="type" class="form-input form-select" onchange="updateReportAction(this.value)">
+                        <option value="financial">Financial Summary</option>
+                        <option value="contributions">Contributions</option>
+                        <option value="expenditure">Expenditure</option>
+                        <option value="attendance">Attendance</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}">{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-input">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">
+                        <span class="material-icons-outlined mr-2">description</span>
+                        Generate Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateReportAction(type) {
+    const form = event.target.closest('form');
+    const actions = {
+        'financial': '{% url "reports:financial" %}',
+        'contributions': '{% url "reports:contributions" %}',
+        'expenditure': '{% url "reports:expenditure" %}',
+        'attendance': '{% url "reports:attendance" %}'
+    };
+    form.action = actions[type] || actions['financial'];
+}
+</script>
+{% endblock %}

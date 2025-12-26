@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+{% block title %}Contribution Types{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Contribution Types</h1>
+            <p class="text-gray-500 mt-1">Configure contribution categories and allocation rules</p>
+        </div>
+        {% if user.is_mission_admin %}
+        <button onclick="openModal('addTypeModal')" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">add</span>
+            Add Contribution Type
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">category</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Types</p>
+                    <p class="text-xl font-bold text-gray-900">{{ contribution_types.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Active</p>
+                    <p class="text-xl font-bold text-gray-900">{{ active_count|default:contribution_types.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">savings</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Tithe Types</p>
+                    <p class="text-xl font-bold text-gray-900">{{ tithe_count|default:"1" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">volunteer_activism</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Offering Types</p>
+                    <p class="text-xl font-bold text-gray-900">{{ offering_count|default:"5" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contribution Types Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Contribution Type</th>
+                        <th>Code</th>
+                        <th>Category</th>
+                        <th class="text-center">Individual</th>
+                        <th class="text-center">Mission %</th>
+                        <th class="text-center">Branch %</th>
+                        <th>Status</th>
+                        {% if user.is_mission_admin %}
+                        <th class="text-right">Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ct in contribution_types %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                    {% if ct.category == 'tithe' %}bg-blue-100 text-blue-600
+                                    {% elif ct.category == 'offering' %}bg-green-100 text-green-600
+                                    {% elif ct.category == 'donation' %}bg-purple-100 text-purple-600
+                                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                    <span class="material-icons-outlined">
+                                        {% if ct.category == 'tithe' %}savings
+                                        {% elif ct.category == 'offering' %}volunteer_activism
+                                        {% elif ct.category == 'donation' %}redeem
+                                        {% else %}paid{% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ ct.name }}</p>
+                                    {% if ct.description %}
+                                    <p class="text-xs text-gray-500">{{ ct.description|truncatewords:8 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-gray">{{ ct.code }}</span>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if ct.category == 'tithe' %}badge-primary
+                                {% elif ct.category == 'offering' %}badge-success
+                                {% elif ct.category == 'donation' %}badge-warning
+                                {% else %}badge-gray{% endif %}">
+                                {{ ct.get_category_display }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if ct.is_individual %}
+                            <span class="material-icons-outlined text-green-500">check_circle</span>
+                            {% else %}
+                            <span class="material-icons-outlined text-gray-300">remove</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="font-semibold {% if ct.mission_percentage > 0 %}text-primary-600{% else %}text-gray-400{% endif %}">
+                                {{ ct.mission_percentage }}%
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="font-semibold text-green-600">{{ ct.branch_percentage }}%</span>
+                        </td>
+                        <td>
+                            {% if ct.is_closed %}
+                            <span class="badge badge-danger">Closed</span>
+                            {% else %}
+                            <span class="badge badge-success">Active</span>
+                            {% endif %}
+                        </td>
+                        {% if user.is_mission_admin %}
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <a href="{% url 'contributions:type_detail' ct.id %}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="View Details">
+                                    <span class="material-icons-outlined text-lg">visibility</span>
+                                </a>
+                                <button onclick="openEditModal('{{ ct.id }}', '{{ ct.name }}', '{{ ct.code }}', '{{ ct.category }}', {{ ct.is_individual|yesno:'true,false' }}, {{ ct.mission_percentage }}, {{ ct.branch_percentage }}, '{{ ct.description|escapejs }}')" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg" title="Edit">
+                                    <span class="material-icons-outlined text-lg">edit</span>
+                                </button>
+                                {% if ct.is_closed %}
+                                <form method="post" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reopen">
+                                    <input type="hidden" name="type_id" value="{{ ct.id }}">
+                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Reopen">
+                                        <span class="material-icons-outlined text-lg">lock_open</span>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="post" class="inline" onsubmit="return confirm('Close this contribution type? New entries will not be allowed.')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="close">
+                                    <input type="hidden" name="type_id" value="{{ ct.id }}">
+                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg" title="Close">
+                                        <span class="material-icons-outlined text-lg">lock</span>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form method="post" class="inline" onsubmit="return confirm('Delete this contribution type? This cannot be undone.')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="type_id" value="{{ ct.id }}">
+                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete">
+                                        <span class="material-icons-outlined text-lg">delete</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_mission_admin %}8{% else %}7{% endif %}" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">category</span>
+                            <p class="mt-2 text-gray-500">No contribution types configured</p>
+                            {% if user.is_mission_admin %}
+                            <button onclick="openModal('addTypeModal')" class="btn btn-primary mt-4">
+                                <span class="material-icons-outlined mr-2">add</span>
+                                Add First Type
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Contribution Type Modal -->
+<div id="addTypeModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('addTypeModal')"></div>
+    <div class="modal-content modal-lg">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Add Contribution Type</h2>
+                <button onclick="closeModal('addTypeModal')" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'contributions:types' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Name</label>
+                        <input type="text" name="name" required class="form-input" placeholder="e.g., General Tithe">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Code</label>
+                        <input type="text" name="code" required class="form-input" placeholder="e.g., TITHE" style="text-transform: uppercase">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Category</label>
+                        <select name="category" required class="form-input form-select">
+                            <option value="">Select Category</option>
+                            <option value="tithe">Tithe</option>
+                            <option value="offering">Offering</option>
+                            <option value="donation">Donation</option>
+                            <option value="special">Special</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contribution Scope</label>
+                        <select name="is_individual" class="form-input form-select">
+                            <option value="0">General (Branch-wide)</option>
+                            <option value="1">Individual (Per Member)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-4 bg-gray-50 rounded-xl">
+                    <h3 class="font-semibold text-gray-900 mb-4">Allocation Split</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group mb-0">
+                            <label class="form-label required">Mission Percentage</label>
+                            <div class="relative">
+                                <input type="number" name="mission_percentage" min="0" max="100" value="10" required class="form-input pr-8">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Portion remitted to Mission HQ</p>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="form-label required">Branch Percentage</label>
+                            <div class="relative">
+                                <input type="number" name="branch_percentage" min="0" max="100" value="90" required class="form-input pr-8">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Retained by local branch</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-6">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" rows="2" class="form-input" placeholder="Brief description of this contribution type..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-6 border-t">
+                    <button type="button" onclick="closeModal('addTypeModal')" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">add</span>
+                        Create Contribution Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Contribution Type Modal -->
+<div id="editTypeModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('editTypeModal')"></div>
+    <div class="modal-content modal-lg">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Edit Contribution Type</h2>
+                <button onclick="closeModal('editTypeModal')" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'contributions:types' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="type_id" id="edit_type_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Name</label>
+                        <input type="text" name="name" id="edit_name" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Code</label>
+                        <input type="text" name="code" id="edit_code" required class="form-input" style="text-transform: uppercase">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Category</label>
+                        <select name="category" id="edit_category" required class="form-input form-select">
+                            <option value="tithe">Tithe</option>
+                            <option value="offering">Offering</option>
+                            <option value="donation">Donation</option>
+                            <option value="special">Special</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contribution Scope</label>
+                        <select name="is_individual" id="edit_is_individual" class="form-input form-select">
+                            <option value="0">General (Branch-wide)</option>
+                            <option value="1">Individual (Per Member)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-4 bg-gray-50 rounded-xl">
+                    <h3 class="font-semibold text-gray-900 mb-4">Allocation Split</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="form-group mb-0">
+                            <label class="form-label required">Mission Percentage</label>
+                            <div class="relative">
+                                <input type="number" name="mission_percentage" id="edit_mission_pct" min="0" max="100" required class="form-input pr-8">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                            </div>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="form-label required">Branch Percentage</label>
+                            <div class="relative">
+                                <input type="number" name="branch_percentage" id="edit_branch_pct" min="0" max="100" required class="form-input pr-8">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-6">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" id="edit_description" rows="2" class="form-input"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-6 border-t">
+                    <button type="button" onclick="closeModal('editTypeModal')" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">save</span>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+function openEditModal(id, name, code, category, isIndividual, missionPct, branchPct, description) {
+    document.getElementById('edit_type_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_code').value = code;
+    document.getElementById('edit_category').value = category;
+    document.getElementById('edit_is_individual').value = isIndividual ? '1' : '0';
+    document.getElementById('edit_mission_pct').value = missionPct;
+    document.getElementById('edit_branch_pct').value = branchPct;
+    document.getElementById('edit_description').value = description;
+    openModal('editTypeModal');
+}
+</script>
+{% endblock %}

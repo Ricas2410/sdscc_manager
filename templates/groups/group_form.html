@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% block title %}{% if group %}Edit{% else %}Create{% endif %} Group{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if group %}Edit{% else %}Create{% endif %} Group</h1>
+            <p class="mt-1 text-sm text-gray-500">{% if group %}Update group information{% else %}Create a new ministry or fellowship group{% endif %}</p>
+        </div>
+        <a href="{% url 'groups:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">info</span>
+                    Basic Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Group Name</label>
+                        <input type="text" name="name" value="{{ group.name|default:'' }}" required class="form-input" placeholder="e.g., Youth Fellowship">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Group Code</label>
+                        <input type="text" name="code" value="{{ group.code|default:'' }}" required class="form-input" placeholder="e.g., YF001" maxlength="20">
+                        <p class="text-xs text-gray-500 mt-1">Unique identifier for this group</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <div class="flex gap-2">
+                            <select name="category" class="form-input form-select flex-1">
+                                <option value="">Select Category</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if group.category_id == cat.id %}selected{% endif %}>{{ cat.name }} ({{ cat.get_category_type_display }})</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" onclick="openModal('categoryModal')" class="btn btn-secondary" title="Add New Category">
+                                <span class="material-icons-outlined">add</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% if not is_branch_admin %}
+                    <div class="form-group">
+                        <label class="form-label">Scope</label>
+                        <select name="scope" class="form-input form-select">
+                            {% for value, label in scopes %}
+                            <option value="{{ value }}" {% if group.scope == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <input type="hidden" name="scope" value="branch">
+                    {% endif %}
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" rows="3" class="form-input" placeholder="Describe the purpose and activities of this group...">{{ group.description|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branch & Leadership -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">people</span>
+                    Branch & Leadership
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% if not is_branch_admin %}
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <select name="branch" id="branchSelect" class="form-input form-select" onchange="loadBranchMembers()">
+                            <option value="">Select Branch (for branch-level groups)</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if group.branch_id == branch.id %}selected{% endif %}>
+                                {{ branch.name }} ({{ branch.district.area.name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Select a branch to load its members</p>
+                    </div>
+                    {% else %}
+                    <div class="form-group">
+                        <label class="form-label">Branch</label>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="font-medium text-blue-800">{{ user_branch.name }}</p>
+                            <p class="text-sm text-blue-600">Group will be created for your branch</p>
+                        </div>
+                        <input type="hidden" name="branch" id="branchSelect" value="{{ user_branch.id }}">
+                    </div>
+                    {% endif %}
+                    <div class="form-group">
+                        <label class="form-label">Leader</label>
+                        <div class="relative">
+                            <input type="text" id="leaderSearch" class="form-input" placeholder="Search member by name or ID..." autocomplete="off">
+                            <input type="hidden" name="leader" id="leaderInput" value="{{ group.leader_id|default:'' }}">
+                            <div id="leaderResults" class="absolute z-10 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-60 overflow-auto"></div>
+                        </div>
+                        <div id="selectedLeader" class="mt-2 {% if not group.leader %}hidden{% endif %}">
+                            <span class="inline-flex items-center gap-2 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
+                                <span id="leaderName">{% if group.leader %}{{ group.leader.get_full_name }}{% endif %}</span>
+                                <button type="button" onclick="clearLeader()" class="hover:text-primary-600">&times;</button>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Assistant Leader</label>
+                        <div class="relative">
+                            <input type="text" id="assistantSearch" class="form-input" placeholder="Search member..." autocomplete="off">
+                            <input type="hidden" name="assistant_leader" id="assistantInput" value="{{ group.assistant_leader_id|default:'' }}">
+                            <div id="assistantResults" class="absolute z-10 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-60 overflow-auto"></div>
+                        </div>
+                        <div id="selectedAssistant" class="mt-2 {% if not group.assistant_leader %}hidden{% endif %}">
+                            <span class="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                                <span id="assistantName">{% if group.assistant_leader %}{{ group.assistant_leader.get_full_name }}{% endif %}</span>
+                                <button type="button" onclick="clearAssistant()" class="hover:text-gray-600">&times;</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meeting Schedule -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">schedule</span>
+                    Meeting Schedule
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Meeting Day</label>
+                        <select name="meeting_day" class="form-input form-select">
+                            <option value="">Select Day</option>
+                            {% for day in days %}
+                            <option value="{{ day }}" {% if group.meeting_day == day %}selected{% endif %}>{{ day }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Meeting Time</label>
+                        <input type="time" name="meeting_time" value="{{ group.meeting_time|time:'H:i'|default:'' }}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Meeting Location</label>
+                        <input type="text" name="meeting_location" value="{{ group.meeting_location|default:'' }}" class="form-input" placeholder="e.g., Church Hall">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'groups:list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">save</span>{% if group %}Update{% else %}Create{% endif %} Group
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Add Category Modal -->
+<div id="categoryModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('categoryModal')"></div>
+    <div class="modal-content max-w-md">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Add New Category</h2>
+                <button onclick="closeModal('categoryModal')" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_category">
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label required">Category Name</label>
+                        <input type="text" name="category_name" required class="form-input" placeholder="e.g., Youth Ministry">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category Type</label>
+                        <select name="category_type" class="form-input form-select">
+                            {% for value, label in category_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-6 border-t">
+                    <button type="button" onclick="closeModal('categoryModal')" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let debounceTimer;
+
+function openModal(id) {
+    document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+// Leader search
+document.getElementById('leaderSearch').addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const query = this.value;
+    if (query.length < 2) {
+        document.getElementById('leaderResults').classList.add('hidden');
+        return;
+    }
+    debounceTimer = setTimeout(() => searchMembers(query, 'leader'), 300);
+});
+
+// Assistant search
+document.getElementById('assistantSearch').addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const query = this.value;
+    if (query.length < 2) {
+        document.getElementById('assistantResults').classList.add('hidden');
+        return;
+    }
+    debounceTimer = setTimeout(() => searchMembers(query, 'assistant'), 300);
+});
+
+function searchMembers(query, type) {
+    const branchId = document.getElementById('branchSelect').value;
+    let url = `/groups/api/search-members/?q=${encodeURIComponent(query)}&limit=15`;
+    if (branchId) url += `&branch=${branchId}`;
+    
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const resultsDiv = document.getElementById(type + 'Results');
+            if (data.members.length === 0) {
+                resultsDiv.innerHTML = '<div class="p-3 text-gray-500 text-sm">No members found</div>';
+            } else {
+                resultsDiv.innerHTML = data.members.map(m => `
+                    <div class="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0" onclick="selectMember('${m.id}', '${m.name}', '${type}')">
+                        <div class="font-medium text-gray-900">${m.name}</div>
+                        <div class="text-xs text-gray-500">${m.member_id} • ${m.branch}</div>
+                    </div>
+                `).join('');
+            }
+            resultsDiv.classList.remove('hidden');
+        });
+}
+
+function selectMember(id, name, type) {
+    document.getElementById(type + 'Input').value = id;
+    document.getElementById(type + 'Name').textContent = name;
+    document.getElementById('selected' + type.charAt(0).toUpperCase() + type.slice(1)).classList.remove('hidden');
+    document.getElementById(type + 'Search').value = '';
+    document.getElementById(type + 'Results').classList.add('hidden');
+}
+
+function clearLeader() {
+    document.getElementById('leaderInput').value = '';
+    document.getElementById('selectedLeader').classList.add('hidden');
+}
+
+function clearAssistant() {
+    document.getElementById('assistantInput').value = '';
+    document.getElementById('selectedAssistant').classList.add('hidden');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#leaderSearch') && !e.target.closest('#leaderResults')) {
+        document.getElementById('leaderResults').classList.add('hidden');
+    }
+    if (!e.target.closest('#assistantSearch') && !e.target.closest('#assistantResults')) {
+        document.getElementById('assistantResults').classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

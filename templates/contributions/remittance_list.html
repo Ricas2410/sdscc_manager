@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %}Remittances{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Remittances</h1>
+            <p class="mt-1 text-sm text-gray-500">Branch to Mission fund transfers</p>
+        </div>
+        {% if user.is_branch_executive or user.role == 'branch_executive' %}
+        <button type="button" onclick="openRemittanceModal()" class="btn btn-primary">
+            <span class="material-icons-outlined mr-2">add</span>New Remittance
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Pending</p>
+            <p class="text-2xl font-bold text-yellow-600">{{ pending_count|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Approved</p>
+            <p class="text-2xl font-bold text-green-600">{{ approved_count|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Total Remitted (MTD)</p>
+            <p class="text-2xl font-bold text-gray-900">GH₵ {{ month_total|default:"0"|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4">
+            <p class="text-sm text-gray-500">Outstanding</p>
+            <p class="text-2xl font-bold text-red-600">GH₵ {{ outstanding|default:"0"|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <!-- Remittances Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for remittance in remittances %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.branch.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ remittance.period_month }}/{{ remittance.period_year }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">GH₵ {{ remittance.amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                                {% if remittance.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif remittance.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ remittance.status|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            {% if remittance.status == 'pending' and user.role == 'mission_admin' %}
+                            <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="remittance_id" value="{{ remittance.id }}">
+                                <button type="submit" name="approve" class="text-green-600 hover:text-green-900 mr-2">Approve</button>
+                            </form>
+                            {% endif %}
+                            <a href="#" class="text-primary-600 hover:text-primary-900">View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <span class="material-icons-outlined text-5xl text-gray-300">sync_alt</span>
+                            <p class="mt-2 text-gray-500">No remittances found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- New Remittance Modal -->
+<div id="remittanceModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeRemittanceModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full">
+            <div class="p-6 border-b flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Submit Remittance</h3>
+                <button type="button" onclick="closeRemittanceModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+            <form method="post" action="{% url 'contributions:remittance_add' %}" class="p-6 space-y-4">
+                {% csrf_token %}
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-blue-600">info</span>
+                        <div>
+                            <p class="font-medium text-blue-800">{{ request.user.branch.name|default:"Your Branch" }}</p>
+                            <p class="text-sm text-blue-600">Remittance will be submitted for your branch</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Period Month</label>
+                        <select name="period_month" required class="form-input form-select">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Period Year</label>
+                        <input type="number" name="period_year" value="{% now 'Y' %}" required class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Amount (GH₵)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">GH₵</span>
+                        <input type="number" name="amount" step="0.01" min="0.01" required 
+                               class="form-input pl-14" placeholder="0.00" id="remittanceAmount">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Payment Date</label>
+                    <input type="date" name="date" required class="form-input" id="remittanceDate">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Payment Method</label>
+                    <select name="payment_method" required class="form-input form-select">
+                        <option value="mobile_money" selected>Mobile Money</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Reference Number</label>
+                    <input type="text" name="reference" class="form-input" placeholder="Transaction ID or reference">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closeRemittanceModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">send</span>Submit Remittance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default date and month
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    document.getElementById('remittanceDate').value = today.toISOString().split('T')[0];
+    
+    // Set current month in dropdown
+    const monthSelect = document.querySelector('select[name="period_month"]');
+    if (monthSelect) {
+        monthSelect.value = today.getMonth() + 1;
+    }
+});
+
+function openRemittanceModal() {
+    document.getElementById('remittanceModal').classList.remove('hidden');
+}
+
+function closeRemittanceModal() {
+    document.getElementById('remittanceModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

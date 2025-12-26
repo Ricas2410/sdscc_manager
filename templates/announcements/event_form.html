@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}{% if is_edit %}Edit Event{% else %}Create Event{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{% if is_edit %}Edit Event{% else %}Create Event{% endif %}</h1>
+            <p class="text-gray-500 mt-1">{% if is_edit %}Update event details{% else %}Organize and schedule church events{% endif %}</p>
+        </div>
+        <a href="{% url 'announcements:events' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back to Events
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Main Content -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">event</span>
+                    Event Details
+                </h2>
+            </div>
+            <div class="card-body space-y-6">
+                <div class="form-group">
+                    <label class="form-label required">Event Title</label>
+                    <input type="text" name="title" required class="form-input" placeholder="Enter event title" value="{% if is_edit %}{{ event.title }}{% endif %}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" rows="4" class="form-input" placeholder="Describe the event...">{% if is_edit %}{{ event.description }}{% endif %}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" name="location" class="form-input" placeholder="Event location" value="{% if is_edit %}{{ event.location }}{% endif %}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">schedule</span>
+                    Date & Time
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label required">Start Date</label>
+                        <input type="date" name="start_date" value="{% if is_edit %}{{ start_date }}{% else %}{{ today }}{% endif %}" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Start Time</label>
+                        <input type="time" name="start_time" value="{% if is_edit %}{{ start_time }}{% else %}{{ now }}{% endif %}" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" name="end_date" value="{% if is_edit %}{{ end_date }}{% else %}{{ today }}{% endif %}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Time</label>
+                        <input type="time" name="end_time" value="{% if is_edit %}{{ end_time }}{% else %}{{ now }}{% endif %}" class="form-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scope -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span class="material-icons-outlined mr-2 text-primary-600 align-middle">public</span>
+                    Event Scope
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Target Audience</label>
+                    <select name="scope" class="form-input form-select">
+                        <option value="branch" {% if is_edit and event.scope == 'branch' %}selected{% endif %}>Branch Only</option>
+                        {% if user.is_district_executive or user.is_area_executive or user.is_mission_admin %}
+                        <option value="district" {% if is_edit and event.scope == 'district' %}selected{% endif %}>District-wide</option>
+                        {% endif %}
+                        {% if user.is_area_executive or user.is_mission_admin %}
+                        <option value="area" {% if is_edit and event.scope == 'area' %}selected{% endif %}>Area-wide</option>
+                        {% endif %}
+                        {% if user.is_mission_admin %}
+                        <option value="mission" {% if is_edit and event.scope == 'mission' %}selected{% endif %}>Mission-wide (All Branches)</option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                {% if not is_branch_admin %}
+                <div class="form-group">
+                    <label class="form-label">Branch</label>
+                    <select name="branch" class="form-input form-select">
+                        <option value="">Select a branch</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if is_edit and event.branch_id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'announcements:events' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <span class="material-icons-outlined mr-2">{% if is_edit %}save{% else %}event_available{% endif %}</span>
+                {% if is_edit %}Update Event{% else %}Create Event{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

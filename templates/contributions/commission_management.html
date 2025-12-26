@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% block title %}Commission Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Commission Management</h1>
+            <p class="text-sm text-gray-500">Generate, approve, and process pastor commissions</p>
+        </div>
+        <button type="button" onclick="openGenerateModal()" class="btn btn-primary">
+            <span class="material-icons-outlined mr-1">auto_awesome</span>Generate Commissions
+        </button>
+    </div>
+
+    <!-- Filters & Period Selection -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-input form-select" onchange="this.form.submit()">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-input form-select" onchange="this.form.submit()">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <a href="{% url 'contributions:commission_management' %}" class="btn btn-secondary w-full">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <p class="text-sm text-gray-500">Qualified Branches</p>
+                <p class="text-2xl font-bold text-green-600">{{ stats.total_qualified|default:0 }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="text-sm text-gray-500">Total Commission</p>
+                <p class="text-2xl font-bold text-blue-600">GH₵{{ stats.total_amount|floatformat:2|default:"0.00" }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="text-sm text-gray-500">Paid</p>
+                <p class="text-2xl font-bold text-green-600">GH₵{{ stats.total_paid|floatformat:2|default:"0.00" }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="text-sm text-gray-500">Pending</p>
+                <p class="text-2xl font-bold text-orange-600">GH₵{{ stats.total_pending|floatformat:2|default:"0.00" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Commissions Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-900">Commissions - {{ month_name }} {{ year }}</h3>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Pastor / Contact</th>
+                        <th>Branch</th>
+                        <th class="text-right">Target</th>
+                        <th class="text-right">Collected</th>
+                        <th class="text-center">%</th>
+                        <th class="text-right">Commission</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commission in commissions %}
+                    <tr class="{% if commission.is_qualified %}bg-green-50{% endif %}">
+                        <td>
+                            <div class="font-medium text-gray-900">{{ commission.recipient.get_full_name }}</div>
+                            {% if commission.recipient.phone %}
+                            <div class="text-xs text-blue-600 font-mono">
+                                <a href="tel:{{ commission.recipient.phone }}">{{ commission.recipient.phone }}</a>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-gray-900">{{ commission.branch.name }}</div>
+                            <div class="text-xs text-gray-500">{{ commission.branch.district.name }}</div>
+                        </td>
+                        <td class="text-right font-mono text-sm">GH₵{{ commission.target_amount|floatformat:2 }}</td>
+                        <td class="text-right font-mono text-sm text-green-600">GH₵{{ commission.tithe_collected|floatformat:2 }}</td>
+                        <td class="text-center">
+                            <span class="font-semibold text-sm {% if commission.is_qualified %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ commission.percentage_achieved|floatformat:0 }}%
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            {% if commission.is_qualified %}
+                            <span class="font-mono font-bold text-blue-600">GH₵{{ commission.commission_amount|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="text-gray-400 text-sm">Not Qualified</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not commission.is_qualified %}
+                            <span class="badge badge-secondary">Not Met</span>
+                            {% elif commission.status == 'paid' %}
+                            <span class="badge badge-success">
+                                <span class="material-icons-outlined text-xs mr-1">check</span>Paid
+                            </span>
+                            {% elif commission.status == 'approved' %}
+                            <span class="badge badge-primary">Ready to Pay</span>
+                            {% elif commission.status == 'pending' %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% else %}
+                            <span class="badge badge-secondary">{{ commission.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex justify-end gap-2">
+                                {% if commission.status == 'pending' and commission.is_qualified %}
+                                <form method="post" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve_commission">
+                                    <input type="hidden" name="commission_id" value="{{ commission.id }}">
+                                    <button type="submit" class="btn btn-sm btn-success" title="Approve Commission">
+                                        <span class="material-icons-outlined text-sm">check_circle</span>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if commission.status == 'approved' %}
+                                <button type="button" onclick="openPayModal('{{ commission.id }}', '{{ commission.recipient.get_full_name|escapejs }}', '{{ commission.commission_amount }}', '{{ commission.recipient.phone|default:"" }}')" 
+                                        class="btn btn-sm btn-primary" title="Mark as Paid">
+                                    <span class="material-icons-outlined text-sm">payments</span>
+                                </button>
+                                {% endif %}
+                                {% if commission.status == 'paid' %}
+                                <span class="text-green-600 text-xs">
+                                    <span class="material-icons-outlined text-sm">done_all</span>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-8 text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300">paid</span>
+                            <p class="mt-2">No commissions found for this period</p>
+                            <button type="button" onclick="openGenerateModal()" class="btn btn-primary mt-4">
+                                Generate Commissions
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Commissions Modal -->
+<div id="generateModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeGenerateModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Generate Commissions</h3>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="generate_commissions">
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p class="text-sm text-blue-800">This will calculate commissions for all branches that met their tithe targets for the selected period.</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label required">Month</label>
+                        <select name="month" required class="form-input form-select">
+                            {% for m_num, m_name in months %}
+                            <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Year</label>
+                        <select name="year" required class="form-input form-select">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Commission Percentage</label>
+                    <input type="number" name="commission_percentage" step="0.01" min="0" max="100" value="10.00" required class="form-input">
+                    <p class="text-xs text-gray-500 mt-1">Default is 10% of tithe collected</p>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closeGenerateModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pay Commission Modal -->
+<div id="payModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closePayModal()"></div>
+        <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Process Commission Payment</h3>
+            </div>
+            <form method="post" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="pay_commission">
+                <input type="hidden" name="commission_id" id="payCommissionId">
+                
+                <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div>
+                        <p class="text-sm text-gray-500">Pastor</p>
+                        <p class="font-medium text-gray-900" id="payPastorName"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Phone / MoMo Number</p>
+                        <p class="font-medium text-blue-600 font-mono" id="payPhone"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Commission Amount</p>
+                        <p class="text-xl font-bold text-green-600" id="payAmount"></p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Payment Reference</label>
+                    <input type="text" name="payment_reference" required class="form-input" placeholder="e.g., CHQ123456, TRF789012">
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p class="text-sm text-yellow-800">This will create an expenditure record for audit purposes and mark the commission as paid.</p>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" onclick="closePayModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Process Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openGenerateModal() {
+    document.getElementById('generateModal').classList.remove('hidden');
+}
+
+function closeGenerateModal() {
+    document.getElementById('generateModal').classList.add('hidden');
+}
+
+function openPayModal(commissionId, pastorName, amount, phone) {
+    document.getElementById('payCommissionId').value = commissionId;
+    document.getElementById('payPastorName').textContent = pastorName;
+    document.getElementById('payAmount').textContent = 'GH₵' + parseFloat(amount).toFixed(2);
+    var phoneEl = document.getElementById('payPhone');
+    if (phoneEl) {
+        phoneEl.textContent = phone || 'Not available';
+    }
+    document.getElementById('payModal').classList.remove('hidden');
+}
+
+function closePayModal() {
+    document.getElementById('payModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

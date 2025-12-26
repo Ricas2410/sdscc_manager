@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% block title %}Mission Returns - {{ month_name }} {{ selected_year }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Mission Returns</h1>
+            <p class="text-gray-500 mt-1">Track and manage monthly financial returns from branches</p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if period_status == 'open' %}
+            <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="close_month">
+                <button type="submit" class="btn btn-warning" onclick="return confirm('Close {{ month_name }} {{ selected_year }}? This will lock the period from edits.')">
+                    <span class="material-icons-outlined mr-2">lock</span>Close Month
+                </button>
+            </form>
+            {% else %}
+            <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reopen_month">
+                <button type="submit" class="btn btn-secondary">
+                    <span class="material-icons-outlined mr-2">lock_open</span>Reopen Month
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="flex flex-wrap items-end gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-input form-select">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-input form-select">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-input form-select">
+                        <option value="">All Statuses</option>
+                        <option value="paid" {% if request.GET.status == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="partial" {% if request.GET.status == 'partial' %}selected{% endif %}>Partially Paid</option>
+                        <option value="unpaid" {% if request.GET.status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0 flex-1 min-w-[200px]">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Branch name..." class="form-input">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons-outlined mr-1">filter_alt</span>Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Period Status Banner -->
+    <div class="flex items-center justify-between p-4 rounded-xl {% if period_status == 'closed' %}bg-yellow-50 border border-yellow-200{% else %}bg-blue-50 border border-blue-200{% endif %}">
+        <div class="flex items-center gap-3">
+            <span class="material-icons-outlined text-2xl {% if period_status == 'closed' %}text-yellow-600{% else %}text-blue-600{% endif %}">
+                {% if period_status == 'closed' %}lock{% else %}calendar_today{% endif %}
+            </span>
+            <div>
+                <p class="font-semibold {% if period_status == 'closed' %}text-yellow-900{% else %}text-blue-900{% endif %}">
+                    {{ month_name }} {{ selected_year }}
+                </p>
+                <p class="text-sm {% if period_status == 'closed' %}text-yellow-700{% else %}text-blue-700{% endif %}">
+                    {% if period_status == 'closed' %}This period is closed and locked{% else %}This period is open for updates{% endif %}
+                </p>
+            </div>
+        </div>
+        <span class="badge {% if period_status == 'closed' %}badge-warning{% else %}badge-primary{% endif %}">
+            {{ period_status|title }}
+        </span>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">account_balance</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Due</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵{{ total_due|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Paid</p>
+                    <p class="text-xl font-bold text-green-600">GH₵{{ total_paid|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-red-100">
+                    <span class="material-icons-outlined text-red-600">warning</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Outstanding</p>
+                    <p class="text-xl font-bold text-red-600">GH₵{{ total_outstanding|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">church</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Branches</p>
+                    <p class="text-xl font-bold text-gray-900">
+                        <span class="text-green-600">{{ paid_count }}</span> / 
+                        <span class="text-yellow-600">{{ partial_count }}</span> / 
+                        <span class="text-red-600">{{ unpaid_count }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branches Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Branch Returns</h2>
+            <p class="text-sm text-gray-500">{{ branch_data|length }} branches</p>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Branch</th>
+                        <th>Area / District</th>
+                        <th class="text-right">Amount Due</th>
+                        <th class="text-right">Amount Paid</th>
+                        <th class="text-right">Outstanding</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in branch_data %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-primary-600">church</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ item.branch.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ item.branch.code }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <p class="text-gray-900">{{ item.branch.district.area.name }}</p>
+                            <p class="text-xs text-gray-500">{{ item.branch.district.name }}</p>
+                        </td>
+                        <td class="text-right font-medium">GH₵{{ item.amount_due|floatformat:2 }}</td>
+                        <td class="text-right font-medium text-green-600">GH₵{{ item.amount_paid|floatformat:2 }}</td>
+                        <td class="text-right font-medium {% if item.outstanding > 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+                            GH₵{{ item.outstanding|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if item.status == 'paid' %}
+                            <span class="badge badge-success">Paid</span>
+                            {% elif item.status == 'partial' %}
+                            <span class="badge badge-warning">Partial</span>
+                            {% else %}
+                            <span class="badge badge-danger">Unpaid</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            {% if period_status == 'open' %}
+                            <button onclick="openPaymentModal('{{ item.branch.id }}', '{{ item.branch.name }}', {{ item.outstanding }})" 
+                                class="btn btn-sm btn-primary">
+                                <span class="material-icons-outlined text-sm mr-1">payment</span>
+                                Record Payment
+                            </button>
+                            {% else %}
+                            <span class="text-gray-400 text-sm">Period Closed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">search_off</span>
+                            <p class="mt-2 text-gray-500">No branches found matching your criteria</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('paymentModal')"></div>
+    <div class="modal-content">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Record Payment</h2>
+                <button onclick="closeModal('paymentModal')" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <form id="paymentForm" method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="month" value="{{ selected_month }}">
+                <input type="hidden" name="year" value="{{ selected_year }}">
+                
+                <div class="space-y-4">
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500">Branch</p>
+                        <p class="font-semibold text-gray-900" id="modalBranchName"></p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Amount (GH₵)</label>
+                        <input type="number" name="amount" id="modalAmount" step="0.01" min="0" required class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-input form-select">
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="mobile_money">Mobile Money</option>
+                            <option value="cash">Cash</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Reference Number</label>
+                        <input type="text" name="payment_reference" class="form-input" placeholder="Transaction ID or reference">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" rows="2" class="form-input" placeholder="Optional notes..."></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-6 border-t">
+                    <button type="button" onclick="closeModal('paymentModal')" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">check</span>Confirm Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPaymentModal(branchId, branchName, outstanding) {
+    document.getElementById('paymentForm').action = '/contributions/mission-returns/mark-paid/' + branchId + '/';
+    document.getElementById('modalBranchName').textContent = branchName;
+    document.getElementById('modalAmount').value = outstanding.toFixed(2);
+    openModal('paymentModal');
+}
+
+function openModal(id) {
+    document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+</script>
+{% endblock %}

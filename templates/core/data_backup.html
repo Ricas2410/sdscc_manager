@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Data Backup & Restore{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Data Backup & Restore</h1>
+            <p class="text-gray-500">Backup your data or restore from a previous backup</p>
+        </div>
+        <a href="{% url 'core:settings' %}" class="btn-secondary">
+            <span class="material-icons-outlined text-lg mr-2">settings</span>
+            Settings
+        </a>
+    </div>
+    
+    <!-- Stats Overview -->
+    {% if stats %}
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div class="bg-white rounded-lg p-4 text-center shadow-sm border">
+            <p class="text-2xl font-bold text-blue-600">{{ stats.areas }}</p>
+            <p class="text-xs text-gray-500">Areas</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center shadow-sm border">
+            <p class="text-2xl font-bold text-green-600">{{ stats.districts }}</p>
+            <p class="text-xs text-gray-500">Districts</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center shadow-sm border">
+            <p class="text-2xl font-bold text-purple-600">{{ stats.branches }}</p>
+            <p class="text-xs text-gray-500">Branches</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center shadow-sm border">
+            <p class="text-2xl font-bold text-cyan-600">{{ stats.users }}</p>
+            <p class="text-xs text-gray-500">Users</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center shadow-sm border">
+            <p class="text-2xl font-bold text-orange-600">{{ stats.members }}</p>
+            <p class="text-xs text-gray-500">Members</p>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center shadow-sm border">
+            <p class="text-2xl font-bold text-pink-600">{{ stats.contributions }}</p>
+            <p class="text-xs text-gray-500">Contributions</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="grid md:grid-cols-2 gap-6">
+        <!-- Backup Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <h2 class="font-semibold text-white flex items-center gap-2">
+                    <span class="material-icons-outlined">cloud_download</span>
+                    Create Backup
+                </h2>
+            </div>
+            <div class="p-6">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="backup">
+                    
+                    <div class="space-y-4">
+                        <label class="flex items-start gap-3 p-4 rounded-lg border-2 border-blue-200 bg-blue-50 cursor-pointer">
+                            <input type="radio" name="backup_type" value="structure" class="mt-1" checked>
+                            <div>
+                                <span class="font-medium text-gray-900">Structure Only</span>
+                                <p class="text-sm text-gray-500">Areas, districts, branches, contribution types, categories</p>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-200 cursor-pointer">
+                            <input type="radio" name="backup_type" value="full" class="mt-1">
+                            <div>
+                                <span class="font-medium text-gray-900">Full Backup</span>
+                                <p class="text-sm text-gray-500">All data including users, members, contributions, attendance, payroll</p>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-full mt-6">
+                        <span class="material-icons-outlined mr-2">download</span>
+                        Download Backup (JSON)
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Restore Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+                <h2 class="font-semibold text-white flex items-center gap-2">
+                    <span class="material-icons-outlined">cloud_upload</span>
+                    Restore Backup
+                </h2>
+            </div>
+            <div class="p-6">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="restore">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Backup File</label>
+                            <input type="file" name="backup_file" accept=".json" required class="input-field">
+                            <p class="text-xs text-gray-500 mt-1">Only .json backup files are supported</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Restore Type</label>
+                            <select name="restore_type" class="input-field">
+                                <option value="structure">Structure Only (Safe)</option>
+                                <option value="full">Full Restore (Caution)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                            <div class="flex items-start gap-2">
+                                <span class="material-icons-outlined text-amber-600 text-sm">warning</span>
+                                <p class="text-xs text-amber-700">Only items that don't already exist will be restored. Existing data will not be overwritten.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-secondary w-full mt-6 border-green-300 text-green-700 hover:bg-green-50">
+                        <span class="material-icons-outlined mr-2">restore</span>
+                        Restore from Backup
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Options -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Quick Exports</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+            <a href="{% url 'core:export_members' %}" class="flex items-center gap-3 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-green-600">people</span>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">Members</p>
+                    <p class="text-xs text-gray-500">Export to Excel</p>
+                </div>
+            </a>
+            <a href="{% url 'core:export_contributions' %}" class="flex items-center gap-3 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-purple-600">payments</span>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">Contributions</p>
+                    <p class="text-xs text-gray-500">Export to Excel</p>
+                </div>
+            </a>
+            <a href="{% url 'core:settings' %}" class="flex items-center gap-3 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-blue-600">settings</span>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">Settings</p>
+                    <p class="text-xs text-gray-500">System Configuration</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Backup Best Practices -->
+    <div class="bg-amber-50 rounded-xl p-5">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-amber-600">tips_and_updates</span>
+            <div class="text-sm text-amber-700">
+                <p class="font-medium">Backup Best Practices</p>
+                <ul class="mt-2 list-disc list-inside space-y-1">
+                    <li>Perform regular backups (weekly recommended)</li>
+                    <li>Store backups in multiple secure locations</li>
+                    <li>Test backup restoration periodically</li>
+                    <li>Keep backups for at least 1 year</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

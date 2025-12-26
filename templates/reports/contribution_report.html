@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Contribution Report{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Contribution Report</h1>
+            <p class="text-gray-500 mt-1">Detailed contribution analysis</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">print</span>Print
+            </button>
+            <a href="{% url 'reports:index' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">arrow_back</span>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}">{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Type</label>
+                    <select name="type" class="form-input form-select">
+                        <option value="">All Types</option>
+                        {% for ct in contribution_types %}
+                        <option value="{{ ct.id }}">{{ ct.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">Generate Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Total Contributions</p>
+            <p class="text-2xl font-bold text-gray-900">GH₵{{ total_contributions|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Total Tithe</p>
+            <p class="text-2xl font-bold text-blue-600">GH₵{{ total_tithe|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Total Offering</p>
+            <p class="text-2xl font-bold text-green-600">GH₵{{ total_offering|floatformat:2|default:"0.00" }}</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-sm text-gray-500">Transaction Count</p>
+            <p class="text-2xl font-bold text-gray-900">{{ transaction_count|default:"0" }}</p>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Contribution Breakdown</h2>
+        </div>
+        <div class="card-body">
+            <canvas id="contributionChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Contribution Details by Branch</h2>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Branch</th>
+                        <th>District</th>
+                        <th>Area</th>
+                        <th class="text-right">Tithe</th>
+                        <th class="text-right">Offering</th>
+                        <th class="text-right">Other</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in branch_breakdown %}
+                    <tr>
+                        <td class="font-medium">{{ item.branch }}</td>
+                        <td class="text-gray-500">{{ item.district }}</td>
+                        <td class="text-gray-500">{{ item.area }}</td>
+                        <td class="text-right">GH₵{{ item.tithe|floatformat:2 }}</td>
+                        <td class="text-right">GH₵{{ item.offering|floatformat:2 }}</td>
+                        <td class="text-right">GH₵{{ item.other|floatformat:2 }}</td>
+                        <td class="text-right font-semibold">GH₵{{ item.total|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-500">No data for selected period</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('contributionChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Tithe', 'Offering', 'Special Contributions', 'Other'],
+            datasets: [{
+                data: [{{ tithe_pct|default:40 }}, {{ offering_pct|default:35 }}, {{ special_pct|default:15 }}, {{ other_pct|default:10 }}],
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right' } }
+        }
+    });
+});
+</script>
+{% endblock %}

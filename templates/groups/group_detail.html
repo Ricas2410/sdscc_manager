@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="{% url 'groups:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ group.name }}</h1>
+                {% if group.category %}
+                <p class="text-sm text-gray-500">{{ group.category.name }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if user.role != 'member' %}
+        <a href="{% url 'groups:members' group.id %}" class="btn-primary">
+            <span class="material-icons-outlined mr-1">person_add</span> Manage Members
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Group Info -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="font-medium text-gray-900 mb-4">Group Information</h3>
+            {% if group.description %}
+            <p class="text-gray-600 mb-4">{{ group.description }}</p>
+            {% endif %}
+            <dl class="space-y-3">
+                <div>
+                    <dt class="text-sm text-gray-500">Leader</dt>
+                    <dd class="font-medium">{{ group.leader.get_full_name|default:"Not assigned" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Total Members</dt>
+                    <dd class="font-medium">{{ group.members.count }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Created</dt>
+                    <dd class="font-medium">{{ group.created_at|date:"M d, Y" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Members List -->
+        <div class="lg:col-span-2 bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b">
+                <h3 class="font-medium text-gray-900">Members</h3>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for membership in group.members.all %}
+                <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                            <span class="text-primary-600 font-medium">{{ membership.user.first_name|slice:":1" }}{{ membership.user.last_name|slice:":1" }}</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-900">{{ membership.user.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ membership.role|default:"Member" }}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">Joined {{ membership.joined_at|date:"M Y" }}</span>
+                </div>
+                {% empty %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <p>No members in this group yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

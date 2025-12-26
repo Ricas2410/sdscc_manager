@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}Tithe Performance Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Tithe Performance Tracking</h1>
+            <p class="text-sm text-gray-500">Monitor branch tithe targets and commission calculations</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'contributions:commission_report_print' %}?month={{ month }}&year={{ year }}" target="_blank" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-1">print</span>Print Report
+            </a>
+            {% if user.is_mission_admin %}
+            <a href="{% url 'contributions:commission_management' %}?month={{ month }}&year={{ year }}" class="btn btn-primary">
+                <span class="material-icons-outlined mr-1">paid</span>Manage Commissions
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-input form-select" onchange="this.form.submit()">
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-input form-select" onchange="this.form.submit()">
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if user.is_mission_admin %}
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if selected_area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">District</label>
+                    <select name="district" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" {% if selected_district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="flex items-end">
+                    <a href="{% url 'contributions:tithe_performance' %}" class="btn btn-secondary w-full">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Target</p>
+                        <p class="text-2xl font-bold text-gray-900">GH₵{{ total_target|floatformat:2 }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-gray-400">flag</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Collected</p>
+                        <p class="text-2xl font-bold text-green-600">GH₵{{ total_collected|floatformat:2 }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-green-600">payments</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Overall Achievement</p>
+                        <p class="text-2xl font-bold {% if overall_percentage >= 100 %}text-green-600{% else %}text-orange-600{% endif %}">
+                            {{ overall_percentage|floatformat:1 }}%
+                        </p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-primary-600">analytics</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Branches Met Target</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ branches_met_target }}/{{ total_branches }}</p>
+                    </div>
+                    <span class="material-icons-outlined text-4xl text-blue-600">check_circle</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Table -->
+    <div class="card">
+        <div class="card-header flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">Branch Performance - {{ month_name }} {{ year }}</h3>
+            <div class="flex gap-2">
+                <select name="sort" class="form-input form-select text-sm py-1.5" onchange="window.location.href='?month={{ month }}&year={{ year }}&sort=' + this.value">
+                    <option value="percentage">Sort by Achievement %</option>
+                    <option value="collected">Sort by Amount Collected</option>
+                    <option value="variance">Sort by Variance</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Branch</th>
+                        <th>Pastor</th>
+                        <th class="text-right">Target</th>
+                        <th class="text-right">Collected</th>
+                        <th class="text-center">Achievement</th>
+                        <th class="text-right">Variance</th>
+                        <th class="text-right">Commission</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in branch_performance %}
+                    <tr class="{% if item.met_target %}bg-green-50{% endif %}">
+                        <td>
+                            <div class="font-medium text-gray-900">{{ item.branch.name }}</div>
+                            <div class="text-xs text-gray-500">{{ item.branch.district.name }}</div>
+                        </td>
+                        <td>
+                            {% if item.pastor %}
+                            {{ item.pastor.get_full_name }}
+                            {% else %}
+                            <span class="text-gray-400">No Pastor</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right font-mono">GH₵{{ item.target|floatformat:2 }}</td>
+                        <td class="text-right font-mono font-semibold text-green-600">GH₵{{ item.collected|floatformat:2 }}</td>
+                        <td class="text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <div class="w-24 bg-gray-200 rounded-full h-2">
+                                    <div class="{% if item.percentage >= 100 %}bg-green-600{% elif item.percentage >= 75 %}bg-blue-600{% elif item.percentage >= 50 %}bg-yellow-600{% else %}bg-red-600{% endif %} h-2 rounded-full" 
+                                         style="width: {% if item.percentage > 100 %}100{% else %}{{ item.percentage }}{% endif %}%"></div>
+                                </div>
+                                <span class="font-semibold {% if item.percentage >= 100 %}text-green-600{% else %}text-orange-600{% endif %}">
+                                    {{ item.percentage|floatformat:1 }}%
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-right font-mono {% if item.variance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if item.variance >= 0 %}+{% endif %}GH₵{{ item.variance|floatformat:2 }}
+                        </td>
+                        <td class="text-right font-mono font-semibold text-blue-600">
+                            {% if item.commission_amount > 0 %}
+                            GH₵{{ item.commission_amount|floatformat:2 }}
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.met_target %}
+                            <span class="badge badge-success">
+                                <span class="material-icons-outlined text-xs">check_circle</span> Qualified
+                            </span>
+                            {% else %}
+                            <span class="badge badge-warning">
+                                <span class="material-icons-outlined text-xs">pending</span> Not Met
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-8 text-gray-500">
+                            <span class="material-icons-outlined text-4xl text-gray-300">church</span>
+                            <p class="mt-2">No branch data available</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50 font-semibold">
+                    <tr>
+                        <td colspan="2">TOTAL</td>
+                        <td class="text-right">GH₵{{ total_target|floatformat:2 }}</td>
+                        <td class="text-right text-green-600">GH₵{{ total_collected|floatformat:2 }}</td>
+                        <td class="text-center">{{ overall_percentage|floatformat:1 }}%</td>
+                        <td class="text-right {% if total_collected >= total_target %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if total_collected >= total_target %}+{% endif %}GH₵{{ total_collected|add:"-"|add:total_target|floatformat:2 }}
+                        </td>
+                        <td class="text-right text-blue-600">GH₵{{ total_commission|floatformat:2 }}</td>
+                        <td>{{ branches_met_target }}/{{ total_branches }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .sidebar, .topbar, .btn, select, .no-print { display: none !important; }
+    .card { box-shadow: none; border: 1px solid #ddd; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,959 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SDSCC Church Management System">
+    <meta name="theme-color" content="#1e40af">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SDSCC">
+    <meta name="application-name" content="SDSCC">
+    <meta name="msapplication-TileColor" content="#1e40af">
+    <title>{% block title %}SDSCC Church Management{% endblock %}</title>
+    
+    <!-- Favicon -->
+    {% if site_settings and site_settings.get_favicon_url %}
+    <!-- Use uploaded favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ site_settings.get_favicon_url }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ site_settings.get_favicon_url }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ site_settings.get_favicon_url }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ site_settings.get_favicon_url }}">
+    {% else %}
+    <!-- Fallback to default SVG icons -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/icon-192.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/icon-192.svg' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/icon-192.svg' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icon-192.svg' %}">
+    {% endif %}
+    
+    <!-- Additional favicon sizes for better visibility -->
+    {% if site_settings and site_settings.get_favicon_url %}
+    <link rel="icon" type="image/svg+xml" sizes="any" href="{{ site_settings.get_favicon_url }}">
+    <link rel="shortcut icon" href="{{ site_settings.get_favicon_url }}">
+    <link rel="fluid-icon" href="{{ site_settings.get_favicon_url }}" title="SDSCC">
+    {% else %}
+    <link rel="icon" type="image/svg+xml" sizes="any" href="{% static 'images/icon-512.svg' %}">
+    <link rel="shortcut icon" href="{% static 'images/icon-192.svg' %}">
+    <link rel="fluid-icon" href="{% static 'images/icon-512.svg' %}" title="SDSCC">
+    {% endif %}
+    
+    <!-- PWA Manifest - Always load for install prompt -->
+    <link rel="manifest" href="{% url 'core:manifest' %}" crossorigin="use-credentials">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <!-- TailwindCSS -->
+    <link href="{% static 'css/output.css' %}" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        /* Form Styling */
+        .form-input {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #1f2937;
+            background-color: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-input:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #ef4444;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        /* Filter Section Styling */
+        .filter-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .filter-section label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            margin-bottom: 0.375rem;
+        }
+
+        /* Status Pills */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            background: #f3f4f6;
+            padding: 0.375rem;
+            border-radius: 0.75rem;
+        }
+
+        .tab-nav a,
+        .tab-nav button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        /* Mobile Sidebar Scrolling */
+        #mobile-sidebar {
+            height: 100vh !important;
+            max-height: 100vh !important;
+        }
+
+        #mobile-sidebar nav {
+            height: calc(100vh - 4rem) !important;
+            max-height: calc(100vh - 4rem) !important;
+            overflow-y: auto !important;
+        }
+
+        #mobile-sidebar nav:has(+ .profile-section) {
+            height: calc(100vh - 8rem) !important;
+            max-height: calc(100vh - 8rem) !important;
+        }
+
+        .tab-nav a.active,
+        .tab-nav button.active {
+            color: #1d4ed8;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.625rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            position: relative;
+        }
+
+        .card-overflow-hidden {
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .card-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 0.75rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .data-table th {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .data-table td {
+            padding: 0.875rem 1rem;
+            font-size: 0.875rem;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Sidebar Styles */
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.625rem 1rem;
+            margin: 0.125rem 0.5rem;
+            border-radius: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            background: #334155;
+            color: #f1f5f9;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .sidebar-section {
+            padding: 0.5rem 1rem;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 1rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 32rem;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-lg {
+            max-width: 48rem;
+        }
+
+        .modal-xl {
+            max-width: 64rem;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+        }
+
+        .badge-primary {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-gray {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        /* Stat Card */
+        .stat-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Dropdown */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 100;
+            min-width: 12rem;
+            padding: 0.5rem 0;
+            margin-top: 0.25rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+
+        .dropdown:hover .dropdown-menu,
+        .dropdown.open .dropdown-menu,
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+            background: #f3f4f6;
+            color: #111827;
+        }
+
+        /* User Profile Dropdown */
+        #userDropdown,
+        #branchDropdown,
+        #notificationDropdown {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+
+        #userDropdown.show,
+        #branchDropdown.show,
+        #notificationDropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="h-full">
+    <div class="min-h-full">
+        {% if user.is_authenticated %}
+        {% include 'components/sidebar.html' %}
+
+        <!-- Main content area -->
+        <div class="lg:pl-64">
+            {% include 'components/topbar.html' %}
+
+            <main class="py-6">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="mb-4 rounded-lg p-4 {% if message.tags == 'error' %}bg-red-50 text-red-700{% elif message.tags == 'success' %}bg-green-50 text-green-700{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-700{% else %}bg-blue-50 text-blue-700{% endif %}"
+                        role="alert">
+                        <div class="flex items-center">
+                            <span class="material-icons-outlined mr-2 text-lg">
+                                {% if message.tags == 'error' %}
+                                error
+                                {% elif message.tags == 'success' %}
+                                check_circle
+                                {% elif message.tags == 'warning' %}
+                                warning
+                                {% else %}
+                                info
+                                {% endif %}
+                            </span>
+                            {{ message }}
+                            <button type="button" class="ml-auto" onclick="this.parentElement.parentElement.remove()">
+                                <span class="material-icons text-lg">close</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <!-- PIN Change Modal -->
+                    {% if show_pin_change_modal and pin_change_required %}
+                    <div id="pinChangeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+                            <!-- Modal Header -->
+                            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-lg">
+                                <h2 class="text-xl font-bold text-white">Update Your PIN</h2>
+                                <p class="text-blue-100 text-sm">This is required before accessing the system</p>
+                            </div>
+
+                            <!-- Modal Body -->
+                            <div class="p-6">
+                                <div id="pinErrorMessage" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"></div>
+                                
+                                <form id="pinChangeForm" onsubmit="updatePinViaAjax(event)">
+                                    <div class="mb-4">
+                                        <label for="newPin" class="block text-sm font-medium text-gray-700 mb-2">
+                                            New PIN (4+ digits)
+                                        </label>
+                                        <input type="password" id="newPin" name="new_pin" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Enter new PIN">
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label for="confirmPin" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Confirm PIN
+                                        </label>
+                                        <input type="password" id="confirmPin" name="confirm_pin" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Confirm PIN">
+                                    </div>
+
+                                    <div class="flex gap-3">
+                                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-md transition">
+                                            Update PIN
+                                        </button>
+                                        <button type="button" onclick="dismissPinChangeModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 rounded-md transition">
+                                            Later
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+        {% else %}
+        {% block auth_content %}{% endblock %}
+        {% endif %}
+    </div>
+
+    <!-- Mobile sidebar backdrop -->
+    <div id="sidebar-backdrop" class="sidebar-overlay fixed inset-0 bg-gray-900/50 z-40 lg:hidden hidden"
+        onclick="toggleSidebar()"></div>
+
+    <script>
+        // Toggle mobile sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        // Toggle dropdown menus
+        function toggleDropdown(id) {
+            event.stopPropagation();
+            const dropdown = document.getElementById(id);
+            const isOpen = dropdown.classList.contains('show');
+
+            // Close all dropdowns first
+            document.querySelectorAll('#userDropdown, #branchDropdown, #notificationDropdown').forEach(d => {
+                d.classList.remove('show');
+            });
+
+            // Toggle the clicked one
+            if (!isOpen) {
+                dropdown.classList.add('show');
+            }
+
+            const icon = document.getElementById(id + '-icon');
+            if (icon) {
+                icon.classList.toggle('rotate-180');
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#userDropdownContainer') && !e.target.closest('#branchDropdownContainer') && !e.target.closest('#notificationDropdownContainer')) {
+                document.querySelectorAll('#userDropdown, #branchDropdown, #notificationDropdown').forEach(d => {
+                    d.classList.remove('show');
+                });
+            }
+        });
+
+        // Modal functions
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        // Keyboard shortcut for search (Ctrl+K or Cmd+K)
+        document.addEventListener('keydown', function (e) {
+            // Ctrl+K or Cmd+K to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const searchField = document.getElementById('search-field');
+                if (searchField) {
+                    searchField.focus();
+                    searchField.select();
+                }
+            }
+
+            // Escape to close dropdowns
+            if (e.key === 'Escape') {
+                document.querySelectorAll('#userDropdown, #branchDropdown').forEach(d => {
+                    d.classList.remove('show');
+                });
+            }
+        });
+    </script>
+
+    <!-- PWA Service Worker Registration and Install Prompt -->
+    <script>
+        // Store the install prompt event
+        let deferredPrompt;
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('{% url "core:service_worker" %}', { scope: '/' })
+                    .then(function (registration) {
+                        console.log('ServiceWorker registration successful with scope:', registration.scope);
+                        // Check for updates
+                        registration.update();
+                    })
+                    .catch(function (err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // Listen for the beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA install prompt available');
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Store the event for later use
+            deferredPrompt = e;
+            // Show install button/banner
+            showInstallPromotion();
+        });
+
+        // Show PWA install banner
+        function showInstallPromotion() {
+            // Check if banner already exists or was dismissed
+            if (document.getElementById('pwa-install-banner') || localStorage.getItem('pwa-install-dismissed')) {
+                return;
+            }
+
+            const banner = document.createElement('div');
+            banner.id = 'pwa-install-banner';
+            banner.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 rounded-xl shadow-2xl z-50 transform transition-transform duration-300';
+            banner.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+                        <span class="text-2xl font-bold text-blue-600">S</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">Install SDSCC App</h3>
+                        <p class="text-sm text-blue-100 mt-1">Install our app for quick access, offline support, and a better experience!</p>
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="installPWA()" class="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors">
+                                Install Now
+                            </button>
+                            <button onclick="dismissInstallBanner()" class="text-blue-100 px-3 py-2 text-sm hover:text-white transition-colors">
+                                Maybe Later
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="dismissInstallBanner()" class="text-blue-200 hover:text-white">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+
+            // Animate in
+            setTimeout(() => {
+                banner.style.transform = 'translateY(0)';
+            }, 100);
+        }
+
+        // Install the PWA
+        async function installPWA() {
+            if (!deferredPrompt) {
+                console.log('No install prompt available');
+                return;
+            }
+
+            // Show the install prompt
+            deferredPrompt.prompt();
+
+            // Wait for the user's response
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('User response to install prompt:', outcome);
+
+            // Clear the prompt
+            deferredPrompt = null;
+
+            // Hide the banner
+            dismissInstallBanner(true);
+        }
+
+        // Dismiss install banner
+        function dismissInstallBanner(installed = false) {
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) {
+                banner.style.transform = 'translateY(100%)';
+                setTimeout(() => banner.remove(), 300);
+            }
+            if (!installed) {
+                // Only set dismissal for "Maybe Later" - they can see it again after 7 days
+                localStorage.setItem('pwa-install-dismissed', Date.now());
+                setTimeout(() => {
+                    localStorage.removeItem('pwa-install-dismissed');
+                }, 7 * 24 * 60 * 60 * 1000); // 7 days
+            }
+        }
+
+        // Listen for successful installation
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('PWA was installed successfully');
+            dismissInstallBanner(true);
+        });
+
+        // Check on page load if banner should show (for returning visits)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Clear old dismissal after 7 days
+            const dismissed = localStorage.getItem('pwa-install-dismissed');
+            if (dismissed && (Date.now() - parseInt(dismissed)) > 7 * 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('pwa-install-dismissed');
+            }
+        });
+    </script>
+
+    <!-- PIN Change Modal Scripts -->
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function updatePinViaAjax(event) {
+            event.preventDefault();
+            
+            const newPin = document.getElementById('newPin').value.trim();
+            const confirmPin = document.getElementById('confirmPin').value.trim();
+            const errorDiv = document.getElementById('pinErrorMessage');
+            
+            if (!newPin || !confirmPin) {
+                errorDiv.textContent = 'All fields are required';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            if (newPin !== confirmPin) {
+                errorDiv.textContent = 'PINs do not match';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            if (newPin.length < 4) {
+                errorDiv.textContent = 'PIN must be at least 4 characters';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            const csrftoken = getCookie('csrftoken');
+            
+            fetch('{% url "accounts:update_pin_ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: JSON.stringify({
+                    new_pin: newPin,
+                    confirm_pin: confirmPin
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Close modal and show success message
+                    const modal = document.getElementById('pinChangeModal');
+                    if (modal) {
+                        modal.remove();
+                    }
+                    // Show success message
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'bg-green-50 border border-green-200 rounded-md p-4 mb-4';
+                    messageDiv.innerHTML = `
+                        <div class="flex items-start">
+                            <span class="material-icons text-green-600 mr-3">check_circle</span>
+                            <span class="text-green-800">PIN updated successfully. You can now access the system.</span>
+                            <button type="button" class="ml-auto" onclick="this.parentElement.parentElement.remove()">
+                                <span class="material-icons text-lg">close</span>
+                            </button>
+                        </div>
+                    `;
+                    const contentArea = document.querySelector('main');
+                    if (contentArea) {
+                        contentArea.insertBefore(messageDiv, contentArea.firstChild);
+                    }
+                } else {
+                    errorDiv.textContent = data.message || 'Failed to update PIN';
+                    errorDiv.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.classList.remove('hidden');
+            });
+        }
+
+        function dismissPinChangeModal() {
+            const csrftoken = getCookie('csrftoken');
+            
+            fetch('{% url "accounts:dismiss_pin_modal" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const modal = document.getElementById('pinChangeModal');
+                    if (modal) {
+                        modal.remove();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Still remove modal even if dismiss fails
+                const modal = document.getElementById('pinChangeModal');
+                if (modal) {
+                    modal.remove();
+                }
+            });
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block title %}Contributions{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Contributions</h1>
+            <p class="text-gray-500 mt-1">Manage church contributions and offerings</p>
+        </div>
+        <div class="flex gap-2">
+            {% if user.is_mission_admin %}
+            <a href="{% url 'contributions:types' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-1">category</span>Types
+            </a>
+            {% endif %}
+            {% if user.can_manage_finances %}
+            <a href="{% url 'contributions:add' %}" class="btn btn-primary">
+                <span class="material-icons-outlined mr-1">add</span>Record Contribution
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">today</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Today</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵{{ today_total|default:"0"|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">date_range</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">This Week</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵{{ week_total|default:"0"|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">calendar_month</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">This Month</p>
+                    <p class="text-xl font-bold text-gray-900">GH₵{{ month_total|default:"0"|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">calendar_today</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">This Year</p>
+                    <p class="text-xl font-bold text-green-600">GH₵{{ year_total|default:"0"|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-body p-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" value="{{ request.GET.from_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" value="{{ request.GET.to_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Type</label>
+                    <select name="type" class="form-input form-select">
+                        <option value="">All Types</option>
+                        {% for ct in contribution_types %}
+                        <option value="{{ ct.id }}" {% if request.GET.type == ct.id|stringformat:"s" %}selected{% endif %}>{{ ct.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Area</label>
+                    <select name="area" id="areaFilter" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">District</label>
+                    <select name="district" id="districtFilter" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Branch</label>
+                    <select name="branch" id="branchFilter" class="form-input form-select">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }} ({{ branch.district.name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <span class="material-icons-outlined mr-1">search</span>Filter
+                    </button>
+                    <a href="{% url 'contributions:list' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contributions Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Member</th>
+                        <th>Branch</th>
+                        <th class="text-right">Amount</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contribution in contributions %}
+                    <tr>
+                        <td class="text-gray-900">{{ contribution.date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if contribution.contribution_type.category == 'tithe' %}badge-primary
+                                {% elif contribution.contribution_type.category == 'offering' %}badge-success
+                                {% else %}badge-gray{% endif %}">
+                                {{ contribution.contribution_type.name }}
+                            </span>
+                        </td>
+                        <td class="text-gray-500">
+                            {% if contribution.member %}
+                            {{ contribution.member.get_full_name }}
+                            {% else %}
+                            <span class="text-gray-400 italic">General</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-gray-500">{{ contribution.branch.name }}</td>
+                        <td class="text-right font-semibold text-gray-900">GH₵{{ contribution.amount|floatformat:2 }}</td>
+                        <td class="text-right">
+                            <a href="{% url 'contributions:detail' contribution.id %}" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg inline-block">
+                                <span class="material-icons-outlined text-lg">visibility</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">payments</span>
+                            <p class="mt-2 text-gray-500">No contributions found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if contributions.has_other_pages %}
+        <div class="card-body border-t">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-500">
+                    Showing {{ contributions.start_index }} - {{ contributions.end_index }} of {{ contributions.paginator.count }} contributions
+                </p>
+                <nav class="flex items-center gap-1">
+                    {% if contributions.has_previous %}
+                    <a href="?page={{ contributions.previous_page_number }}&{{ request.GET.urlencode }}" class="px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-sm">
+                        <span class="material-icons-outlined text-lg align-middle">chevron_left</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% for num in contributions.paginator.page_range %}
+                        {% if contributions.number == num %}
+                        <span class="px-3 py-1.5 rounded-lg bg-primary-600 text-white text-sm">{{ num }}</span>
+                        {% elif num > contributions.number|add:'-3' and num < contributions.number|add:'3' %}
+                        <a href="?page={{ num }}&{{ request.GET.urlencode }}" class="px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-sm">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if contributions.has_next %}
+                    <a href="?page={{ contributions.next_page_number }}&{{ request.GET.urlencode }}" class="px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-sm">
+                        <span class="material-icons-outlined text-lg align-middle">chevron_right</span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

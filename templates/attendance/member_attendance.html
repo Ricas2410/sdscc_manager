@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}{{ member.get_full_name }} - Attendance{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            {% if member.profile_picture %}
+            <img src="{{ member.profile_picture.url }}" class="w-16 h-16 rounded-full object-cover">
+            {% else %}
+            <div class="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+                <span class="text-xl font-medium text-primary-600">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+            </div>
+            {% endif %}
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ member.get_full_name }}</h1>
+                <p class="text-gray-500">{{ member.user_id }} • {{ member.branch.name|default:"No Branch" }}</p>
+            </div>
+        </div>
+        <a href="{% url 'attendance:list' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="stat-card text-center">
+            <p class="text-4xl font-bold text-primary-600">{{ attendance_percentage|floatformat:0 }}%</p>
+            <p class="text-sm text-gray-500">Attendance Rate</p>
+        </div>
+        <div class="stat-card text-center">
+            <p class="text-4xl font-bold text-gray-900">{{ total_sessions }}</p>
+            <p class="text-sm text-gray-500">Total Sessions</p>
+        </div>
+        <div class="stat-card text-center">
+            <p class="text-4xl font-bold text-green-600">{{ present_count }}</p>
+            <p class="text-sm text-gray-500">Times Present</p>
+        </div>
+        <div class="stat-card text-center">
+            <p class="text-4xl font-bold text-red-600">{{ absent_count }}</p>
+            <p class="text-sm text-gray-500">Times Absent</p>
+        </div>
+    </div>
+
+    <!-- Attendance Progress Bar -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Attendance Progress</span>
+                <span class="text-sm font-medium text-primary-600">{{ attendance_percentage|floatformat:1 }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4">
+                <div class="bg-primary-600 h-4 rounded-full" style="width: {{ attendance_percentage }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance History -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Attendance History</h2>
+            <p class="text-sm text-gray-500">Last 50 sessions</p>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Service Type</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ record.session.date|date:"M d, Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ record.session.date|date:"l" }}</div>
+                        </td>
+                        <td class="text-gray-500">{{ record.session.service_type.name }}</td>
+                        <td class="text-center">
+                            {% if record.status == 'present' %}
+                            <span class="badge badge-success">
+                                <span class="material-icons-outlined text-sm mr-1">check</span>Present
+                            </span>
+                            {% else %}
+                            <span class="badge badge-danger">
+                                <span class="material-icons-outlined text-sm mr-1">close</span>Absent
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-8 text-gray-500">No attendance records found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

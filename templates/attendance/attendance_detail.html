@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Session{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <a href="{% url 'attendance:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ session.service_type.name }}</h1>
+                <p class="text-gray-500">{{ session.date|date:"l, F d, Y" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white shadow rounded-lg p-4 text-center">
+            <p class="text-sm text-gray-500">Total Attendance</p>
+            <p class="text-3xl font-bold text-primary-600">{{ session.total_count|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 text-center">
+            <p class="text-sm text-gray-500">Members</p>
+            <p class="text-3xl font-bold text-gray-900">{{ session.member_count|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 text-center">
+            <p class="text-sm text-gray-500">Visitors</p>
+            <p class="text-3xl font-bold text-green-600">{{ session.visitor_count|default:"0" }}</p>
+        </div>
+        <div class="bg-white shadow rounded-lg p-4 text-center">
+            <p class="text-sm text-gray-500">Children</p>
+            <p class="text-3xl font-bold text-gray-900">{{ session.children_count|default:"0" }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Members Present -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b">
+                <h3 class="font-medium text-gray-900">Members Present</h3>
+            </div>
+            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                {% for record in attendance_records %}
+                <div class="px-6 py-3 flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-xs font-medium text-primary-600">
+                        {{ record.member.first_name|slice:":1" }}{{ record.member.last_name|slice:":1" }}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">{{ record.member.get_full_name }}</p>
+                        <p class="text-xs text-gray-500">{{ record.member.member_id }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <p>No individual attendance recorded</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Visitors -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b">
+                <h3 class="font-medium text-gray-900">Visitors</h3>
+            </div>
+            <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                {% for visitor in visitors %}
+                <div class="px-6 py-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ visitor.name }}</p>
+                            <p class="text-xs text-gray-500">{{ visitor.phone|default:"No phone" }}</p>
+                        </div>
+                        {% if visitor.is_first_time %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">First Time</span>
+                        {% endif %}
+                    </div>
+                    {% if visitor.address %}
+                    <p class="text-xs text-gray-500 mt-1">{{ visitor.address }}</p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="px-6 py-8 text-center text-gray-500">
+                    <p>No visitors recorded</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Info -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="font-medium text-gray-900 mb-4">Session Information</h3>
+        <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <dt class="text-sm text-gray-500">Branch</dt>
+                <dd class="font-medium">{{ session.branch.name }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-gray-500">Recorded By</dt>
+                <dd class="font-medium">{{ session.recorded_by.get_full_name|default:"-" }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-gray-500">Created</dt>
+                <dd class="font-medium">{{ session.created_at|date:"M d, Y H:i" }}</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+{% endblock %}

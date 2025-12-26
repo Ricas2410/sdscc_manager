@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Notifications</h1>
+            <p class="text-gray-500">{{ unread_count }} unread notification{{ unread_count|pluralize }}</p>
+        </div>
+        
+        {% if unread_count > 0 %}
+        <form method="POST" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_all_read">
+            <button type="submit" class="btn-secondary">
+                <span class="material-icons-outlined text-lg mr-2">done_all</span>
+                Mark All Read
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="border-b border-gray-200">
+        <nav class="flex gap-4">
+            <a href="{% url 'core:notifications' %}" 
+               class="py-3 px-1 border-b-2 {% if not request.GET.status %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm">
+                All
+            </a>
+            <a href="{% url 'core:notifications' %}?status=unread" 
+               class="py-3 px-1 border-b-2 {% if request.GET.status == 'unread' %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm">
+                Unread
+            </a>
+            <a href="{% url 'core:notifications' %}?status=read" 
+               class="py-3 px-1 border-b-2 {% if request.GET.status == 'read' %}border-blue-600 text-blue-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm">
+                Read
+            </a>
+        </nav>
+    </div>
+    
+    <!-- Notifications List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+        {% for notification in notifications %}
+        <div class="p-4 hover:bg-gray-50 {% if not notification.is_read %}bg-blue-50/50{% endif %}">
+            <div class="flex items-start gap-4">
+                <!-- Icon -->
+                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+                    {% if notification.notification_type == 'contribution' %}bg-green-100
+                    {% elif notification.notification_type == 'expenditure' %}bg-red-100
+                    {% elif notification.notification_type == 'announcement' %}bg-purple-100
+                    {% elif notification.notification_type == 'member_added' %}bg-blue-100
+                    {% elif notification.notification_type == 'birthday' %}bg-pink-100
+                    {% elif notification.notification_type == 'prayer_request' %}bg-yellow-100
+                    {% else %}bg-gray-100{% endif %}">
+                    <span class="material-icons-outlined text-lg
+                        {% if notification.notification_type == 'contribution' %}text-green-600
+                        {% elif notification.notification_type == 'expenditure' %}text-red-600
+                        {% elif notification.notification_type == 'announcement' %}text-purple-600
+                        {% elif notification.notification_type == 'member_added' %}text-blue-600
+                        {% elif notification.notification_type == 'birthday' %}text-pink-600
+                        {% elif notification.notification_type == 'prayer_request' %}text-yellow-600
+                        {% else %}text-gray-600{% endif %}">
+                        {% if notification.notification_type == 'contribution' %}payments
+                        {% elif notification.notification_type == 'expenditure' %}receipt_long
+                        {% elif notification.notification_type == 'announcement' %}campaign
+                        {% elif notification.notification_type == 'member_added' %}person_add
+                        {% elif notification.notification_type == 'birthday' %}cake
+                        {% elif notification.notification_type == 'prayer_request' %}favorite
+                        {% else %}notifications{% endif %}
+                    </span>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 {% if not notification.is_read %}font-semibold{% endif %}">
+                                {{ notification.title }}
+                            </p>
+                            <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+                        </div>
+                        {% if not notification.is_read %}
+                        <form method="POST" class="flex-shrink-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="mark_read">
+                            <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                            <button type="submit" class="text-blue-600 hover:text-blue-800 p-1" title="Mark as read">
+                                <span class="material-icons-outlined text-lg">check_circle</span>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                        <span>{{ notification.created_at|naturaltime }}</span>
+                        {% if notification.branch %}
+                        <span>• {{ notification.branch.name }}</span>
+                        {% endif %}
+                    </div>
+                    {% if notification.link %}
+                    <a href="{{ notification.link }}" class="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-800">
+                        View Details
+                        <span class="material-icons text-sm">arrow_forward</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-12 text-center">
+            <span class="material-icons-outlined text-6xl text-gray-300">notifications_off</span>
+            <p class="text-gray-500 mt-4">No notifications yet</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
