@@ -62,3 +62,6 @@ node_modules/
 *.bak
 *.backup
 
+# Documentation with sensitive information
+DEPLOYMENT_GUIDE.md
+

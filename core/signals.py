@@ -28,5 +28,5 @@ def log_user_creation(sender, instance, created, **kwargs):
 @receiver(pre_delete, sender=Branch)
 def prevent_branch_deletion_with_members(sender, instance, **kwargs):
     """Prevent deleting a branch if it has active members."""
-    if instance.members.filter(is_active=True).exists():
+    if instance.users.filter(is_active=True).exists():
         raise ValueError(f"Cannot delete branch '{instance.name}' because it has active members.")
