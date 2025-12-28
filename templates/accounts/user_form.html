@@ -4,7 +4,7 @@
 {% block content %}
 <!-- Error Modal -->
 {% if error %}
-<div id="errorModal" class="fixed inset-0 z-50 overflow-y-auto">
+<div id="errorModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: block;">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <!-- Background overlay -->
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeErrorModal()"></div>
@@ -17,9 +17,12 @@
                         <span class="material-icons-outlined text-red-600">error_outline</span>
                     </div>
                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Error Creating User</h3>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Error Adding User</h3>
                         <div class="mt-2">
                             <p class="text-sm text-gray-500">{{ error }}</p>
+                            {% if "null value in column" in error %}
+                            <p class="text-xs text-gray-400 mt-2">Note: Email is optional. If left empty, the system will save it as null.</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -27,7 +30,7 @@
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button type="button" onclick="closeErrorModal()" 
                     class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm">
-                    OK
+                    OK, I'll fix it
                 </button>
             </div>
         </div>
@@ -39,6 +42,11 @@ function closeErrorModal() {
     // Keep form visible but hide modal
     document.getElementById('errorModal').style.display = 'none';
 }
+
+// Auto-close after 10 seconds
+setTimeout(function() {
+    closeErrorModal();
+}, 10000);
 </script>
 {% endif %}
 
@@ -156,13 +164,13 @@ function closeErrorModal() {
                         <label class="form-label">Pastoral Rank</label>
                         <select name="pastoral_rank" class="form-input form-select">
                             <option value="none" {% if form_data.pastoral_rank == 'none' %}selected{% endif %}>None</option>
-                            <option value="associate" {% if form_data.pastoral_rank == 'associate' %}selected{% endif %}>Associate Pastor</option>
-                            <option value="branch" {% if form_data.pastoral_rank == 'branch' %}selected{% endif %}>Branch Pastor</option>
-                            <option value="senior" {% if form_data.pastoral_rank == 'senior' %}selected{% endif %}>Senior Pastor</option>
-                            <option value="district" {% if form_data.pastoral_rank == 'district' %}selected{% endif %}>District Pastor</option>
-                            <option value="area" {% if form_data.pastoral_rank == 'area' %}selected{% endif %}>Area Pastor</option>
-                            <option value="mission" {% if form_data.pastoral_rank == 'mission' %}selected{% endif %}>Mission Pastor</option>
-                            <option value="overseer" {% if form_data.pastoral_rank == 'overseer' %}selected{% endif %}>General Overseer</option>
+                            <option value="associate" {% if form_data.pastoral_rank == 'associate' or (edit_user and edit_user.pastoral_rank == 'associate') %}selected{% endif %}>Associate Pastor</option>
+                            <option value="branch" {% if form_data.pastoral_rank == 'branch' or (edit_user and edit_user.pastoral_rank == 'branch') %}selected{% endif %}>Branch Pastor</option>
+                            <option value="senior" {% if form_data.pastoral_rank == 'senior' or (edit_user and edit_user.pastoral_rank == 'senior') %}selected{% endif %}>Senior Pastor</option>
+                            <option value="district" {% if form_data.pastoral_rank == 'district' or (edit_user and edit_user.pastoral_rank == 'district') %}selected{% endif %}>District Pastor</option>
+                            <option value="area" {% if form_data.pastoral_rank == 'area' or (edit_user and edit_user.pastoral_rank == 'area') %}selected{% endif %}>Area Pastor</option>
+                            <option value="mission" {% if form_data.pastoral_rank == 'mission' or (edit_user and edit_user.pastoral_rank == 'mission') %}selected{% endif %}>Mission Pastor</option>
+                            <option value="overseer" {% if form_data.pastoral_rank == 'overseer' or (edit_user and edit_user.pastoral_rank == 'overseer') %}selected{% endif %}>General Overseer</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -207,10 +215,10 @@ function closeErrorModal() {
                         <label class="form-label">Marital Status</label>
                         <select name="marital_status" class="form-input form-select">
                             <option value="">Select Status</option>
-                            <option value="single" {% if form_data.marital_status == 'single' %}selected{% endif %}>Single</option>
-                            <option value="married" {% if form_data.marital_status == 'married' %}selected{% endif %}>Married</option>
-                            <option value="divorced" {% if form_data.marital_status == 'divorced' %}selected{% endif %}>Divorced</option>
-                            <option value="widowed" {% if form_data.marital_status == 'widowed' %}selected{% endif %}>Widowed</option>
+                            <option value="single" {% if form_data.marital_status == 'single' or (profile and profile.marital_status == 'single') %}selected{% endif %}>Single</option>
+                            <option value="married" {% if form_data.marital_status == 'married' or (profile and profile.marital_status == 'married') %}selected{% endif %}>Married</option>
+                            <option value="divorced" {% if form_data.marital_status == 'divorced' or (profile and profile.marital_status == 'divorced') %}selected{% endif %}>Divorced</option>
+                            <option value="widowed" {% if form_data.marital_status == 'widowed' or (profile and profile.marital_status == 'widowed') %}selected{% endif %}>Widowed</option>
                         </select>
                     </div>
                 </div>
@@ -375,14 +383,14 @@ function closeErrorModal() {
                     <div class="form-group">
                         <label class="form-label">Base Salary (GH₵)</label>
                         <input type="number" name="base_salary" step="0.01" min="0" 
-                            value="{{ payroll.base_salary|default:'0' }}" 
+                            value="{% if form_data.base_salary %}{{ form_data.base_salary }}{% elif payroll.base_salary %}{{ payroll.base_salary }}{% else %}0{% endif %}" 
                             class="form-input" placeholder="0.00">
                         <p class="text-xs text-gray-500 mt-1">Monthly base salary amount</p>
                     </div>
                     <div class="form-group flex items-center pt-6">
                         <label class="flex items-center gap-3 cursor-pointer" id="commission-label" style="display: none;">
                             <input type="checkbox" name="is_commission_eligible" 
-                                {% if edit_user.is_commission_eligible %}checked{% endif %}
+                                {% if edit_user.is_commission_eligible or form_data.is_commission_eligible %}checked{% endif %}
                                 class="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
                             <div>
                                 <p class="font-medium text-gray-900">Commission Eligible</p>
@@ -415,22 +423,22 @@ function closeErrorModal() {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="form-group">
                         <label class="form-label">Contact Name</label>
-                        <input type="text" name="emergency_contact_name" value="{% if form_data.emergency_contact_name %}{{ form_data.emergency_contact_name }}{% else %}{% endif %}" class="form-input" placeholder="Full name">
+                        <input type="text" name="emergency_contact_name" value="{% if form_data.emergency_contact_name %}{{ form_data.emergency_contact_name }}{% elif profile %}{{ profile.emergency_contact_name }}{% else %}{% endif %}" class="form-input" placeholder="Full name">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
-                        <input type="tel" name="emergency_contact_phone" value="{% if form_data.emergency_contact_phone %}{{ form_data.emergency_contact_phone }}{% else %}{% endif %}" class="form-input" placeholder="Phone number">
+                        <input type="tel" name="emergency_contact_phone" value="{% if form_data.emergency_contact_phone %}{{ form_data.emergency_contact_phone }}{% elif profile %}{{ profile.emergency_contact_phone }}{% else %}{% endif %}" class="form-input" placeholder="Phone number">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Relationship</label>
                         <select name="emergency_contact_relationship" class="form-input form-select">
                             <option value="">Select Relationship</option>
-                            <option value="Spouse" {% if form_data.emergency_contact_relationship == 'Spouse' %}selected{% endif %}>Spouse</option>
-                            <option value="Parent" {% if form_data.emergency_contact_relationship == 'Parent' %}selected{% endif %}>Parent</option>
-                            <option value="Sibling" {% if form_data.emergency_contact_relationship == 'Sibling' %}selected{% endif %}>Sibling</option>
-                            <option value="Child" {% if form_data.emergency_contact_relationship == 'Child' %}selected{% endif %}>Child</option>
-                            <option value="Friend" {% if form_data.emergency_contact_relationship == 'Friend' %}selected{% endif %}>Friend</option>
-                            <option value="Other" {% if form_data.emergency_contact_relationship == 'Other' %}selected{% endif %}>Other</option>
+                            <option value="Spouse" {% if form_data.emergency_contact_relationship == 'Spouse' or (profile and profile.emergency_contact_relationship == 'Spouse') %}selected{% endif %}>Spouse</option>
+                            <option value="Parent" {% if form_data.emergency_contact_relationship == 'Parent' or (profile and profile.emergency_contact_relationship == 'Parent') %}selected{% endif %}>Parent</option>
+                            <option value="Sibling" {% if form_data.emergency_contact_relationship == 'Sibling' or (profile and profile.emergency_contact_relationship == 'Sibling') %}selected{% endif %}>Sibling</option>
+                            <option value="Child" {% if form_data.emergency_contact_relationship == 'Child' or (profile and profile.emergency_contact_relationship == 'Child') %}selected{% endif %}>Child</option>
+                            <option value="Friend" {% if form_data.emergency_contact_relationship == 'Friend' or (profile and profile.emergency_contact_relationship == 'Friend') %}selected{% endif %}>Friend</option>
+                            <option value="Other" {% if form_data.emergency_contact_relationship == 'Other' or (profile and profile.emergency_contact_relationship == 'Other') %}selected{% endif %}>Other</option>
                         </select>
                     </div>
                 </div>

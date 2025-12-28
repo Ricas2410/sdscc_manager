@@ -25,6 +25,12 @@ def multiply(value, arg):
 
 
 @register.filter
+def mul(value, arg):
+    """Alias for multiply filter."""
+    return multiply(value, arg)
+
+
+@register.filter
 def percentage(value, total):
     """Calculate percentage."""
     try:

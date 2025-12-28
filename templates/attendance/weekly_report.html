@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load core_tags %}
+
+{% block title %}Weekly Attendance Report{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl p-6 shadow-xl text-gray-900 border border-gray-100">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-emerald-700 text-sm font-semibold">Attendance Analytics</p>
+                <h1 class="text-2xl font-bold text-gray-900">Weekly Attendance Report</h1>
+                <p class="text-emerald-600 mt-1">Track attendance trends across all branches</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <a href="{% url 'attendance:list' %}" class="btn btn-secondary">
+                    <span class="material-icons-outlined mr-2">event</span>
+                    View Sessions
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Week Stats -->
+    <div class="rounded-2xl shadow-lg overflow-hidden bg-slate-900 text-slate-100 border border-white/10">
+        <div class="px-6 py-4 border-b border-white/10 bg-slate-900/90">
+            <h2 class="text-lg font-semibold text-emerald-300">Current Week Overview</h2>
+            <p class="text-sm text-slate-200">{{ current_week.week_start_date|date:"M d, Y" }} - {{ current_week.week_end_date|date:"M d, Y" }}</p>
+        </div>
+        <div class="p-6 bg-slate-900/90">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-200">{{ current_week.total_attendees }}</div>
+                    <div class="text-sm text-slate-200">Total Attendees</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-200">{{ current_week.total_members }}</div>
+                    <div class="text-sm text-slate-200">Total Members</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-200">{{ current_week.attendance_percentage|floatformat:1 }}%</div>
+                    <div class="text-sm text-slate-200">Attendance Rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-200">{{ current_week.first_time_visitors }}</div>
+                    <div class="text-sm text-slate-200">New Visitors</div>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-blue-100 font-medium">Sabbath Service</div>
+                    <div class="text-2xl font-bold text-white">{{ current_week.sabbath_attendance }}</div>
+                </div>
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-green-100 font-medium">Midweek Service</div>
+                    <div class="text-2xl font-bold text-white">{{ current_week.midweek_attendance }}</div>
+                </div>
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-white font-medium">Special Service</div>
+                    <div class="text-2xl font-bold text-white">{{ current_week.special_service_attendance }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Statistics -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Overall Statistics</h2>
+            <p class="text-sm text-gray-500">Across {{ total_weeks }} weeks of data</p>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600">{{ avg_attendance|floatformat:1 }}%</div>
+                    <div class="text-sm text-gray-500">Average Attendance Rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">{{ total_weeks }}</div>
+                    <div class="text-sm text-gray-500">Weeks Tracked</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600">
+                        {% if total_weeks > 0 %}
+                            {{ weekly_stats|length|mul:100|div:total_weeks|floatformat:0 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div class="text-sm text-gray-500">Data Completeness</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly History -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Weekly History</h2>
+            <p class="text-sm text-gray-500">Attendance trends over time</p>
+        </div>
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Week</th>
+                            <th>Attendees</th>
+                            <th>Members</th>
+                            <th>Attendance Rate</th>
+                            <th>Sabbath</th>
+                            <th>Midweek</th>
+                            <th>Special</th>
+                            <th>New Visitors</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for week in weekly_stats %}
+                        <tr class="{% if week.attendance_percentage < 50 %}bg-red-50{% elif week.attendance_percentage > 80 %}bg-green-50{% endif %}">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ week.week_start_date|date:"M d" }} - {{ week.week_end_date|date:"M d, Y" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ week.total_attendees }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ week.total_members }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    {% if week.attendance_percentage >= 80 %}bg-green-100 text-green-800
+                                    {% elif week.attendance_percentage >= 60 %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ week.attendance_percentage|floatformat:1 }}%
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ week.sabbath_attendance }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ week.midweek_attendance }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ week.special_service_attendance }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ week.first_time_visitors }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">
+                                No weekly attendance data available yet. Data will populate as attendance sessions are recorded.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

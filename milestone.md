@@ -677,3 +677,64 @@ Building a comprehensive church management system for Seventh Day Sabbath Church
 - Mobile-first design priority
 - All financial operations must have audit trails
 - Strict role-based access control required
+
+---
+
+### Latest Tasks (2025-12-27) ✅ COMPLETED
+- Fixed User Creation Email Field Issue
+- Fixed TemplateSyntaxError for intcomma filter
+- Fixed Django-Q retry/timeout configuration warning
+
+#### Bug Fixes Applied (December 27, 2025):
+1. **TemplateSyntaxError: Invalid filter: 'intcomma'**
+   - Added `{% load humanize %}` to affected templates:
+     - `templates/core/auditor_branch_statistics.html`
+     - `templates/core/branch_financial_statistics.html`
+   - The `/auditor/branch-statistics/` page now loads without errors
+
+2. **Django-Q Configuration Warning**
+   - Added Q_SETTINGS in `sdscc/settings.py` with proper retry (360s) and timeout (300s) values
+   - Set environment variables early to ensure configuration loads before Django-Q initializes
+   - Warning should be resolved after server restart
+
+3. **TemplateSyntaxError: Invalid filter: 'div'**
+   - Added `{% load core_tags %}` to `templates/core/auditor_branch_statistics.html`
+   - The div filter was already implemented in `core/templatetags/core_tags.py`
+
+4. **TemplateSyntaxError: Invalid filter: 'mul'**
+   - Added `mul` filter as an alias for `multiply` in `core/templatetags/core_tags.py`
+   - The template was using `mul` but the filter was named `multiply`
+
+5. **Email Field Migration Issue**
+   - Updated `accounts/models.py` to set `email = models.EmailField(blank=True, null=True)`
+   - Migration now matches the model definition
+
+**Files Modified**:
+- `templates/core/auditor_branch_statistics.html` - Added humanize load tag
+- `templates/core/branch_financial_statistics.html` - Added humanize load tag  
+- `sdscc/settings.py` - Added Django-Q configuration
+- `accounts/models.py` - Updated email field to include null=True
+
+**Testing**:
+- Created test script `test_fixes.py` to verify fixes
+- Created deployment script `deploy_fixes.ps1` for production deployment
+- Verified intcomma filter works correctly in templates
+- Verified Django-Q configuration has correct retry/timeout values
+  - Created migration 0007_make_email_optional.py to make email field nullable in database
+  - Updated add_user view to handle empty email properly (email if email else None)
+  - Enhanced error handling to preserve ALL form data when validation errors occur
+  - Updated user_form.html template to properly display form_data for all fields on error
+  - Improved error modal with better messaging and auto-close after 10 seconds
+  - Added helpful hint for email-related errors
+  - Email is now truly optional - users can be created without an email address
+  - All form data is preserved when errors occur, preventing data loss
+  - Better user experience with informative error messages
+
+### Bug Fix: NoReverseMatch for weekly_report (Dec 27, 2025)
+- **Issue**: `NoReverseMatch: Reverse for 'weekly_report' not found`
+- **Root Cause**: Added link to `attendance:weekly_report` in mission dashboard template but didn't create the URL pattern and view
+- **Solution**: 
+  - Added URL pattern `path('weekly/', views.weekly_report, name='weekly_report')` to `attendance/urls.py`
+  - Created `weekly_report` view in `attendance/views.py` to display weekly attendance statistics
+  - Created `templates/attendance/weekly_report.html` template with comprehensive weekly attendance report
+- **Result**: Dashboard loads successfully, weekly attendance link now works

@@ -120,12 +120,16 @@ def branch_financial_statistics(request):
         
         # Remittances sent
         remittances = Remittance.objects.filter(
-            branch=branch,
-            date__gte=start_date,
-            date__lte=end_date
+            branch=branch
         )
         
-        total_remitted = remittances.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        # Filter by date range using month/year
+        if period_type == 'yearly':
+            remittances = remittances.filter(year=year)
+        elif period_type == 'monthly':
+            remittances = remittances.filter(year=year, month=month)
+        
+        total_remitted = remittances.aggregate(total=Sum('amount_sent'))['total'] or Decimal('0')
         
         # Calculate coffer balance
         total_income = contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
@@ -276,10 +280,16 @@ def auditor_branch_statistics(request):
         
         # Remittances
         remittances = Remittance.objects.filter(
-            branch=branch,
-            date__gte=start_date,
-            date__lte=end_date
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            branch=branch
+        )
+        
+        # Filter by date range using month/year
+        if period_type == 'yearly':
+            remittances = remittances.filter(year=year)
+        elif period_type == 'monthly':
+            remittances = remittances.filter(year=year, month=month)
+        
+        remittances_total = remittances.aggregate(total=Sum('amount_sent'))['total'] or Decimal('0')
         
         # Coffer balance
         coffer_balance = branch.local_balance or Decimal('0')
@@ -289,9 +299,9 @@ def auditor_branch_statistics(request):
             'contributions': contributions,
             'expenditures': expenditures,
             'payroll': payroll,
-            'remittances': remittances,
+            'remittances': remittances_total,
             'coffer_balance': coffer_balance,
-            'net_position': contributions - expenditures - payroll - remittances,
+            'net_position': contributions - expenditures - payroll - remittances_total,
         }
         
         branches_stats.append(branch_stats)
@@ -300,7 +310,7 @@ def auditor_branch_statistics(request):
         grand_total['contributions'] += contributions
         grand_total['expenditures'] += expenditures
         grand_total['payroll'] += payroll
-        grand_total['remittances'] += remittances
+        grand_total['remittances'] += remittances_total
         grand_total['coffer_balance'] += coffer_balance
     
     # Sort by total contributions

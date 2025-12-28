@@ -256,6 +256,30 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 
+# ============ DJANGO-Q CONFIGURATION ============
+# Configure Django-Q before it's imported
+import os
+# Set Django-Q configuration as environment variables to ensure early loading
+os.environ.setdefault('Q_RETRY', '360')
+os.environ.setdefault('Q_TIMEOUT', '300')
+
+Q_SETTINGS = {
+    'retry': 360,  # 6 minutes in seconds - MUST be larger than timeout
+    'timeout': 300,  # 5 minutes in seconds
+    'workers': 4,
+    'queue_limit': 50,
+    'limit': 100,
+    'save_limit': 250,
+    'cpu_affinity': 1,
+    'label': 'SDSCC Task Queue',
+    'redis': {
+        'host': os.environ.get('REDIS_HOST', 'localhost'),
+        'port': int(os.environ.get('REDIS_PORT', 6379)),
+        'db': 0,
+        'password': os.environ.get('REDIS_PASSWORD', ''),
+    }
+}
+
 # ============ LOGGING ============
 LOGGING = {
     'version': 1,

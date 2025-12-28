@@ -6,6 +6,9 @@ Supports Sabbath (Saturday), midweek, and special services
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth import get_user_model
 from core.models import TimeStampedModel
 
 
@@ -168,3 +171,74 @@ class VisitorRecord(TimeStampedModel):
         super().save(*args, **kwargs)
         self.session.visitors_count = self.session.visitor_records.count()
         self.session.save()
+
+
+class WeeklyAttendance(TimeStampedModel):
+    """Track weekly attendance statistics across all branches."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    week_start_date = models.DateField(help_text="Start date of the week (Monday)")
+    week_end_date = models.DateField(help_text="End date of the week (Sunday)")
+    
+    # Attendance counts
+    total_attendees = models.IntegerField(default=0, help_text="Total unique attendees for the week")
+    total_members = models.IntegerField(default=0, help_text="Total active members in the system")
+    
+    # Percentages
+    attendance_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, 
+                                               help_text="Percentage of members who attended")
+    
+    # Breakdown by service type
+    sabbath_attendance = models.IntegerField(default=0)
+    midweek_attendance = models.IntegerField(default=0)
+    special_service_attendance = models.IntegerField(default=0)
+    
+    # Additional stats
+    first_time_visitors = models.IntegerField(default=0)
+    average_per_service = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    class Meta:
+        ordering = ['-week_start_date']
+        unique_together = ['week_start_date', 'week_end_date']
+        verbose_name = 'Weekly Attendance'
+        verbose_name_plural = 'Weekly Attendances'
+    
+    def __str__(self):
+        return f"Week of {self.week_start_date} - {self.attendance_percentage}%"
+    
+    def save(self, *args, **kwargs):
+        # Calculate attendance percentage if not set
+        if self.total_members > 0:
+            self.attendance_percentage = (self.total_attendees / self.total_members) * 100
+        
+        # Calculate average per service
+        total_services = 0
+        if self.sabbath_attendance > 0:
+            total_services += 1
+        if self.midweek_attendance > 0:
+            total_services += 1
+        if self.special_service_attendance > 0:
+            total_services += 1
+        
+        if total_services > 0:
+            self.average_per_service = self.total_attendees / total_services
+        
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_current_week(cls):
+        """Get or create the current week's attendance record."""
+        today = timezone.now().date()
+        
+        # Find Monday (start of week)
+        days_since_monday = today.weekday()
+        week_start = today - timedelta(days=days_since_monday)
+        week_end = week_start + timedelta(days=6)  # Sunday
+        
+        obj, created = cls.objects.get_or_create(
+            week_start_date=week_start,
+            week_end_date=week_end,
+            defaults={'total_members': get_user_model().objects.filter(is_active=True).count()}
+        )
+        
+        return obj

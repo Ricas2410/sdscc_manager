@@ -16,6 +16,9 @@ urlpatterns = [
     path('session/<uuid:session_id>/', views.session_detail, name='session_detail'),
     path('member/<uuid:user_id>/', views.member_attendance, name='member_attendance'),
     
+    # Weekly attendance reports
+    path('weekly/', views.weekly_report, name='weekly_report'),
+    
     # Visitor tracking
     path('visitors/', views.visitor_list, name='visitors'),
     path('visitor/add/<uuid:session_id>/', views.add_visitor, name='add_visitor'),

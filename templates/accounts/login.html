@@ -155,6 +155,9 @@
                         <p>Need help signing in?</p>
                         <p class="mt-1">Contact your branch administrator for assistance</p>
                     </div>
+                    <button id="pwa-install-button" type="button" class="mt-4 w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-primary-200 text-primary-700 rounded-lg shadow-sm text-sm font-medium bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors hidden">
+                        <span class="material-icons text-lg">download</span> Install App
+                    </button>
                 </div>
             </div>
         </div>
@@ -162,6 +165,32 @@
 </div>
 
 <script>
+    let deferredPrompt = null;
+    const installButton = document.getElementById('pwa-install-button');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const formCard = document.querySelector('.bg-white.rounded-2xl.shadow-xl.p-8');
+        if (formCard) {
+            formCard.appendChild(installButton);
+        }
+    });
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installButton.classList.remove('hidden');
+    });
+
+    installButton.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            installButton.classList.add('hidden');
+        }
+        deferredPrompt = null;
+    });
+
     function togglePasswordVisibility() {
         const passwordInput = document.getElementById('password');
         const eyeIcon = document.getElementById('eye-icon');

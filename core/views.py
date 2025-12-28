@@ -52,11 +52,15 @@ def mission_dashboard(request):
     from contributions.models import Contribution, Remittance
     from expenditure.models import Expenditure
     from accounts.models import User
+    from attendance.models import WeeklyAttendance
     
     # Get current fiscal year
     fiscal_year = FiscalYear.get_current()
     today = timezone.now().date()
     month_start = today.replace(day=1)
+    
+    # Get current week's attendance
+    weekly_attendance = WeeklyAttendance.get_current_week()
     
     # Get pending remittances with branch info
     pending_remittances_list = Remittance.objects.filter(
@@ -68,7 +72,7 @@ def mission_dashboard(request):
         'total_branches': Branch.objects.filter(is_active=True).count(),
         'total_districts': District.objects.filter(is_active=True).count(),
         'total_areas': Area.objects.filter(is_active=True).count(),
-        'total_members': User.objects.filter(role='member', is_active=True).count(),
+        'total_members': User.objects.filter(is_active=True).count(),
         'total_pastors': User.objects.filter(role='pastor', is_active=True).count(),
         
         # Financial summaries
@@ -98,6 +102,7 @@ def mission_dashboard(request):
         ).order_by('-created_at')[:5],
         
         'fiscal_year': fiscal_year,
+        'weekly_attendance': weekly_attendance,
     }
     
     # Add PIN change modal context

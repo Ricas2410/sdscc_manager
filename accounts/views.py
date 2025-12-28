@@ -498,7 +498,7 @@ def add_user(request):
         
         # Validate member_id
         if User.objects.filter(member_id=member_id).exists():
-            # Return error with form data to repopulate
+            # Return error with ALL form data to repopulate
             context = {
                 'edit_user': None,
                 'profile': None,
@@ -510,21 +510,42 @@ def add_user(request):
                     'user_id': member_id,
                     'first_name': first_name,
                     'last_name': last_name,
+                    'other_names': other_names,
                     'email': email,
                     'phone': phone,
                     'gender': gender,
                     'date_of_birth': date_of_birth,
                     'role': role,
                     'branch': branch_id,
+                    'pastoral_rank': pastoral_rank,
+                    'ordination_date': ordination_date,
+                    'ordination_place': ordination_place,
+                    'ordaining_minister': ordaining_minister,
+                    'address': address,
+                    'city': city,
+                    'region': region,
+                    'marital_status': marital_status,
+                    'profession': profession,
+                    'employer': employer,
+                    'baptism_date': baptism_date,
+                    'baptism_by': baptism_by,
+                    'membership_date': membership_date,
+                    'previous_church': previous_church,
                     'emergency_contact_name': emergency_name,
                     'emergency_contact_phone': emergency_phone,
                     'emergency_contact_relationship': emergency_relationship,
+                    'skills': skills,
+                    'talents': talents,
+                    'pastoral_notes': pastoral_notes,
+                    'counseling_status': counseling_status,
+                    'base_salary': base_salary,
                 }
             }
             return render(request, 'accounts/user_form.html', context)
         
         # Validate PIN
         if len(pin) < 5:
+            # Return error with ALL form data to repopulate
             context = {
                 'edit_user': None,
                 'profile': None,
@@ -536,15 +557,35 @@ def add_user(request):
                     'user_id': member_id,
                     'first_name': first_name,
                     'last_name': last_name,
+                    'other_names': other_names,
                     'email': email,
                     'phone': phone,
                     'gender': gender,
                     'date_of_birth': date_of_birth,
                     'role': role,
                     'branch': branch_id,
+                    'pastoral_rank': pastoral_rank,
+                    'ordination_date': ordination_date,
+                    'ordination_place': ordination_place,
+                    'ordaining_minister': ordaining_minister,
+                    'address': address,
+                    'city': city,
+                    'region': region,
+                    'marital_status': marital_status,
+                    'profession': profession,
+                    'employer': employer,
+                    'baptism_date': baptism_date,
+                    'baptism_by': baptism_by,
+                    'membership_date': membership_date,
+                    'previous_church': previous_church,
                     'emergency_contact_name': emergency_name,
                     'emergency_contact_phone': emergency_phone,
                     'emergency_contact_relationship': emergency_relationship,
+                    'skills': skills,
+                    'talents': talents,
+                    'pastoral_notes': pastoral_notes,
+                    'counseling_status': counseling_status,
+                    'base_salary': base_salary,
                 }
             }
             return render(request, 'accounts/user_form.html', context)
@@ -555,7 +596,7 @@ def add_user(request):
                 first_name=first_name,
                 other_names=other_names,
                 last_name=last_name,
-                email=email,
+                email=email if email else None,  # Handle empty email
                 phone=phone,
                 gender=gender,
                 date_of_birth=date_of_birth,
@@ -617,26 +658,47 @@ def add_user(request):
             messages.success(request, f'User {user.get_full_name()} created successfully. Member ID: {user.member_id}')
             return redirect('accounts:users')
         except Exception as e:
+            # Return error with ALL form data to repopulate
             context = {
                 'edit_user': None,
                 'profile': None,
                 'roles': User.Role.choices,
                 'branches': Branch.objects.filter(is_active=True),
                 'groups': Group.objects.filter(is_active=True).select_related('category'),
-                'error': f'Error creating user: {str(e)}',
+                'error': f'Error adding member: {str(e)}',
                 'form_data': {
                     'user_id': member_id,
                     'first_name': first_name,
                     'last_name': last_name,
+                    'other_names': other_names,
                     'email': email,
                     'phone': phone,
                     'gender': gender,
                     'date_of_birth': date_of_birth,
                     'role': role,
                     'branch': branch_id,
+                    'pastoral_rank': pastoral_rank,
+                    'ordination_date': ordination_date,
+                    'ordination_place': ordination_place,
+                    'ordaining_minister': ordaining_minister,
+                    'address': address,
+                    'city': city,
+                    'region': region,
+                    'marital_status': marital_status,
+                    'profession': profession,
+                    'employer': employer,
+                    'baptism_date': baptism_date,
+                    'baptism_by': baptism_by,
+                    'membership_date': membership_date,
+                    'previous_church': previous_church,
                     'emergency_contact_name': emergency_name,
                     'emergency_contact_phone': emergency_phone,
                     'emergency_contact_relationship': emergency_relationship,
+                    'skills': skills,
+                    'talents': talents,
+                    'pastoral_notes': pastoral_notes,
+                    'counseling_status': counseling_status,
+                    'base_salary': base_salary,
                 }
             }
             return render(request, 'accounts/user_form.html', context)

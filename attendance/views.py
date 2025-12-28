@@ -6,10 +6,37 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Avg
 from datetime import date
 
-from .models import AttendanceSession, AttendanceRecord, ServiceType, VisitorRecord
+from .models import AttendanceSession, AttendanceRecord, ServiceType, VisitorRecord, WeeklyAttendance
+
+
+@login_required
+def weekly_report(request):
+    """Weekly attendance report view."""
+    if not (request.user.is_any_admin or request.user.is_pastor):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    # Get all weekly attendance records
+    weekly_stats = WeeklyAttendance.objects.all().order_by('-week_start_date')
+    
+    # Get current week
+    current_week = WeeklyAttendance.get_current_week()
+    
+    # Calculate some overall stats
+    total_weeks = weekly_stats.count()
+    avg_attendance = weekly_stats.aggregate(avg=Avg('attendance_percentage'))['avg'] or 0
+    
+    context = {
+        'weekly_stats': weekly_stats,
+        'current_week': current_week,
+        'total_weeks': total_weeks,
+        'avg_attendance': avg_attendance,
+    }
+    
+    return render(request, 'attendance/weekly_report.html', context)
 
 
 @login_required
@@ -233,7 +260,7 @@ def attendance_tracking(request):
     """Admin view for tracking member attendance across branches."""
     from accounts.models import User
     from core.models import Area, District, Branch
-    from django.db.models import Count, Q, Avg
+    from django.db.models import Count, Avg, Q, Avg
     
     if not (request.user.is_any_admin or request.user.is_auditor):
         messages.error(request, 'Access denied.')

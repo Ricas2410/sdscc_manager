@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load humanize %}
+{% load core_tags %}
 {% block title %}Branch Statistics - Auditor View{% endblock %}
 
 {% block extra_head %}
@@ -20,70 +22,122 @@
                 - All Branches Overview
             </p>
         </div>
-        <div class="mt-4 sm:mt-0 flex space-x-2">
-            <button onclick="exportPDF()" class="btn-secondary">
-                <span class="material-icons-outlined mr-1">picture_as_pdf</span> Export PDF
-            </button>
-            <button onclick="exportExcel()" class="btn-secondary">
-                <span class="material-icons-outlined mr-1">grid_on</span> Export Excel
-            </button>
+        <div class="mt-4 sm:mt-0 flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
+                <button onclick="exportPDF()" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <span class="material-icons-outlined mr-2 text-red-500">picture_as_pdf</span>
+                    Export PDF
+                </button>
+                <button onclick="exportExcel()" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <span class="material-icons-outlined mr-2 text-green-500">grid_on</span>
+                    Export Excel
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Area</label>
-                <select name="area" id="areaSelect" class="input-field">
-                    <option value="">All Areas</option>
-                    {% for area in areas %}
-                    <option value="{{ area.district__area__id }}" {% if selected_area == area.district__area__id|stringformat:"s" %}selected{% endif %}>
-                        {{ area.district__area__name }}
-                    </option>
-                    {% endfor %}
-                </select>
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <div class="flex items-center">
+                <span class="material-icons-outlined text-gray-600 mr-2">filter_list</span>
+                <h3 class="text-lg font-medium text-gray-900">Filter Options</h3>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
-                <select name="district" id="districtSelect" class="input-field">
-                    <option value="">All Districts</option>
-                    {% for district in districts %}
-                    <option value="{{ district.district__id }}" {% if selected_district == district.district__id|stringformat:"s" %}selected{% endif %}>
-                        {{ district.district__name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
-                <select name="period" id="periodSelect" class="input-field">
-                    <option value="yearly" {% if period_type == 'yearly' %}selected{% endif %}>Yearly</option>
-                    <option value="monthly" {% if period_type == 'monthly' %}selected{% endif %}>Monthly</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                <select name="year" class="input-field">
-                    {% for y in available_years %}
-                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div id="monthFilter" {% if period_type == 'yearly' %}style="display:none"{% endif %}>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
-                <select name="month" class="input-field">
-                    {% for m in months %}
-                    <option value="{{ m.0 }}" {% if month == m.0 %}selected{% endif %}>{{ m.1 }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="md:col-span-4 flex items-end">
-                <button type="submit" class="btn-primary">
-                    <span class="material-icons-outlined mr-1">filter_list</span> Apply Filters
-                </button>
-            </div>
-        </form>
+        </div>
+        <div class="p-6">
+            <form method="get" class="space-y-6">
+                <!-- Main Filters Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            <span class="flex items-center">
+                                <span class="material-icons-outlined text-gray-400 mr-1 text-sm">location_on</span>
+                                Area
+                            </span>
+                        </label>
+                        <select name="area" id="areaSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="">All Areas</option>
+                            {% for area in areas %}
+                            <option value="{{ area.district__area__id }}" {% if selected_area == area.district__area__id|stringformat:"s" %}selected{% endif %}>
+                                {{ area.district__area__name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            <span class="flex items-center">
+                                <span class="material-icons-outlined text-gray-400 mr-1 text-sm">business</span>
+                                District
+                            </span>
+                        </label>
+                        <select name="district" id="districtSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="">All Districts</option>
+                            {% for district in districts %}
+                            <option value="{{ district.district__id }}" {% if selected_district == district.district__id|stringformat:"s" %}selected{% endif %}>
+                                {{ district.district__name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            <span class="flex items-center">
+                                <span class="material-icons-outlined text-gray-400 mr-1 text-sm">schedule</span>
+                                Period Type
+                            </span>
+                        </label>
+                        <select name="period" id="periodSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="yearly" {% if period_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                            <option value="monthly" {% if period_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            <span class="flex items-center">
+                                <span class="material-icons-outlined text-gray-400 mr-1 text-sm">calendar_today</span>
+                                Year
+                            </span>
+                        </label>
+                        <select name="year" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            {% for y in available_years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Month Filter (conditional) -->
+                <div id="monthFilter" {% if period_type == 'yearly' %}style="display:none"{% endif %} class="transition-all duration-200">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-gray-700">
+                                <span class="flex items-center">
+                                    <span class="material-icons-outlined text-gray-400 mr-1 text-sm">date_range</span>
+                                    Month
+                                </span>
+                            </label>
+                            <select name="month" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                                {% for m in months %}
+                                <option value="{{ m.0 }}" {% if month == m.0 %}selected{% endif %}>{{ m.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apply Button -->
+                <div class="flex justify-end pt-4 border-t border-gray-200">
+                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        <span class="material-icons-outlined mr-2">filter_list</span>
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Grand Totals -->
@@ -95,7 +149,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Contributions</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.contributions|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.contributions|floatformat:2|intcomma }}</p>
                 </div>
             </div>
         </div>
@@ -106,7 +160,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Expenditures</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.expenditures|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.expenditures|floatformat:2|intcomma }}</p>
                 </div>
             </div>
         </div>
@@ -117,7 +171,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Payroll</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.payroll|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.payroll|floatformat:2|intcomma }}</p>
                 </div>
             </div>
         </div>
@@ -128,7 +182,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Remittances</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.remittances|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.remittances|floatformat:2|intcomma }}</p>
                 </div>
             </div>
         </div>
@@ -139,7 +193,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Coffer Balance</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ grand_total.coffer_balance|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.coffer_balance|floatformat:2|intcomma }}</p>
                 </div>
             </div>
         </div>
@@ -148,7 +202,9 @@
     <!-- Branch Comparison Chart -->
     <div class="bg-white shadow rounded-lg p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Branch Contributions Comparison</h3>
-        <canvas id="branchComparisonChart" height="100"></canvas>
+        <div class="relative" style="height: 400px;">
+            <canvas id="branchComparisonChart"></canvas>
+        </div>
     </div>
 
     <!-- Branch Details Table -->
@@ -181,25 +237,25 @@
                             {{ stat.branch.district.name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₦{{ stat.contributions|floatformat:2|intcomma }}
+                            {{ site_settings.currency_symbol }}{{ stat.contributions|floatformat:2|intcomma }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₦{{ stat.expenditures|floatformat:2|intcomma }}
+                            {{ site_settings.currency_symbol }}{{ stat.expenditures|floatformat:2|intcomma }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₦{{ stat.payroll|floatformat:2|intcomma }}
+                            {{ site_settings.currency_symbol }}{{ stat.payroll|floatformat:2|intcomma }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₦{{ stat.remittances|floatformat:2|intcomma }}
+                            {{ site_settings.currency_symbol }}{{ stat.remittances|floatformat:2|intcomma }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₦{{ stat.coffer_balance|floatformat:2|intcomma }}
+                            {{ site_settings.currency_symbol }}{{ stat.coffer_balance|floatformat:2|intcomma }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs font-medium rounded-full
                                 {% if stat.net_position >= 0 %}bg-green-100 text-green-800
                                 {% else %}bg-red-100 text-red-800{% endif %}">
-                                ₦{{ stat.net_position|floatformat:2|intcomma }}
+                                {{ site_settings.currency_symbol }}{{ stat.net_position|floatformat:2|intcomma }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -242,7 +298,7 @@
                     {% if stat.net_position < 0 %}
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">{{ stat.branch.name }}</span>
-                        <span class="text-sm font-medium text-red-600">₦{{ stat.net_position|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-red-600">{{ site_settings.currency_symbol }}{{ stat.net_position|floatformat:2|intcomma }}</span>
                     </div>
                     {% endif %}
                 {% empty %}
@@ -261,13 +317,13 @@
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Average Contributions</span>
                     <span class="text-sm font-medium">
-                        ₦{{ grand_total.contributions|div:branches_stats|length|floatformat:2|intcomma }}
+                        {{ site_settings.currency_symbol }}{{ grand_total.contributions|div:branches_stats|length|floatformat:2|intcomma }}
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Mission Remittance (10%)</span>
                     <span class="text-sm font-medium">
-                        ₦{{ grand_total.contributions|mul:"0.1"|floatformat:2|intcomma }}
+                        {{ site_settings.currency_symbol }}{{ grand_total.contributions|mul:"0.1"|floatformat:2|intcomma }}
                     </span>
                 </div>
             </div>
@@ -299,8 +355,13 @@ document.getElementById('areaSelect').addEventListener('change', function() {
 });
 
 // Branch Comparison Chart
-const ctx = document.getElementById('branchComparisonChart').getContext('2d');
-new Chart(ctx, {
+// Destroy any existing chart before creating a new one
+let branchComparisonChart = null;
+const ctx = document.getElementById('branchComparisonChart');
+if (branchComparisonChart) {
+    branchComparisonChart.destroy();
+}
+branchComparisonChart = new Chart(ctx, {
     type: 'bar',
     data: {
         labels: [{% for stat in branches_stats|slice:":10" %}'{{ stat.branch.name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
@@ -327,7 +388,7 @@ new Chart(ctx, {
                 beginAtZero: true,
                 ticks: {
                     callback: function(value) {
-                        return '₦' + (value / 1000000).toFixed(1) + 'M';
+                        return '{{ site_settings.currency_symbol }}' + (value / 1000000).toFixed(1) + 'M';
                     }
                 }
             }
