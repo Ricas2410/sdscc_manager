@@ -60,15 +60,15 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="stat-card">
             <p class="text-sm text-gray-500">Total Expenditure</p>
-            <p class="text-2xl font-bold text-red-600">GH₵{{ total_expenditure|floatformat:2|default:"0.00" }}</p>
+            <p class="text-2xl font-bold text-red-600">{{ total_expenditure|currency }}</p>
         </div>
         <div class="stat-card">
             <p class="text-sm text-gray-500">Mission Level</p>
-            <p class="text-2xl font-bold text-gray-900">GH₵{{ mission_expenditure|floatformat:2|default:"0.00" }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ mission_expenditure|currency }}</p>
         </div>
         <div class="stat-card">
             <p class="text-sm text-gray-500">Branch Level</p>
-            <p class="text-2xl font-bold text-gray-900">GH₵{{ branch_expenditure|floatformat:2|default:"0.00" }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ branch_expenditure|currency }}</p>
         </div>
         <div class="stat-card">
             <p class="text-sm text-gray-500">Pending Approval</p>
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: ['Utilities', 'Maintenance', 'Salaries', 'Welfare', 'Transport', 'Other'],
             datasets: [{
-                label: 'Amount (GH₵)',
+                label: 'Amount ({{ site_settings.currency_symbol }})',
                 data: [{{ utilities|default:1500 }}, {{ maintenance|default:800 }}, {{ salaries|default:5000 }}, {{ welfare|default:600 }}, {{ transport|default:400 }}, {{ other|default:300 }}],
                 backgroundColor: '#ef4444'
             }]

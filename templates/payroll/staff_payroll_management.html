@@ -218,15 +218,15 @@
                                 <!-- Base Salary -->
                                 <div>
                                     <label for="base_salary" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Base Salary (GH₵)
+                                        Base Salary ({{ site_settings.currency_symbol }})
                                         <span class="text-red-500">*</span>
                                     </label>
                                     <div class="relative">
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500 sm:text-sm">GH₵</span>
+                                            <span class="text-gray-500 text-sm">{{ site_settings.currency_symbol }}</span>
                                         </div>
                                         <input type="number" id="base_salary" name="base_salary" step="0.01" min="0" required
-                                               class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                               class="w-full pl-16 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                                placeholder="0.00">
                                     </div>
                                     <p class="mt-1 text-xs text-gray-500">Monthly base salary before allowances</p>
@@ -239,7 +239,7 @@
                                         <label for="housing_allowance" class="block text-sm font-medium text-gray-700 mb-2">Housing Allowance</label>
                                         <div class="relative">
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 sm:text-sm">GH₵</span>
+                                                <span class="text-gray-500 sm:text-sm">{{ site_settings.currency_symbol }}</span>
                                             </div>
                                             <input type="number" id="housing_allowance" name="housing_allowance" step="0.01" min="0" value="0"
                                                    class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
@@ -252,7 +252,7 @@
                                         <label for="transport_allowance" class="block text-sm font-medium text-gray-700 mb-2">Transport Allowance</label>
                                         <div class="relative">
                                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <span class="text-gray-500 sm:text-sm">GH₵</span>
+                                                <span class="text-gray-500 sm:text-sm">{{ site_settings.currency_symbol }}</span>
                                             </div>
                                             <input type="number" id="transport_allowance" name="transport_allowance" step="0.01" min="0" value="0"
                                                    class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
@@ -266,7 +266,7 @@
                                     <label for="other_allowances" class="block text-sm font-medium text-gray-700 mb-2">Other Allowances</label>
                                     <div class="relative">
                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span class="text-gray-500 sm:text-sm">GH₵</span>
+                                            <span class="text-gray-500 sm:text-sm">{{ site_settings.currency_symbol }}</span>
                                         </div>
                                         <input type="number" id="other_allowances" name="other_allowances" step="0.01" min="0" value="0"
                                                class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -279,7 +279,7 @@
                                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm font-medium text-blue-900">Total Monthly Compensation:</span>
-                                        <span id="total_preview" class="text-sm font-bold text-blue-900">GH₵ 0.00</span>
+                                        <span id="total_preview" class="text-sm font-bold text-blue-900">{{ site_settings.currency_symbol }} 0.00</span>
                                     </div>
                                 </div>
                             </div>
@@ -326,7 +326,7 @@ function calculateTotal() {
 
     const total = baseSalary + housingAllowance + transportAllowance + otherAllowances;
 
-    document.getElementById('total_preview').textContent = 'GH₵ ' + total.toLocaleString('en-US', {
+    document.getElementById('total_preview').textContent = '{{ site_settings.currency_symbol }} ' + total.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });

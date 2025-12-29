@@ -32,10 +32,10 @@
                         <input type="date" name="date" value="{{ today }}" required class="form-input" id="expenseDate">
                     </div>
                     <div class="form-group">
-                        <label class="form-label required">Amount (GH₵)</label>
+                        <label class="form-label required">Amount ({{ site_settings.currency_symbol }})</label>
                         <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">GH₵</span>
-                            <input type="number" name="amount" step="0.01" min="0.01" value="{{ expenditure.amount|default:'' }}" required class="form-input pl-14" placeholder="0.00">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">{{ site_settings.currency_symbol }}</span>
+                            <input type="number" name="amount" step="0.01" min="0.01" value="{{ expenditure.amount|default:'' }}" required class="form-input pl-16" placeholder="0.00">
                         </div>
                     </div>
                     <div class="form-group">

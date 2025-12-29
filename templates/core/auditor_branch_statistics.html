@@ -285,7 +285,7 @@
                 {% for stat in branches_stats|slice:":5" %}
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">{{ stat.branch.name }}</span>
-                    <span class="text-sm font-medium">₦{{ stat.contributions|floatformat:2|intcomma }}</span>
+                    <span class="text-sm font-medium">{{ stat.contributions|currency }}</span>
                 </div>
                 {% endfor %}
             </div>

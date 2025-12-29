@@ -2,34 +2,84 @@
 {% block title %}Assets & Inventory{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="container mx-auto px-4 py-6">
     <!-- Page Header -->
-    <div class="sm:flex sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Assets & Inventory</h1>
-            <p class="mt-1 text-sm text-gray-500">Manage church assets and inventory across branches</p>
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Assets & Inventory</h1>
+                <p class="mt-1 text-sm text-gray-500">Manage church assets and inventory across branches</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="exportAssets('pdf')" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    <span class="material-icons-outlined mr-2">picture_as_pdf</span>
+                    Export PDF
+                </button>
+                <button onclick="exportAssets('excel')" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    <span class="material-icons-outlined mr-2">grid_on</span>
+                    Export Excel
+                </button>
+                {% if user.is_mission_admin %}
+                <button onclick="openAssetModal()" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <span class="material-icons-outlined mr-2">add</span>
+                    Add Asset
+                </button>
+                {% endif %}
+            </div>
         </div>
-        <div class="flex gap-3">
-            <button onclick="exportAssets('pdf')" class="btn btn-secondary">
-                <span class="material-icons-outlined mr-2">picture_as_pdf</span>
-                Export PDF
-            </button>
-            <button onclick="exportAssets('excel')" class="btn btn-secondary">
-                <span class="material-icons-outlined mr-2">grid_on</span>
-                Export Excel
-            </button>
-            {% if user.is_mission_admin %}
-            <button onclick="openAssetModal()" class="btn btn-primary">
-                <span class="material-icons-outlined mr-2">add</span>
-                Add Asset
-            </button>
-            {% endif %}
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Assets</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_assets }}</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <span class="material-icons text-blue-600">inventory</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Value</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_value|currency }}</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <span class="material-icons text-green-600">attach_money</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">In Good Condition</p>
+                    <p class="text-2xl font-bold text-green-600">{{ good_condition }}</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <span class="material-icons text-green-600">check_circle</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Need Maintenance</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ needs_maintenance }}</p>
+                </div>
+                <div class="bg-orange-100 p-3 rounded-lg">
+                    <span class="material-icons text-orange-600">build</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Filters Section -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Filters</h2>
         <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Hierarchy Filters -->
             {% if user.is_mission_admin %}
@@ -182,7 +232,7 @@
                             {{ asset.branch.name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            GHS {{ asset.value|floatformat:2 }}
+                            {{ asset.value|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if asset.status == 'excellent' %}

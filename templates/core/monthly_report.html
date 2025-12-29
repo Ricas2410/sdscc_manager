@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load core_tags %}
 
 {% block title %}Monthly Report - {{ branch.name }}{% endblock %}
 
@@ -91,7 +92,7 @@
                         {% endfor %}
                         <tr class="bg-gray-100 font-bold">
                             <td class="border p-2">TOTAL</td>
-                            <td class="border p-2 text-center">{{ summary.contributions_by_type.values|sum:'count' }}</td>
+                            <td class="border p-2 text-center">{{ summary.contributions_by_type.values|sum_filter:'count' }}</td>
                             <td class="border p-2 text-right">{{ summary.total_contributions|currency }}</td>
                             <td class="border p-2 text-right">{{ summary.total_mission|currency }}</td>
                             <td class="border p-2 text-right">{{ summary.total_branch|currency }}</td>
@@ -123,7 +124,7 @@
                         {% endfor %}
                         <tr class="bg-gray-100 font-bold">
                             <td class="border p-2">TOTAL</td>
-                            <td class="border p-2 text-center">{{ summary.expenditures_by_category.values|sum:'count' }}</td>
+                            <td class="border p-2 text-center">{{ summary.expenditures_by_category.values|sum_filter:'count' }}</td>
                             <td class="border p-2 text-right">{{ summary.total_expenditure|currency }}</td>
                         </tr>
                     </tbody>

@@ -1359,7 +1359,10 @@ def manifest_json(request):
     # Use uploaded logo from settings if available, otherwise use default SVG icons
     logo_url = None
     if settings_obj and settings_obj.site_logo:
-        logo_url = f"{base_url}{settings_obj.site_logo.url}"
+        # Check if the logo URL already includes the full URL
+        logo_url = settings_obj.site_logo.url
+        if not logo_url.startswith(('http://', 'https://')):
+            logo_url = f"{base_url}{logo_url}"
     elif settings_obj and settings_obj.site_logo_url:
         logo_url = settings_obj.site_logo_url
 
@@ -2423,6 +2426,10 @@ def month_close_management(request):
         is_closed=True
     ).count()
     
+    # Generate month names safely
+    import calendar
+    month_names = [(i, calendar.month_name[i]) for i in range(1, 13)]
+
     context = {
         'current_year': current_year,
         'current_month': current_month,
@@ -2430,7 +2437,7 @@ def month_close_management(request):
         'fully_closed_months': fully_closed_months,
         'total_branches': total_branches,
         'current_month_closed': current_month_closed,
-        'months': [(i, today.replace(month=i).strftime('%B')) for i in range(1, 13)],
+        'months': month_names,
         'years': list(range(current_year - 2, current_year + 1)),
     }
     
@@ -2441,33 +2448,49 @@ def month_close_management(request):
 def close_month_action(request):
     """Close a specific month."""
     if not request.user.is_mission_admin:
-        return JsonResponse({'success': False, 'error': 'Access denied'})
+        return JsonResponse({'success': False, 'error': 'Access denied - Mission admin required'})
     
     if request.method == 'POST':
-        year = int(request.POST.get('year'))
-        month = int(request.POST.get('month'))
         try:
-            from .monthly_closing import MonthlyClosingService
-            from django.db import transaction
-            branches = Branch.objects.filter(is_active=True)
+            year = int(request.POST.get('year'))
+            month = int(request.POST.get('month'))
             
-            with transaction.atomic():
-                # Mission admin close applies to ALL branches using the service
-                for branch in branches:
-                    service = MonthlyClosingService(branch, month, year)
-                    service.close_month(request.user)
+            # Validate month and year
+            if month < 1 or month > 12:
+                return JsonResponse({'success': False, 'error': 'Invalid month'})
+            if year < 2020 or year > 2030:
+                return JsonResponse({'success': False, 'error': 'Invalid year'})
             
-            return JsonResponse({
-                'success': True,
-                'message': f'Successfully closed {timezone.now().strftime("%B")} {year} for all branches'
-            })
+            # Import the service here to avoid potential circular imports
+            try:
+                from .monthly_closing import MonthlyClosingService
+                from django.db import transaction
+                from django.utils import timezone
+                
+                branches = Branch.objects.filter(is_active=True)
+                
+                with transaction.atomic():
+                    # Mission admin close applies to ALL branches using the service
+                    for branch in branches:
+                        service = MonthlyClosingService(branch, month, year)
+                        service.close_month(request.user)
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Successfully closed {timezone.now().strftime("%B")} {year} for all branches'
+                })
+                
+            except ImportError as e:
+                return JsonResponse({'success': False, 'error': f'Monthly closing service not available: {str(e)}'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': f'Error during month closing: {str(e)}'})
             
         except ValueError as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            return JsonResponse({'success': False, 'error': f'Invalid data format: {str(e)}'})
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            return JsonResponse({'success': False, 'error': f'Unexpected error: {str(e)}'})
     
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+    return JsonResponse({'success': False, 'error': 'POST request required'})
 
 
 def error_400(request, exception=None):

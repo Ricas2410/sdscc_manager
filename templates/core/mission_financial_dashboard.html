@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Mission Financial Dashboard - {{ site_settings.church_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+    }
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .income-icon { background: #dcfce7; color: #16a34a; }
+    .expense-icon { background: #fee2e2; color: #dc2626; }
+    .balance-icon { background: #dbeafe; color: #2563eb; }
+    .pending-icon { background: #fef3c7; color: #d97706; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Mission Financial Dashboard</h1>
+            <p class="text-muted mb-0">{{ period_name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'core:mission_expenditure_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list"></i> Expenditures
+            </a>
+            <a href="{% url 'core:mission_remittance_tracking' %}" class="btn btn-outline-primary">
+                <i class="fas fa-exchange-alt"></i> Remittances
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-select" onchange="this.form.submit()">
+                        {% for y in available_years %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Month (Optional)</label>
+                    <select name="month" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Months</option>
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'core:mission_financial_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Income Card -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon income-icon">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <span class="badge bg-success">{{ remittances_count }} remittances</span>
+                </div>
+                <div class="stat-label">Total Income (Remittances)</div>
+                <div class="stat-value text-success">{{ total_remittances_received|currency }}</div>
+            </div>
+        </div>
+
+        <!-- Expenditure Card -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon expense-icon">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <span class="badge bg-danger">{{ expenditures_count }} expenses</span>
+                </div>
+                <div class="stat-label">Total Expenditures</div>
+                <div class="stat-value text-danger">{{ total_mission_expenditures|currency }}</div>
+            </div>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon balance-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+                <div class="stat-label">Mission Balance</div>
+                <div class="stat-value {% if mission_balance >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                    {{ mission_balance|currency }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Card -->
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon pending-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <span class="badge bg-warning text-dark">{{ pending_count }} pending</span>
+                </div>
+                <div class="stat-label">Pending Remittances</div>
+                <div class="stat-value text-warning">{{ total_pending|currency }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Details -->
+    <div class="row g-4">
+        <!-- Top Contributing Branches -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Top Contributing Branches</h5>
+                </div>
+                <div class="card-body">
+                    {% if branch_remittances %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Branch</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-center">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in branch_remittances %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'core:branch_financial_statistics' %}?branch={{ item.branch__id }}"
+                                           class="text-decoration-none">
+                                            {{ item.branch__name }}
+                                        </a>
+                                    </td>
+                                    <td class="text-end fw-bold">{{ item.total|currency }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ item.count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No remittances received in this period</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenditure by Category -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Expenditure by Category</h5>
+                </div>
+                <div class="card-body">
+                    {% if expenditures_by_category %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in expenditures_by_category %}
+                                <tr>
+                                    <td>{{ item.category__name }}</td>
+                                    <td class="text-end fw-bold">{{ item.total|currency }}</td>
+                                    <td class="text-end">
+                                        {% widthratio item.total total_mission_expenditures 100 %}%
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td>Total</td>
+                                    <td class="text-end">{{ total_mission_expenditures|currency }}</td>
+                                    <td class="text-end">100%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No expenditures recorded in this period</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mt-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Quick Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="{% url 'expenditure:expenditure_add' %}?level=mission" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-plus-circle"></i> Add Mission Expenditure
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'core:mission_expenditure_list' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-list"></i> View All Expenditures
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'core:mission_remittance_tracking' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-exchange-alt"></i> Track Remittances
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="#" class="btn btn-outline-success w-100" onclick="window.print(); return false;">
+                        <i class="fas fa-print"></i> Print Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit form on filter change
+    document.querySelectorAll('select[name="year"], select[name="month"]').forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+</script>
+{% endblock %}

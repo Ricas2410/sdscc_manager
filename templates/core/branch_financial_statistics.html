@@ -88,7 +88,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Contributions</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ total_contributions|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_contributions|currency }}</p>
                 </div>
             </div>
         </div>
@@ -99,7 +99,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Expenditures</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ total_expenditures|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_expenditures|currency }}</p>
                 </div>
             </div>
         </div>
@@ -110,7 +110,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Coffer Balance</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ coffer_balance|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ coffer_balance|currency }}</p>
                 </div>
             </div>
         </div>
@@ -121,7 +121,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Mission Remittance</p>
-                    <p class="text-2xl font-bold text-gray-900">₦{{ mission_remittance|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ mission_remittance|currency }}</p>
                 </div>
             </div>
         </div>
@@ -129,17 +129,21 @@
 
     <!-- Charts Row -->
     {% if period_type == 'yearly' %}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <!-- Monthly Trend Chart -->
         <div class="bg-white shadow rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Monthly Trend</h3>
-            <canvas id="trendChart" height="200"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="trendChart"></canvas>
+            </div>
         </div>
-        
+
         <!-- Contribution Types Chart -->
         <div class="bg-white shadow rounded-lg p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Contributions by Type</h3>
-            <canvas id="contributionChart" height="200"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="contributionChart"></canvas>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -155,15 +159,15 @@
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Tithe</span>
-                        <span class="text-sm font-medium">₦{{ tithe_total|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium">{{ tithe_total|currency }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Other Contributions</span>
-                        <span class="text-sm font-medium">₦{{ other_contributions|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium">{{ other_contributions|currency }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t">
                         <span class="text-sm font-medium text-gray-900">Total Contributions</span>
-                        <span class="text-lg font-bold text-gray-900">₦{{ total_contributions|floatformat:2|intcomma }}</span>
+                        <span class="text-lg font-bold text-gray-900">{{ total_contributions|currency }}</span>
                     </div>
                 </div>
                 
@@ -174,7 +178,7 @@
                         {% for contrib in contributions_by_type %}
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-gray-600">{{ contrib.contribution_type__name|title }}</span>
-                            <span class="font-medium">₦{{ contrib.total|floatformat:2|intcomma }}</span>
+                            <span class="font-medium">{{ contrib.total|currency }}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -192,20 +196,20 @@
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Payroll</span>
-                        <span class="text-sm font-medium">₦{{ total_payroll|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium">{{ total_payroll|currency }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Other Expenses</span>
-                        <span class="text-sm font-medium">₦{{ total_expenditures|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium">{{ total_expenditures|currency }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Remittances Sent</span>
-                        <span class="text-sm font-medium">₦{{ total_remittances|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium">{{ total_remittances|currency }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t">
                         <span class="text-sm font-medium text-gray-900">Total Outflows</span>
                         <span class="text-lg font-bold text-gray-900">
-                            ₦{{ total_expenditures|add:total_payroll|add:total_remittances|floatformat:2|intcomma }}
+                            {{ total_expenditures|add:total_payroll|add:total_remittances|currency }}
                         </span>
                     </div>
                 </div>
@@ -217,7 +221,7 @@
                         {% for exp in expenditures_by_category %}
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-gray-600">{{ exp.category|title }}</span>
-                            <span class="font-medium">₦{{ exp.total|floatformat:2|intcomma }}</span>
+                            <span class="font-medium">{{ exp.total|currency }}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -311,7 +315,8 @@ new Chart(trendCtx, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
+        aspectRatio: 2,
         plugins: {
             legend: {
                 position: 'top',
@@ -322,7 +327,7 @@ new Chart(trendCtx, {
                 beginAtZero: true,
                 ticks: {
                     callback: function(value) {
-                        return '₦' + value.toLocaleString();
+                        return '{{ site_settings.currency_symbol }}' + value.toLocaleString();
                     }
                 }
             }
@@ -345,10 +350,23 @@ new Chart(contribCtx, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
+        aspectRatio: 1.5,
         plugins: {
             legend: {
                 position: 'right',
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += '{{ site_settings.currency_symbol }}' + context.parsed.toLocaleString();
+                        return label;
+                    }
+                }
             }
         }
     }

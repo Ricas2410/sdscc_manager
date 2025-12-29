@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
+from django.utils import timezone
 from calendar import month_name
 from datetime import datetime
 
@@ -107,7 +108,7 @@ def commissions_list(request):
     context = {
         'commissions': commissions,
         'areas': Area.objects.filter(is_active=True),
-        'years': list(range(datetime.now().year - 5, datetime.now().year + 6)),
+        'years': list(range(timezone.now().year - 5, timezone.now().year + 6)),
         'selected_year': int(year) if year else None,
         'selected_month': int(month) if month else None,
         'commission_rate': settings.commission_percentage,

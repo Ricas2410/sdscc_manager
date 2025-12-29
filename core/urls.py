@@ -3,7 +3,7 @@ Core URL Configuration
 """
 
 from django.urls import path
-from . import views, financial_views
+from . import views, financial_views, mission_financial_views
 from . import views_assets
 from . import monthly_closing_views
 
@@ -79,12 +79,18 @@ urlpatterns = [
     # Financial Statistics
     path('financial-statistics/', financial_views.branch_financial_statistics, name='branch_financial_statistics'),
     path('auditor/branch-statistics/', financial_views.auditor_branch_statistics, name='auditor_branch_statistics'),
+
+    # Mission Financial Management
+    path('mission/financial-dashboard/', mission_financial_views.mission_financial_dashboard, name='mission_financial_dashboard'),
+    path('mission/expenditures/', mission_financial_views.mission_expenditure_list, name='mission_expenditure_list'),
+    path('mission/remittances/', mission_financial_views.mission_remittance_tracking, name='mission_remittance_tracking'),
     
     # Monthly Closing
     path('monthly-closing/', monthly_closing_views.monthly_closing_dashboard, name='monthly_closing'),
     path('monthly-closing/close/', monthly_closing_views.close_month, name='close_month'),
     path('monthly-closing/reopen/', monthly_closing_views.reopen_month, name='reopen_month'),
     path('monthly-closing/check-edit/', monthly_closing_views.check_edit_permission, name='check_edit_permission'),
+    path('monthly-closing/check-status/', monthly_closing_views.check_monthly_closing_status, name='check_monthly_closing_status'),
     path('monthly-report/', monthly_closing_views.monthly_report_view, name='monthly_report'),
     path('monthly-report/pdf/', monthly_closing_views.monthly_report_pdf, name='monthly_report_pdf'),
     

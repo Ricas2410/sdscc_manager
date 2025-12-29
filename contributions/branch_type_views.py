@@ -115,10 +115,24 @@ def create_branch_contribution_type(request):
                     created_by=request.user
                 )
             
+            # Return JSON for AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Contribution type "{name}" created successfully with code "{code}".'
+                })
+
             messages.success(request, f'Contribution type "{name}" created successfully with code "{code}".')
             return redirect('contributions:branch_types')
-            
+
         except Exception as e:
+            # Return JSON for AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error creating contribution type: {str(e)}'
+                }, status=400)
+
             messages.error(request, f'Error creating contribution type: {str(e)}')
             return redirect('contributions:branch_types')
     
@@ -166,9 +180,24 @@ def edit_branch_contribution_type(request, type_id):
         
         try:
             contrib_type.save()
+
+            # Return JSON for AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Contribution type "{contrib_type.name}" updated successfully.'
+                })
+
             messages.success(request, f'Contribution type "{contrib_type.name}" updated successfully.')
             return redirect('contributions:branch_types')
         except Exception as e:
+            # Return JSON for AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error updating contribution type: {str(e)}'
+                }, status=400)
+
             messages.error(request, f'Error updating contribution type: {str(e)}')
     
     context = {
@@ -209,13 +238,40 @@ def deactivate_branch_contribution_type(request, type_id):
 
 
 @login_required
+def get_branch_contribution_type_api(request, type_id):
+    """Get contribution type details as JSON for editing."""
+    contrib_type = get_object_or_404(ContributionType, pk=type_id)
+
+    # Check permissions
+    if not request.user.is_mission_admin:
+        if contrib_type.scope != 'branch' or contrib_type.branch != request.user.branch:
+            return JsonResponse({'success': False, 'message': 'Access denied'}, status=403)
+
+    data = {
+        'id': str(contrib_type.id),
+        'name': contrib_type.name,
+        'code': contrib_type.code,
+        'description': contrib_type.description or '',
+        'category': contrib_type.category,
+        'mission_percentage': float(contrib_type.mission_percentage),
+        'area_percentage': float(contrib_type.area_percentage),
+        'district_percentage': float(contrib_type.district_percentage),
+        'branch_percentage': float(contrib_type.branch_percentage),
+        'is_individual': contrib_type.is_individual,
+        'is_active': contrib_type.is_active,
+    }
+
+    return JsonResponse(data)
+
+
+@login_required
 def activate_branch_contribution_type(request, type_id):
     """Reactivate a branch contribution type."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
-    
+
     contrib_type = get_object_or_404(ContributionType, pk=type_id)
-    
+
     # Check permissions
     if not request.user.is_mission_admin:
         if contrib_type.scope != 'branch' or contrib_type.branch != request.user.branch:

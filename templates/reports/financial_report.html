@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const value = context.parsed || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((value / total) * 100).toFixed(1);
-                                return label + ': GH₵' + value.toFixed(2) + ' (' + percentage + '%)';
+                                return label + ': {{ site_settings.currency_symbol }}' + value.toFixed(2) + ' (' + percentage + '%)';
                             }
                         }
                     },
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const value = context.parsed || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((value / total) * 100).toFixed(1);
-                                return label + ': GH₵' + value.toFixed(2) + ' (' + percentage + '%)';
+                                return label + ': {{ site_settings.currency_symbol }}' + value.toFixed(2) + ' (' + percentage + '%)';
                             }
                         }
                     },

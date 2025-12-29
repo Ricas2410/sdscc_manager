@@ -381,9 +381,9 @@ setTimeout(function() {
             <div class="card-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="form-group">
-                        <label class="form-label">Base Salary (GH₵)</label>
-                        <input type="number" name="base_salary" step="0.01" min="0" 
-                            value="{% if form_data.base_salary %}{{ form_data.base_salary }}{% elif payroll.base_salary %}{{ payroll.base_salary }}{% else %}0{% endif %}" 
+                        <label class="form-label">Base Salary ({{ site_settings.currency_symbol }})</label>
+                        <input type="number" name="base_salary" step="0.01" min="0"
+                            value="{% if form_data.base_salary %}{{ form_data.base_salary }}{% elif payroll.base_salary %}{{ payroll.base_salary }}{% else %}0{% endif %}"
                             class="form-input" placeholder="0.00">
                         <p class="text-xs text-gray-500 mt-1">Monthly base salary amount</p>
                     </div>

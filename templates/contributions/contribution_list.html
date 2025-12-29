@@ -75,7 +75,7 @@
     <!-- Filters -->
     <div class="card">
         <div class="card-body p-4">
-            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if user.is_mission_admin %}6{% elif user.is_area_executive or user.is_district_executive %}5{% else %}4{% endif %} gap-4">
                 <div class="form-group mb-0">
                     <label class="form-label">From Date</label>
                     <input type="date" name="from_date" value="{{ request.GET.from_date }}" class="form-input">
@@ -93,6 +93,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if user.is_mission_admin %}
                 <div class="form-group mb-0">
                     <label class="form-label">Area</label>
                     <select name="area" id="areaFilter" class="form-input form-select" onchange="this.form.submit()">
@@ -102,6 +103,8 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
+                {% if user.is_mission_admin or user.is_area_executive %}
                 <div class="form-group mb-0">
                     <label class="form-label">District</label>
                     <select name="district" id="districtFilter" class="form-input form-select" onchange="this.form.submit()">
@@ -111,15 +114,18 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
+                {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %}
                 <div class="form-group mb-0">
                     <label class="form-label">Branch</label>
                     <select name="branch" id="branchFilter" class="form-input form-select">
                         <option value="">All Branches</option>
                         {% for branch in branches %}
-                        <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }} ({{ branch.district.name }})</option>
+                        <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}{% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %} ({{ branch.district.name }}){% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
                 <div class="flex items-end gap-2">
                     <button type="submit" class="btn btn-primary flex-1">
                         <span class="material-icons-outlined mr-1">search</span>Filter
@@ -137,8 +143,12 @@
                 <thead>
                     <tr>
                         <th>Branch</th>
+                        {% if user.is_mission_admin or user.is_area_executive %}
                         <th>District</th>
+                        {% endif %}
+                        {% if user.is_mission_admin %}
                         <th>Area</th>
+                        {% endif %}
                         <th class="text-right">Total Amount</th>
                         <th class="text-right">Entries</th>
                     </tr>
@@ -147,14 +157,18 @@
                     {% for row in branch_totals %}
                     <tr>
                         <td class="text-gray-900 font-semibold">{{ row.branch__name }}</td>
+                        {% if user.is_mission_admin or user.is_area_executive %}
                         <td class="text-gray-600">{{ row.branch__district__name }}</td>
+                        {% endif %}
+                        {% if user.is_mission_admin %}
                         <td class="text-gray-500">{{ row.branch__district__area__name }}</td>
+                        {% endif %}
                         <td class="text-right font-bold text-gray-900">{{ row.total_amount|currency }}</td>
                         <td class="text-right text-gray-700">{{ row.total_count|intcomma }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-12">
+                        <td colspan="{% if user.is_mission_admin %}5{% elif user.is_area_executive %}4{% else %}3{% endif %}" class="text-center py-12">
                             <span class="material-icons-outlined text-5xl text-gray-300">payments</span>
                             <p class="mt-2 text-gray-500">No contributions found for this filter.</p>
                         </td>

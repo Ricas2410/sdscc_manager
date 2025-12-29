@@ -14,10 +14,10 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-48oz#lt$z8kl+7y)-f!m$mhn(#(dft=gi_kpc1wx!-^i+u9x2@')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'rRBJ7zT5daSvTsNA6WyE5yjf13uyYnH8lB17XTwRSfsRi-oMApo2IRQhKxwf17jXE2c')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,sdscc.fly.dev').split(',')
 
@@ -216,6 +216,15 @@ LOGOUT_REDIRECT_URL = 'accounts:login'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_SAVE_EVERY_REQUEST = True
 
+# Security settings for production
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
 
 # REST Framework Configuration
 REST_FRAMEWORK = {
@@ -239,6 +248,23 @@ SDSCC_SETTINGS = {
     'PASTOR_ID_PREFIX': 'PST',
     'TITHE_COMMISSION_PERCENT': 10,  # Default commission percentage
     'ENABLE_PWA': True,
+}
+
+
+# Django-Q Configuration
+Q_CLUSTER = {
+    'name': 'SDSCC',
+    'workers': 2,
+    'recycle': 500,
+    'timeout': 300,  # 5 minutes
+    'retry': 360,  # 6 minutes (must be larger than timeout)
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default',
+    'catch_up': True,
+    'save_limit': 250,
+    'sync': False,  # Set to True for development/testing
+    'ack_failures': True,
 }
 
 

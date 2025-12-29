@@ -438,7 +438,7 @@ def monthly_reports(request):
         'districts': District.objects.filter(is_active=True),
         'branches': Branch.objects.filter(is_active=True),
         'fiscal_years': FiscalYear.objects.all(),
-        'months': [(i, timezone.now().replace(month=i).strftime('%B')) for i in range(1, 13)],
+        'months': [(i, timezone.now().replace(day=1, month=i).strftime('%B')) for i in range(1, 13)],
         'years': range(timezone.now().year - 2, timezone.now().year + 1),
         'status_choices': MonthlyReport.Status.choices,
         'selected_month': int(selected_month),
@@ -601,7 +601,7 @@ def monthly_report_generate(request):
     
     context = {
         'branch': branch,
-        'months': [(i, timezone.now().replace(month=i).strftime('%B')) for i in range(1, 12)],
+        'months': [(i, timezone.now().replace(day=1, month=i).strftime('%B')) for i in range(1, 12)],
         'current_year': timezone.now().year,
     }
     

@@ -60,15 +60,15 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="stat-card">
             <p class="text-sm text-gray-500">Total Contributions</p>
-            <p class="text-2xl font-bold text-gray-900">GH₵{{ total_contributions|floatformat:2|default:"0.00" }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ total_contributions|currency }}</p>
         </div>
         <div class="stat-card">
             <p class="text-sm text-gray-500">Total Tithe</p>
-            <p class="text-2xl font-bold text-blue-600">GH₵{{ total_tithe|floatformat:2|default:"0.00" }}</p>
+            <p class="text-2xl font-bold text-blue-600">{{ total_tithe|currency }}</p>
         </div>
         <div class="stat-card">
             <p class="text-sm text-gray-500">Total Offering</p>
-            <p class="text-2xl font-bold text-green-600">GH₵{{ total_offering|floatformat:2|default:"0.00" }}</p>
+            <p class="text-2xl font-bold text-green-600">{{ total_offering|currency }}</p>
         </div>
         <div class="stat-card">
             <p class="text-sm text-gray-500">Transaction Count</p>

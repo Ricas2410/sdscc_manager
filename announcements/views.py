@@ -211,8 +211,8 @@ def event_add(request):
     context = {
         'branches': branches,
         'areas': Area.objects.filter(is_active=True),
-        'today': dt.datetime.now().strftime('%Y-%m-%d'),
-        'now': dt.datetime.now().strftime('%H:%M'),
+        'today': timezone.now().strftime('%Y-%m-%d'),
+        'now': timezone.now().strftime('%H:%M'),
         'is_branch_admin': request.user.is_branch_executive and not request.user.is_mission_admin,
     }
     return render(request, 'announcements/event_form.html', context)
@@ -393,8 +393,8 @@ def announcement_edit(request, announcement_id):
         'expiry_date': announcement.expiry_date.strftime('%Y-%m-%d %H:%M') if announcement.expiry_date else '',
         'is_branch_admin': request.user.is_branch_executive and not request.user.is_mission_admin,
         'is_edit': True,
-        'today': dt.datetime.now().strftime('%Y-%m-%d'),
-        'now': dt.datetime.now().strftime('%H:%M'),
+        'today': timezone.now().strftime('%Y-%m-%d'),
+        'now': timezone.now().strftime('%H:%M'),
     }
     return render(request, 'announcements/announcement_form.html', context)
 

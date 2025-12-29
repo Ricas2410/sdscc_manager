@@ -34,7 +34,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Monthly Payroll</p>
-                    <p class="text-xl font-bold text-gray-900">GH₵{{ monthly_total|floatformat:0|default:"0" }}</p>
+                    <p class="text-xl font-bold text-gray-900">{{ monthly_total|currency }}</p>
                 </div>
             </div>
         </div>

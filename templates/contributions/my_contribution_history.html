@@ -52,7 +52,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="text-center p-4 bg-green-50 rounded-lg">
                     <p class="text-sm text-green-600 font-medium">Total Amount</p>
-                    <p class="text-3xl font-bold text-green-700">GH₵{{ year_stats.total|floatformat:2|default:"0.00" }}</p>
+                    <p class="text-3xl font-bold text-green-700">{{ year_stats.total|currency }}</p>
                 </div>
                 <div class="text-center p-4 bg-blue-50 rounded-lg">
                     <p class="text-sm text-blue-600 font-medium">Total Records</p>

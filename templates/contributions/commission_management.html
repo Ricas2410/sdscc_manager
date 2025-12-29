@@ -61,19 +61,19 @@
         <div class="card">
             <div class="card-body">
                 <p class="text-sm text-gray-500">Total Commission</p>
-                <p class="text-2xl font-bold text-blue-600">GH₵{{ stats.total_amount|floatformat:2|default:"0.00" }}</p>
+                <p class="text-2xl font-bold text-blue-600">{{ stats.total_amount|currency }}</p>
             </div>
         </div>
         <div class="card">
             <div class="card-body">
                 <p class="text-sm text-gray-500">Paid</p>
-                <p class="text-2xl font-bold text-green-600">GH₵{{ stats.total_paid|floatformat:2|default:"0.00" }}</p>
+                <p class="text-2xl font-bold text-green-600">{{ stats.total_paid|currency }}</p>
             </div>
         </div>
         <div class="card">
             <div class="card-body">
                 <p class="text-sm text-gray-500">Pending</p>
-                <p class="text-2xl font-bold text-orange-600">GH₵{{ stats.total_pending|floatformat:2|default:"0.00" }}</p>
+                <p class="text-2xl font-bold text-orange-600">{{ stats.total_pending|currency }}</p>
             </div>
         </div>
     </div>
@@ -292,7 +292,7 @@ function closeGenerateModal() {
 function openPayModal(commissionId, pastorName, amount, phone) {
     document.getElementById('payCommissionId').value = commissionId;
     document.getElementById('payPastorName').textContent = pastorName;
-    document.getElementById('payAmount').textContent = 'GH₵' + parseFloat(amount).toFixed(2);
+    document.getElementById('payAmount').textContent = '{{ site_settings.currency_symbol }}' + parseFloat(amount).toFixed(2);
     var phoneEl = document.getElementById('payPhone');
     if (phoneEl) {
         phoneEl.textContent = phone || 'Not available';

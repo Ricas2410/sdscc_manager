@@ -18,11 +18,11 @@ from payroll.models import PayrollRun, PaySlip
 
 @login_required
 def branch_financial_statistics(request):
-    """Comprehensive financial statistics for branch executive/pastor."""
+    """Comprehensive financial statistics for branch executive/pastor/auditor."""
     user = request.user
-    
+
     # Determine branches this user can see
-    if user.is_mission_admin:
+    if user.is_mission_admin or user.is_auditor:
         branches = Branch.objects.filter(is_active=True)
         selected_branch_id = request.GET.get('branch')
         if selected_branch_id:
@@ -194,13 +194,18 @@ def branch_financial_statistics(request):
     
     # Available years for filter
     available_years = list(range(today.year - 3, today.year + 2))
-    
+
+    # Get site settings for currency
+    from core.models import SiteSettings
+    site_settings = SiteSettings.get_settings()
+
     context = {
         **stats,
         'available_years': available_years,
         'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
+        'site_settings': site_settings,
     }
-    
+
     return render(request, 'core/branch_financial_statistics.html', context)
 @login_required
 def auditor_branch_statistics(request):

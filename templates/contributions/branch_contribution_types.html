@@ -284,13 +284,14 @@ document.getElementById('typeForm').addEventListener('submit', function(e) {
     
     const formData = new FormData(this);
     const typeId = formData.get('id');
-    
+
     const url = typeId ? `/contributions/branch-types/${typeId}/edit/` : '/contributions/branch-types/create/';
-    
+
     fetch(url, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest',
         },
         body: formData
     })

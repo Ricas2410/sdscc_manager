@@ -2,27 +2,36 @@
 {% block title %}Sermons{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="sm:flex sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Sermon Library</h1>
-            <p class="mt-1 text-sm text-gray-500">Audio, video, and text sermons</p>
+<div class="container mx-auto px-4 py-6">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Sermon Library</h1>
+                <p class="mt-1 text-sm text-gray-500">Audio, video, and text sermons</p>
+            </div>
+            {% if user.role in 'pastor,mission_admin,branch_executive' %}
+            <div class="mt-4 sm:mt-0">
+                <a href="{% url 'sermons:add' %}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <span class="material-icons-outlined mr-2">add</span> Add Sermon
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% if user.role in 'pastor,mission_admin,branch_executive' %}
-        <a href="{% url 'sermons:add' %}" class="btn-primary">
-            <span class="material-icons-outlined mr-1">add</span> Add Sermon
-        </a>
-        {% endif %}
     </div>
 
     <!-- Search & Filter -->
-    <div class="bg-white shadow rounded-lg p-4">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="md:col-span-2">
-                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search sermons..." class="input-field">
+                <div class="relative">
+                    <span class="material-icons-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">search</span>
+                    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search sermons..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
             </div>
             <div>
-                <select name="category" class="input-field">
+                <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                     <option value="">All Categories</option>
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
@@ -30,7 +39,9 @@
                 </select>
             </div>
             <div>
-                <button type="submit" class="btn-primary w-full">Search</button>
+                <button type="submit" class="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center">
+                    <span class="material-icons-outlined mr-2">search</span> Search
+                </button>
             </div>
         </form>
     </div>
@@ -38,45 +49,64 @@
     <!-- Sermons Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for sermon in sermons %}
-        <a href="{% url 'sermons:detail' sermon.id %}" class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow group">
-            <div class="relative">
+        <a href="{% url 'sermons:detail' sermon.id %}" class="group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+            <div class="relative aspect-video">
                 {% if sermon.thumbnail %}
-                <img src="{{ sermon.thumbnail.url }}" class="w-full h-40 object-cover">
+                <img src="{{ sermon.thumbnail.url }}" alt="{{ sermon.title }}" class="w-full h-full object-cover">
                 {% else %}
-                <div class="w-full h-40 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <div class="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
                     <span class="material-icons-outlined text-6xl text-white/50">menu_book</span>
                 </div>
                 {% endif %}
                 {% if sermon.video_url %}
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <span class="material-icons-outlined text-3xl text-primary-600">play_arrow</span>
+                <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                    <div class="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                        <span class="material-icons-outlined text-4xl text-primary-600">play_arrow</span>
                     </div>
                 </div>
                 {% endif %}
                 {% if sermon.audio_file %}
-                <div class="absolute top-2 right-2">
-                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-white/90 text-gray-700">
+                <div class="absolute top-3 right-3">
+                    <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full bg-white/90 backdrop-blur-sm text-gray-700 shadow-sm">
                         <span class="material-icons-outlined text-sm mr-1">headphones</span> Audio
                     </span>
                 </div>
                 {% endif %}
             </div>
-            <div class="p-4">
-                <h3 class="font-semibold text-gray-900 group-hover:text-primary-600 line-clamp-2">{{ sermon.title }}</h3>
-                <p class="text-sm text-gray-500 mt-1">{{ sermon.preacher }}</p>
-                <div class="flex items-center justify-between mt-3 text-xs text-gray-500">
-                    <span>{{ sermon.sermon_date|date:"M d, Y" }}</span>
+            <div class="p-5">
+                <h3 class="font-semibold text-lg text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2">{{ sermon.title }}</h3>
+                <p class="text-sm text-gray-600 mt-2 flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">person</span>
+                    {{ sermon.preacher }}
+                </p>
+                <div class="flex items-center justify-between mt-4">
+                    <span class="text-xs text-gray-500 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">event</span>
+                        {{ sermon.sermon_date|date:"M d, Y" }}
+                    </span>
                     {% if sermon.category %}
-                    <span class="px-2 py-1 bg-gray-100 rounded">{{ sermon.category.name }}</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
+                        {{ sermon.category.name }}
+                    </span>
                     {% endif %}
                 </div>
+                {% if sermon.description %}
+                <p class="text-sm text-gray-600 mt-3 line-clamp-2">{{ sermon.description }}</p>
+                {% endif %}
             </div>
         </a>
         {% empty %}
-        <div class="col-span-full bg-white shadow rounded-lg p-12 text-center">
-            <span class="material-icons-outlined text-5xl text-gray-300">menu_book</span>
-            <p class="mt-2 text-gray-500">No sermons available</p>
+        <div class="col-span-full bg-white rounded-lg shadow-sm p-12 text-center">
+            <div class="flex flex-col items-center">
+                <span class="material-icons-outlined text-6xl text-gray-300 mb-4">menu_book</span>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No sermons available</h3>
+                <p class="text-sm text-gray-500">Get started by adding your first sermon to the library.</p>
+                {% if user.role in 'pastor,mission_admin,branch_executive' %}
+                <a href="{% url 'sermons:add' %}" class="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <span class="material-icons-outlined mr-2">add</span> Add Your First Sermon
+                </a>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>

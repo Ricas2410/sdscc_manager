@@ -4,33 +4,35 @@
 {% block title %}Prayer Requests{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="container mx-auto px-4 py-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Prayer Requests</h1>
-            <p class="text-gray-500">Share and support each other in prayer</p>
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Prayer Requests</h1>
+                <p class="mt-1 text-sm text-gray-500">Share and support each other in prayer</p>
+            </div>
+            <a href="{% url 'core:prayer_request_add' %}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <span class="material-icons-outlined text-lg mr-2">add</span>
+                Submit Request
+            </a>
         </div>
-        <a href="{% url 'core:prayer_request_add' %}" class="btn-primary">
-            <span class="material-icons-outlined text-lg mr-2">add</span>
-            Submit Request
-        </a>
     </div>
     
     <!-- Filter Tabs -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <!-- Status Filter -->
             <div class="flex items-center gap-2">
                 <span class="text-sm font-medium text-gray-700">Status:</span>
-                <div class="tab-nav">
+                <div class="flex flex-wrap gap-2">
                     <a href="{% url 'core:prayer_requests' %}" 
-                       class="{% if not request.GET.status and not request.GET.approval %}active{% endif %}">
+                       class="px-3 py-1.5 text-sm rounded-full {% if not request.GET.status and not request.GET.approval %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %} transition-colors">
                         All
                     </a>
                     {% for status_val, status_label in status_choices %}
                     <a href="{% url 'core:prayer_requests' %}?status={{ status_val }}" 
-                       class="{% if request.GET.status == status_val %}active{% endif %}">
+                       class="px-3 py-1.5 text-sm rounded-full {% if request.GET.status == status_val %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %} transition-colors">
                         {{ status_label }}
                     </a>
                     {% endfor %}
@@ -41,13 +43,13 @@
             {% if is_admin %}
             <div class="flex items-center gap-2">
                 <span class="text-sm font-medium text-gray-700">Approval:</span>
-                <div class="tab-nav">
+                <div class="flex flex-wrap gap-2">
                     <a href="{% url 'core:prayer_requests' %}" 
-                       class="{% if not request.GET.approval %}active{% endif %}">
+                       class="px-3 py-1.5 text-sm rounded-full {% if not request.GET.approval %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %} transition-colors">
                         All
                     </a>
                     <a href="{% url 'core:prayer_requests' %}?approval=pending" 
-                       class="{% if request.GET.approval == 'pending' %}active{% endif %}">
+                       class="px-3 py-1.5 text-sm rounded-full {% if request.GET.approval == 'pending' %}bg-primary-100 text-primary-700{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %} transition-colors">
                         Pending
                         {% if pending_count > 0 %}
                         <span class="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">{{ pending_count }}</span>

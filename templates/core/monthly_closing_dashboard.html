@@ -245,20 +245,16 @@ function closeMonth() {
     if (!confirm('Are you sure you want to close this month? This action cannot be undone by branch administrators.')) {
         return;
     }
-    
-    const data = {
-        'branch_id': '{{ branch.id }}',
-        'month': '{{ selected_month }}',
-        'year': '{{ selected_year }}'
-    };
-    
+
+    const formData = new FormData();
+    formData.append('branch_id', '{{ branch.id }}');
+    formData.append('month', '{{ selected_month }}');
+    formData.append('year', '{{ selected_year }}');
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
     fetch('/monthly-closing/close/', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify(data)
+        body: formData
     })
     .then(response => response.json())
     .then(data => {

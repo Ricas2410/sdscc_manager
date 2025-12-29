@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Mission Expenditures - {{ site_settings.church_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Mission Expenditures</h1>
+            <p class="text-muted mb-0">Track all mission-level expenses</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'core:mission_financial_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'expenditure:expenditure_add' %}?level=mission" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Expenditure
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Total Expenditures</div>
+                    <div class="h4 mb-0">{{ totals.total|currency|default:"0.00" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Approved</div>
+                    <div class="h4 mb-0 text-success">{{ totals.approved|currency|default:"0.00" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Paid</div>
+                    <div class="h4 mb-0 text-primary">{{ totals.paid|currency|default:"0.00" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted small">Pending</div>
+                    <div class="h4 mb-0 text-warning">{{ totals.pending|currency|default:"0.00" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected_category %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="paid" {% if selected_status == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-select">
+                        <option value="">All Years</option>
+                        {% for y in available_years %}
+                        <option value="{{ y }}" {% if y|stringformat:"s" == selected_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-select">
+                        <option value="">All Months</option>
+                        {% for m_num, m_name in months %}
+                        <option value="{{ m_num }}" {% if m_num|stringformat:"s" == selected_month %}selected{% endif %}>
+                            {{ m_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'core:mission_expenditure_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Expenditures Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if expenditures %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th class="text-end">Amount</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in expenditures %}
+                        <tr>
+                            <td>{{ exp.date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="fw-bold">{{ exp.title }}</div>
+                                {% if exp.vendor %}
+                                <small class="text-muted">Vendor: {{ exp.vendor }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ exp.category.name }}</td>
+                            <td class="text-end fw-bold">{{ exp.amount|currency }}</td>
+                            <td>
+                                {% if exp.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif exp.status == 'paid' %}
+                                <span class="badge bg-primary">Paid</span>
+                                {% elif exp.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif exp.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ exp.created_by.get_full_name|default:exp.created_by.username }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'expenditure:expenditure_detail' exp.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-inbox fa-4x mb-3"></i>
+                <p class="h5">No expenditures found</p>
+                <p>Try adjusting your filters or add a new expenditure</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

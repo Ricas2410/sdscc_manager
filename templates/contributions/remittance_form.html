@@ -25,7 +25,7 @@
             </div>
             <div class="text-right">
                 <p class="text-sm text-blue-700">Amount Owed</p>
-                <p class="text-xl font-bold text-blue-900">GH₵{{ amount_owed|floatformat:2|default:"0.00" }}</p>
+                <p class="text-xl font-bold text-blue-900">{{ amount_owed|currency }}</p>
             </div>
         </div>
     </div>
@@ -37,7 +37,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label required">Amount (GH₵)</label>
+                    <label class="form-label required">Amount ({{ site_settings.currency_symbol }})</label>
                     <input type="number" name="amount" step="0.01" min="0" required class="form-input" placeholder="0.00">
                 </div>
                 <div class="form-group">

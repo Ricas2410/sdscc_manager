@@ -235,4 +235,122 @@
         </div>
     </div>
 </div>
+
+<!-- Monthly Closing Reminder Modal -->
+<div id="monthlyClosingReminder" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+        <div class="bg-gradient-to-r from-orange-500 to-orange-600 p-6 rounded-t-xl">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <span class="material-icons-outlined text-3xl text-white">event_busy</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Monthly Closing Reminder</h3>
+                        <p class="text-orange-100 text-sm">Action Required</p>
+                    </div>
+                </div>
+                <button onclick="dismissMonthlyReminder()" class="text-white hover:text-orange-100">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <div class="mb-4">
+                <div class="flex items-start gap-3 mb-3">
+                    <span class="material-icons-outlined text-orange-500 mt-1">info</span>
+                    <div>
+                        <p class="text-gray-700 font-medium">The previous month has not been closed yet.</p>
+                        <p class="text-gray-600 text-sm mt-1">Please close <span id="reminderMonth" class="font-semibold"></span> to ensure accurate financial records.</p>
+                    </div>
+                </div>
+
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4">
+                    <p class="text-sm text-orange-800 font-medium mb-2">Why close the month?</p>
+                    <ul class="text-sm text-orange-700 space-y-1">
+                        <li class="flex items-start gap-2">
+                            <span class="material-icons-outlined text-xs mt-0.5">check_circle</span>
+                            <span>Locks financial data for integrity</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="material-icons-outlined text-xs mt-0.5">check_circle</span>
+                            <span>Calculates mission remittances</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="material-icons-outlined text-xs mt-0.5">check_circle</span>
+                            <span>Generates monthly reports</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <a href="{% url 'core:monthly_closing' %}" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-medium py-3 px-4 rounded-lg transition-colors text-center">
+                    Close Month Now
+                </a>
+                <button onclick="dismissMonthlyReminder()" class="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Remind Later
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check if previous month needs closing
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if reminder was dismissed today
+    const dismissedDate = localStorage.getItem('monthlyClosingReminderDismissed');
+    const today = new Date().toDateString();
+
+    if (dismissedDate === today) {
+        return; // Don't show if dismissed today
+    }
+
+    // Get current date
+    const now = new Date();
+    const currentDay = now.getDate();
+
+    // Only show reminder after the 5th of the month
+    if (currentDay <= 5) {
+        return;
+    }
+
+    // Calculate previous month
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    const prevMonthName = monthNames[prevMonth.getMonth()] + ' ' + prevMonth.getFullYear();
+
+    // Check if previous month is closed via AJAX
+    fetch(`/monthly-closing/check-status/?month=${prevMonth.getMonth() + 1}&year=${prevMonth.getFullYear()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.is_closed) {
+                // Show reminder
+                document.getElementById('reminderMonth').textContent = prevMonthName;
+                const modal = document.getElementById('monthlyClosingReminder');
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    modal.classList.remove('hidden');
+                }, 10);
+            }
+        })
+        .catch(error => {
+            console.log('Could not check monthly closing status:', error);
+        });
+});
+
+function dismissMonthlyReminder() {
+    const modal = document.getElementById('monthlyClosingReminder');
+    modal.classList.add('hidden');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+
+    // Remember dismissal for today
+    localStorage.setItem('monthlyClosingReminderDismissed', new Date().toDateString());
+}
+</script>
 {% endblock %}

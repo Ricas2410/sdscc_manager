@@ -70,7 +70,7 @@
                         <p class="text-xs text-gray-500">Members</p>
                     </div>
                     <div class="bg-gray-50 rounded p-2">
-                        <p class="text-lg font-bold text-gray-900">GH₵{{ branch.monthly_tithe_target|floatformat:0|default:"0" }}</p>
+                        <p class="text-lg font-bold text-gray-900">{{ branch.monthly_tithe_target|currency }}</p>
                         <p class="text-xs text-gray-500">Target</p>
                     </div>
                 </div>

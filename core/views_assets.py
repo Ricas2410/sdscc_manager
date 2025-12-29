@@ -10,6 +10,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from django.template.loader import render_to_string
+from django.utils import timezone
 import json
 from datetime import datetime
 
@@ -231,9 +232,9 @@ def export_assets(request, assets_queryset, format_type):
     # For now, return a simple CSV export (can be enhanced with proper PDF/Excel libraries)
     import csv
     from django.http import HttpResponse
-    
+
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="assets_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    response['Content-Disposition'] = f'attachment; filename="assets_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
     
     writer = csv.writer(response)
     writer.writerow([

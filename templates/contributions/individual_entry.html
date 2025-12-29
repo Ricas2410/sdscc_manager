@@ -67,7 +67,7 @@
                         <tr>
                             <th>Member</th>
                             <th class="hidden md:table-cell">Member ID</th>
-                            <th class="w-40">Amount (GH₵)</th>
+                            <th class="w-40">Amount ({{ site_settings.currency_symbol }})</th>
                             <th class="hidden md:table-cell w-48">Notes</th>
                         </tr>
                     </thead>
@@ -90,7 +90,7 @@
                             </td>
                             <td>
                                 <div class="relative">
-                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">GH₵</span>
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{{ site_settings.currency_symbol }}</span>
                                     <input type="number" name="amount_{{ member.id }}" step="0.01" min="0" class="form-input pl-10 py-1" placeholder="0.00">
                                 </div>
                             </td>

@@ -62,15 +62,15 @@
             <div class="card-body">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="form-group">
-                        <label class="form-label required">Base Salary (GH₵)</label>
+                        <label class="form-label required">Base Salary ({{ site_settings.currency_symbol }})</label>
                         <input type="number" name="base_salary" step="0.01" value="{{ staff.base_salary|default:'' }}" required class="form-input" placeholder="0.00">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Allowances (GH₵)</label>
+                        <label class="form-label">Allowances ({{ site_settings.currency_symbol }})</label>
                         <input type="number" name="allowances" step="0.01" value="{{ staff.allowances|default:'0' }}" class="form-input" placeholder="0.00">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Deductions (GH₵)</label>
+                        <label class="form-label">Deductions ({{ site_settings.currency_symbol }})</label>
                         <input type="number" name="deductions" step="0.01" value="{{ staff.deductions|default:'0' }}" class="form-input" placeholder="0.00">
                     </div>
                     <div class="form-group">

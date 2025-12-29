@@ -130,3 +130,37 @@ def currency_symbol():
         return settings.currency_symbol if settings else 'GH₵ '
     except Exception:
         return 'GH₵ '
+
+
+@register.filter
+def sum_filter(values, field=None):
+    """
+    Sum values in a list or sum specific field from list of dictionaries.
+    Usage: {{ list|sum_filter }} or {{ list|sum_filter:'field_name' }}
+    """
+    try:
+        if not values:
+            return 0
+        
+        if field is None:
+            # Sum simple list of numbers
+            return sum(float(v) for v in values if v is not None)
+        else:
+            # Sum specific field from list of dictionaries or objects
+            total = 0
+            for item in values:
+                if item is not None:
+                    try:
+                        # Try to get attribute first (for objects)
+                        value = getattr(item, field)
+                        if value is not None:
+                            total += float(value)
+                    except AttributeError:
+                        # Fall back to dictionary access
+                        if hasattr(item, 'get') and field in item:
+                            value = item.get(field)
+                            if value is not None:
+                                total += float(value)
+            return total
+    except (ValueError, TypeError, AttributeError):
+        return 0

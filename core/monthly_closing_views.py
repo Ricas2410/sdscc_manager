@@ -17,6 +17,44 @@ from expenditure.models import Expenditure
 
 
 @login_required
+def check_monthly_closing_status(request):
+    """API endpoint to check if a month is closed."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+
+    if not month or not year:
+        return JsonResponse({'error': 'Month and year required'}, status=400)
+
+    try:
+        month = int(month)
+        year = int(year)
+    except ValueError:
+        return JsonResponse({'error': 'Invalid month or year'}, status=400)
+
+    # Get user's branch
+    branch = request.user.branch
+    if not branch:
+        return JsonResponse({'is_closed': False})
+
+    # Check if month is closed
+    monthly_close = MonthlyClose.objects.filter(
+        branch=branch,
+        month=month,
+        year=year,
+        is_closed=True
+    ).first()
+
+    return JsonResponse({
+        'is_closed': monthly_close is not None,
+        'month': month,
+        'year': year
+    })
+
+
+@login_required
 def monthly_closing_dashboard(request):
     """Dashboard for monthly closing operations."""
     if not (request.user.is_mission_admin or request.user.is_branch_executive):
@@ -149,7 +187,7 @@ def reopen_month(request):
 @login_required
 def monthly_report_view(request):
     """View monthly report for a closed month."""
-    if not request.user.can_view_finances:
+    if not (request.user.can_view_all_finances or request.user.can_manage_finances):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     
@@ -238,6 +276,10 @@ def monthly_report_pdf(request):
         year=year
     ).first()
     
+    # Get site settings for letterhead
+    from core.models import SiteSettings
+    site_settings = SiteSettings.get_settings()
+
     # Render HTML template
     html_string = render_to_string('core/monthly_report_pdf.html', {
         'branch': branch,
@@ -248,6 +290,7 @@ def monthly_report_pdf(request):
         'monthly_close': monthly_close,
         'generated_date': date.today(),
         'generated_by': request.user,
+        'site_settings': site_settings,
     })
     
     # Generate PDF

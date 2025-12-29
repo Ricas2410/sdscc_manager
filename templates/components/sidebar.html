@@ -53,6 +53,20 @@
                 Branches
             </a>
             
+            <div class="sidebar-section">Mission Finance</div>
+            <a href="{% url 'core:mission_financial_dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+                Mission Dashboard
+            </a>
+            <a href="{% url 'core:mission_expenditure_list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                Mission Expenditures
+            </a>
+            <a href="{% url 'core:mission_remittance_tracking' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittance Tracking
+            </a>
+
             <div class="sidebar-section">Financial Setup</div>
             <a href="{% url 'contributions:types' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">category</span>
@@ -66,7 +80,7 @@
                 <span class="material-icons-outlined text-xl mr-3">trending_up</span>
                 Monthly Tithe Targets
             </a>
-            
+
             <div class="sidebar-section">Contributions</div>
             <a href="{% url 'contributions:list' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">payments</span>
@@ -621,7 +635,21 @@
             <span class="material-icons-outlined text-xl mr-3">church</span>
             Branches
         </a>
-        
+
+        <div class="sidebar-section">Mission Finance</div>
+        <a href="{% url 'core:mission_financial_dashboard' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+            Mission Dashboard
+        </a>
+        <a href="{% url 'core:mission_expenditure_list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+            Mission Expenditures
+        </a>
+        <a href="{% url 'core:mission_remittance_tracking' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+            Remittance Tracking
+        </a>
+
         <div class="sidebar-section">Financial Setup</div>
         <a href="{% url 'contributions:types' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">category</span>

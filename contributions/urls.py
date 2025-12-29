@@ -37,6 +37,7 @@ urlpatterns = [
     path('branch-types/<uuid:type_id>/edit/', branch_type_views.edit_branch_contribution_type, name='edit_branch_type'),
     path('branch-types/<uuid:type_id>/deactivate/', branch_type_views.deactivate_branch_contribution_type, name='deactivate_branch_type'),
     path('branch-types/<uuid:type_id>/activate/', branch_type_views.activate_branch_contribution_type, name='activate_branch_type'),
-    
+    path('api/branch-type/<uuid:type_id>/', branch_type_views.get_branch_contribution_type_api, name='get_branch_type_api'),
+
     path('<uuid:contribution_id>/', views.contribution_detail, name='detail'),
 ]

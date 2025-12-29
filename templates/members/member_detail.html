@@ -27,13 +27,17 @@
             <div class="flex flex-col md:flex-row md:items-center gap-6">
                 <!-- Avatar -->
                 <div class="flex-shrink-0">
-                    <div class="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                    <div class="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden {% if member.profile_picture %}cursor-pointer hover:ring-4 hover:ring-primary-200 transition-all{% endif %}"
+                         {% if member.profile_picture %}onclick="openPhotoModal()"{% endif %}>
                         {% if member.profile_picture %}
-                        <img src="{{ member.profile_picture.url }}" class="h-24 w-24 object-cover">
+                        <img src="{{ member.profile_picture.url }}" class="h-24 w-24 object-cover" alt="{{ member.get_full_name }}">
                         {% else %}
                         <span class="text-4xl text-primary-600 font-bold">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
                         {% endif %}
                     </div>
+                    {% if member.profile_picture %}
+                    <p class="text-xs text-center text-gray-500 mt-2">Click to enlarge</p>
+                    {% endif %}
                 </div>
                 <!-- Info -->
                 <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -319,4 +323,45 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Photo Modal -->
+{% if member.profile_picture %}
+<div id="photoModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closePhotoModal()"></div>
+    <div class="modal-content max-w-4xl">
+        <div class="modal-header">
+            <h3 class="modal-title">{{ member.get_full_name }}</h3>
+            <button onclick="closePhotoModal()" class="modal-close">
+                <span class="material-icons-outlined">close</span>
+            </button>
+        </div>
+        <div class="modal-body p-0">
+            <img src="{{ member.profile_picture.url }}" alt="{{ member.get_full_name }}" class="w-full h-auto">
+        </div>
+        <div class="modal-footer">
+            <p class="text-sm text-gray-600">Member ID: {{ member.member_id }}</p>
+            <button onclick="closePhotoModal()" class="btn btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPhotoModal() {
+    document.getElementById('photoModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closePhotoModal() {
+    document.getElementById('photoModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closePhotoModal();
+    }
+});
+</script>
+{% endif %}
 {% endblock %}
