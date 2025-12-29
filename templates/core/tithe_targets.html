@@ -122,7 +122,7 @@
                         <td>{{ branch.district.name }}</td>
                         <td>{{ branch.district.area.name }}</td>
                         <td class="text-right">
-                            <span class="font-mono font-semibold text-green-600">GH₵{{ branch.monthly_tithe_target|floatformat:2 }}</span>
+                            <span class="font-mono font-semibold text-green-600">{{ branch.monthly_tithe_target|currency }}</span>
                         </td>
                         <td class="text-right">
                             <button type="button" onclick="editTarget('{{ branch.id }}', '{{ branch.name|escapejs }}', '{{ branch.monthly_tithe_target }}')" class="text-primary-600 hover:text-primary-900 text-sm font-medium">

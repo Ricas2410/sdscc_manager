@@ -186,7 +186,7 @@ def branch_financial_statistics(request):
             'starting_balance': starting_balance,
             'contributions_by_type': contributions_by_type,
             'expenditures_by_category': expenditures_by_category,
-            'remittances': remittances.order_by('-date')[:10],
+            'remittances': remittances.order_by('-payment_date')[:10],
             'monthly_data': monthly_data,
             'tithe_total': total_tithe,
             'other_contributions': total_income - total_tithe,

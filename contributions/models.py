@@ -7,6 +7,7 @@ import uuid
 from decimal import Decimal
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from core.models import TimeStampedModel
 
 
@@ -103,11 +104,21 @@ class ContributionType(TimeStampedModel):
     
     def calculate_allocations(self, amount):
         """Calculate allocation amounts from total contribution."""
+        # Ensure amount is a Decimal
+        if not isinstance(amount, Decimal):
+            amount = Decimal(str(amount))
+
+        # Convert percentage to Decimal if it's a string
+        mission_pct = Decimal(str(self.mission_percentage)) / Decimal('100')
+        area_pct = Decimal(str(self.area_percentage)) / Decimal('100')
+        district_pct = Decimal(str(self.district_percentage)) / Decimal('100')
+        branch_pct = Decimal(str(self.branch_percentage)) / Decimal('100')
+
         return {
-            'mission': amount * (self.mission_percentage / 100),
-            'area': amount * (self.area_percentage / 100),
-            'district': amount * (self.district_percentage / 100),
-            'branch': amount * (self.branch_percentage / 100),
+            'mission': amount * mission_pct,
+            'area': amount * area_pct,
+            'district': amount * district_pct,
+            'branch': amount * branch_pct,
         }
 
 

@@ -56,7 +56,7 @@
             <div>
                 <p class="font-medium text-red-800">Payment Overdue</p>
                 <p class="text-sm text-red-700 mt-1">
-                    Mission remittance of GH₵{{ report.mission_remittance_balance|floatformat:2|intcomma }} is overdue.
+                    Mission remittance of {{ report.mission_remittance_balance|currency }} is overdue.
                 </p>
             </div>
         </div>
@@ -120,19 +120,19 @@
                 <div class="space-y-3">
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-sm text-gray-600">Tithe</span>
-                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.tithe_amount|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ report.tithe_amount|currency }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-sm text-gray-600">Offering</span>
-                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.offering_amount|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ report.offering_amount|currency }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-sm text-gray-600">Special Contributions</span>
-                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.special_contributions|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ report.special_contributions|currency }}</span>
                     </div>
                     <div class="flex justify-between py-2">
                         <span class="text-sm font-semibold text-gray-700">Total Contributions</span>
-                        <span class="text-sm font-bold text-green-600">GH₵{{ report.total_contributions|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-bold text-green-600">{{ report.total_contributions|currency }}</span>
                     </div>
                 </div>
             </div>
@@ -146,19 +146,19 @@
                 <div class="space-y-3">
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-sm text-gray-600">Utility Expenses</span>
-                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.utility_expenses|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ report.utility_expenses|currency }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-sm text-gray-600">Maintenance</span>
-                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.maintenance_expenses|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ report.maintenance_expenses|currency }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-sm text-gray-600">Other Expenses</span>
-                        <span class="text-sm font-medium text-gray-900">GH₵{{ report.other_expenses|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-gray-900">{{ report.other_expenses|currency }}</span>
                     </div>
                     <div class="flex justify-between py-2">
                         <span class="text-sm font-semibold text-gray-700">Total Expenditure</span>
-                        <span class="text-sm font-bold text-red-600">GH₵{{ report.total_expenditure|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-bold text-red-600">{{ report.total_expenditure|currency }}</span>
                     </div>
                 </div>
             </div>
@@ -172,14 +172,14 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="text-center p-4 bg-blue-50 rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Mission Remittance Due</p>
-                <p class="text-2xl font-bold text-blue-600">GH₵{{ report.mission_remittance_due|floatformat:2|intcomma }}</p>
+                <p class="text-2xl font-bold text-blue-600">{{ report.mission_remittance_due|currency }}</p>
                 <p class="text-xs text-gray-500 mt-1">10% of tithe</p>
             </div>
             
             <div class="text-center p-4 {% if report.mission_remittance_paid > 0 %}bg-green-50{% else %}bg-orange-50{% endif %} rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Mission Remittance Paid</p>
                 <p class="text-2xl font-bold {% if report.mission_remittance_paid > 0 %}text-green-600{% else %}text-orange-600{% endif %}">
-                    GH₵{{ report.mission_remittance_paid|floatformat:2|intcomma }}
+                    {{ report.mission_remittance_paid|currency }}
                 </p>
                 {% if report.payment_date %}
                 <p class="text-xs text-gray-500 mt-1">Paid on {{ report.payment_date|date:"M d, Y" }}</p>
@@ -188,7 +188,7 @@
             
             <div class="text-center p-4 bg-purple-50 rounded-lg">
                 <p class="text-sm text-gray-600 mb-2">Branch Balance</p>
-                <p class="text-2xl font-bold text-purple-600">GH₵{{ report.branch_balance|floatformat:2|intcomma }}</p>
+                <p class="text-2xl font-bold text-purple-600">{{ report.branch_balance|currency }}</p>
                 <p class="text-xs text-gray-500 mt-1">Remaining funds</p>
             </div>
         </div>

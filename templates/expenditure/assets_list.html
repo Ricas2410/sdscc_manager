@@ -87,8 +87,8 @@
                             {% endif %}
                         </td>
                         <td class="text-center">{{ asset.quantity }}</td>
-                        <td class="text-right font-mono">GH₵ {{ asset.purchase_price|floatformat:2 }}</td>
-                        <td class="text-right font-mono font-semibold text-green-600">GH₵ {{ asset.current_value|floatformat:2 }}</td>
+                        <td class="text-right font-mono">{{ asset.purchase_price|currency }}</td>
+                        <td class="text-right font-mono font-semibold text-green-600">{{ asset.current_value|currency }}</td>
                         <td>
                             {% if asset.status == 'active' %}
                             <span class="badge badge-success">Active</span>

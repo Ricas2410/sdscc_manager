@@ -52,10 +52,10 @@
             {% for report in reports %}
             <tr>
                 <td>{{ report.entity_name }}</td>
-                <td class="amount positive">GH₵ {{ report.total_contributions|floatformat:2 }}</td>
-                <td class="amount negative">GH₵ {{ report.total_expenditure|floatformat:2 }}</td>
+                <td class="amount positive">{{ report.total_contributions|currency }}</td>
+                <td class="amount negative">{{ report.total_expenditure|currency }}</td>
                 <td class="amount {% if report.net_balance >= 0 %}positive{% else %}negative{% endif %}">
-                    GH₵ {{ report.net_balance|floatformat:2 }}
+                    {{ report.net_balance|currency }}
                 </td>
             </tr>
             {% empty %}
@@ -66,9 +66,9 @@
             {% if reports %}
             <tr class="total-row">
                 <td>TOTAL</td>
-                <td class="amount">GH₵ {{ total_contributions|floatformat:2 }}</td>
-                <td class="amount">GH₵ {{ total_expenditure|floatformat:2 }}</td>
-                <td class="amount">GH₵ {{ total_balance|floatformat:2 }}</td>
+                <td class="amount">{{ total_contributions|currency }}</td>
+                <td class="amount">{{ total_expenditure|currency }}</td>
+                <td class="amount">{{ total_balance|currency }}</td>
             </tr>
             {% endif %}
         </tbody>
@@ -78,15 +78,15 @@
         <h3>Summary</h3>
         <div class="summary-grid">
             <div class="summary-item">
-                <div class="value positive">GH₵ {{ total_contributions|floatformat:2 }}</div>
+                <div class="value positive">{{ total_contributions|currency }}</div>
                 <div class="label">Total Contributions</div>
             </div>
             <div class="summary-item">
-                <div class="value negative">GH₵ {{ total_expenditure|floatformat:2 }}</div>
+                <div class="value negative">{{ total_expenditure|currency }}</div>
                 <div class="label">Total Expenditure</div>
             </div>
             <div class="summary-item">
-                <div class="value {% if total_balance >= 0 %}positive{% else %}negative{% endif %}">GH₵ {{ total_balance|floatformat:2 }}</div>
+                <div class="value {% if total_balance >= 0 %}positive{% else %}negative{% endif %}">{{ total_balance|currency }}</div>
                 <div class="label">Net Balance</div>
             </div>
         </div>

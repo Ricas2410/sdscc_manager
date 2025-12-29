@@ -1,45 +1,55 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Payroll Processing{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="sm:flex sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Payroll Processing</h1>
-            <p class="mt-1 text-sm text-gray-500">Generate and manage monthly payroll for all staff</p>
-        </div>
-        <div class="mt-4 sm:mt-0 flex space-x-2">
-            <a href="{% url 'payroll:staff_management' %}" class="btn-secondary">
-                <span class="material-icons-outlined mr-1">badge</span> Staff Management
-            </a>
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Payroll Processing</h1>
+                <p class="text-gray-600 mt-1">Generate and manage monthly payroll for all staff</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{% url 'payroll:staff_management' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                    <i class="material-icons mr-2">badge</i>
+                    Staff Management
+                </a>
+                <a href="{% url 'payroll:export_payroll' %}?month={{ month }}&year={{ year }}" class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                    <i class="material-icons mr-2">download</i>
+                    Export
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Generate Payroll Form -->
-    <div class="bg-white shadow rounded-lg p-6">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Generate New Payroll</h2>
         <form method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             {% csrf_token %}
             <input type="hidden" name="action" value="generate">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
-                <select name="month" class="input-field" required>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                <select name="month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" required>
                     {% for m in months %}
                     <option value="{{ m.0 }}" {% if m.0 == month %}selected{% endif %}>{{ m.1 }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                <select name="year" class="input-field" required>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                <select name="year" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" required>
                     {% for y in years %}
                     <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="md:col-span-2 flex items-end">
-                <button type="submit" class="btn-primary w-full">
-                    <span class="material-icons-outlined mr-1">add_circle</span> Generate Payroll
+                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <i class="material-icons mr-2">add_circle</i>
+                    Generate Payroll
                 </button>
             </div>
         </form>
@@ -75,15 +85,15 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 border-b">
             <div>
                 <p class="text-sm text-gray-500">Total Gross Pay</p>
-                <p class="text-2xl font-bold text-gray-900">GH₵{{ payroll_run.total_gross|floatformat:2 }}</p>
+                <p class="text-2xl font-bold text-gray-900">{{ payroll_run.total_gross|currency }}</p>
             </div>
             <div>
                 <p class="text-sm text-gray-500">Total Deductions</p>
-                <p class="text-2xl font-bold text-red-600">GH₵{{ payroll_run.total_deductions|floatformat:2 }}</p>
+                <p class="text-2xl font-bold text-red-600">{{ payroll_run.total_deductions|currency }}</p>
             </div>
             <div>
                 <p class="text-sm text-gray-500">Total Net Pay</p>
-                <p class="text-2xl font-bold text-green-600">GH₵{{ payroll_run.total_net|floatformat:2 }}</p>
+                <p class="text-2xl font-bold text-green-600">{{ payroll_run.total_net|currency }}</p>
             </div>
             <div>
                 <p class="text-sm text-gray-500">Payment Status</p>
@@ -120,9 +130,9 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payslip.staff.position|default:"Staff" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">GH₵{{ payslip.gross_pay|floatformat:2 }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">GH₵{{ payslip.total_deductions|floatformat:2 }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">GH₵{{ payslip.net_pay|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">{{ payslip.gross_pay|currency }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">{{ payslip.total_deductions|currency }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">{{ payslip.net_pay|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if payslip.is_paid %}
                             <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">

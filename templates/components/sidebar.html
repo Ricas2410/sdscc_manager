@@ -80,9 +80,17 @@
                 <span class="material-icons-outlined text-xl mr-3">person</span>
                 Individual Entry
             </a>
+            <a href="{% url 'contributions:add' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">add_circle</span>
+                Add Contribution
+            </a>
             <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">trending_up</span>
                 Tithe Performance
+            </a>
+            <a href="{% url 'contributions:branch_types' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">category</span>
+                Branch Contribution Types
             </a>
             <a href="{% url 'contributions:commission_management' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">paid</span>
@@ -114,6 +122,10 @@
                 <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
                 Welfare Payments
             </a>
+            <a href="{% url 'expenditure:welfare_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assignment</span>
+                Welfare Requests
+            </a>
             <a href="{% url 'expenditure:assets' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">inventory_2</span>
                 Assets & Inventory
@@ -130,7 +142,7 @@
             </a>
             <a href="{% url 'payroll:commissions' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">paid</span>
-                Pastor Commissions
+                Tithe Commission
             </a>
             
             <div class="sidebar-section">Users & Members</div>
@@ -150,6 +162,10 @@
                 <span class="material-icons-outlined text-xl mr-3">person_add</span>
                 Add Member
             </a>
+            <a href="{% url 'members:export_page' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">download</span>
+                Export Members
+            </a>
             <a href="{% url 'groups:list' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
                 Groups & Ministries
@@ -160,20 +176,26 @@
             </a>
             
             <div class="sidebar-section">Reports & Audit</div>
+            <a href="{% url 'auditing:dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">assessment</span>Auditor Dashboard
+            </a>
+            <a href="{% url 'auditing:financial_audit' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">account_balance</span>Financial Audit
+            </a>
+            <a href="{% url 'auditing:contribution_trail' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">receipt_long</span>Contribution Trail
+            </a>
+            <a href="{% url 'auditing:expenditure_trail' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">payments</span>Expenditure Trail
+            </a>
+            <a href="{% url 'auditing:variance_analysis' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">compare_arrows</span>Variance Analysis
+            </a>
             <a href="{% url 'reports:index' %}" class="sidebar-link">
                 <span class="material-icons-outlined mr-3">dashboard</span>Reports Dashboard
             </a>
             <a href="{% url 'reports:comprehensive_statistics' %}" class="sidebar-link">
                 <span class="material-icons-outlined mr-3">analytics</span>Comprehensive Statistics
-            </a>
-            <a href="{% url 'reports:member_contributions' %}" class="sidebar-link">
-                <span class="material-icons-outlined mr-3">people</span>Member Contributions
-            </a>
-            <a href="{% url 'reports:contributions' %}" class="sidebar-link">
-                <span class="material-icons-outlined mr-3">trending_up</span>Contribution Reports
-            </a>
-            <a href="{% url 'reports:expenditure' %}" class="sidebar-link">
-                <span class="material-icons-outlined mr-3">trending_down</span>Expenditure Reports
             </a>
             <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
                 <span class="material-icons-outlined mr-3">calendar_month</span>Monthly Reports
@@ -282,6 +304,10 @@
                 <span class="material-icons-outlined text-xl mr-3">analytics</span>
                 Tithe Performance
             </a>
+            <a href="{% url 'contributions:branch_types' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">category</span>
+                Branch Contribution Types
+            </a>
             
             <div class="sidebar-section">Expenditures</div>
             <a href="{% url 'expenditure:list' %}" class="sidebar-link">
@@ -340,6 +366,10 @@
             </a>
             
             <div class="sidebar-section">Reports</div>
+            <a href="{% url 'core:monthly_closing' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">lock</span>
+                Monthly Closing
+            </a>
             <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">assessment</span>
                 Monthly Reports
@@ -463,6 +493,10 @@
             <a href="{% url 'reports:attendance' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">group_work</span>
                 Attendance Reports
+            </a>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+                Monthly Reports
             </a>
             
             {% else %}
@@ -673,7 +707,7 @@
         </a>
         <a href="{% url 'payroll:commissions' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">paid</span>
-            Pastor Commissions
+            Tithe Commission
         </a>
         
         <div class="sidebar-section">Users & Members</div>

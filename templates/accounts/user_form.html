@@ -130,8 +130,8 @@ setTimeout(function() {
                         <label class="form-label">Gender</label>
                         <select name="gender" class="form-input form-select">
                             <option value="">Select Gender</option>
-                            <option value="M" {% if form_data.gender == 'M' or edit_user.gender == 'M' %}selected{% endif %}>Male</option>
-                            <option value="F" {% if form_data.gender == 'F' or edit_user.gender == 'F' %}selected{% endif %}>Female</option>
+                            <option value="M" {% if form_data.gender == 'M' or (edit_user and edit_user.gender == 'M') %}selected{% endif %}>Male</option>
+                            <option value="F" {% if form_data.gender == 'F' or (edit_user and edit_user.gender == 'F') %}selected{% endif %}>Female</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -164,13 +164,13 @@ setTimeout(function() {
                         <label class="form-label">Pastoral Rank</label>
                         <select name="pastoral_rank" class="form-input form-select">
                             <option value="none" {% if form_data.pastoral_rank == 'none' %}selected{% endif %}>None</option>
-                            <option value="associate" {% if form_data.pastoral_rank == 'associate' or (edit_user and edit_user.pastoral_rank == 'associate') %}selected{% endif %}>Associate Pastor</option>
-                            <option value="branch" {% if form_data.pastoral_rank == 'branch' or (edit_user and edit_user.pastoral_rank == 'branch') %}selected{% endif %}>Branch Pastor</option>
-                            <option value="senior" {% if form_data.pastoral_rank == 'senior' or (edit_user and edit_user.pastoral_rank == 'senior') %}selected{% endif %}>Senior Pastor</option>
-                            <option value="district" {% if form_data.pastoral_rank == 'district' or (edit_user and edit_user.pastoral_rank == 'district') %}selected{% endif %}>District Pastor</option>
-                            <option value="area" {% if form_data.pastoral_rank == 'area' or (edit_user and edit_user.pastoral_rank == 'area') %}selected{% endif %}>Area Pastor</option>
-                            <option value="mission" {% if form_data.pastoral_rank == 'mission' or (edit_user and edit_user.pastoral_rank == 'mission') %}selected{% endif %}>Mission Pastor</option>
-                            <option value="overseer" {% if form_data.pastoral_rank == 'overseer' or (edit_user and edit_user.pastoral_rank == 'overseer') %}selected{% endif %}>General Overseer</option>
+                            <option value="associate" {% if form_data.pastoral_rank == 'associate' %}selected{% elif edit_user and edit_user.pastoral_rank == 'associate' %}selected{% endif %}>Associate Pastor</option>
+                            <option value="branch" {% if form_data.pastoral_rank == 'branch' %}selected{% elif edit_user and edit_user.pastoral_rank == 'branch' %}selected{% endif %}>Branch Pastor</option>
+                            <option value="senior" {% if form_data.pastoral_rank == 'senior' %}selected{% elif edit_user and edit_user.pastoral_rank == 'senior' %}selected{% endif %}>Senior Pastor</option>
+                            <option value="district" {% if form_data.pastoral_rank == 'district' %}selected{% elif edit_user and edit_user.pastoral_rank == 'district' %}selected{% endif %}>District Pastor</option>
+                            <option value="area" {% if form_data.pastoral_rank == 'area' %}selected{% elif edit_user and edit_user.pastoral_rank == 'area' %}selected{% endif %}>Area Pastor</option>
+                            <option value="mission" {% if form_data.pastoral_rank == 'mission' %}selected{% elif edit_user and edit_user.pastoral_rank == 'mission' %}selected{% endif %}>Mission Pastor</option>
+                            <option value="overseer" {% if form_data.pastoral_rank == 'overseer' %}selected{% elif edit_user and edit_user.pastoral_rank == 'overseer' %}selected{% endif %}>General Overseer</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -339,7 +339,7 @@ setTimeout(function() {
                         <select name="role" required class="form-input form-select">
                             <option value="">Select Role</option>
                             {% for value, label in roles %}
-                            <option value="{{ value }}" {% if form_data.role == value or edit_user.role == value %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}" {% if form_data.role == value or (edit_user and edit_user.role == value) %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -348,7 +348,7 @@ setTimeout(function() {
                         <select name="branch" class="form-input form-select">
                             <option value="">No Branch (Mission-level)</option>
                             {% for branch in branches %}
-                            <option value="{{ branch.id }}" {% if form_data.branch == branch.id|stringformat:"s" or edit_user.branch_id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                            <option value="{{ branch.id }}" {% if form_data.branch == branch.id|stringformat:"s" or (edit_user and edit_user.branch_id == branch.id) %}selected{% endif %}>{{ branch.name }}</option>
                             {% endfor %}
                         </select>
                     </div>

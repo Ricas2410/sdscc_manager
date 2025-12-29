@@ -67,8 +67,10 @@ class CalendarEvent(TimeStampedModel):
         'core.Area', on_delete=models.CASCADE, null=True, blank=True, related_name='calendar_events'
     )
     
-    # Appearance
-    color = models.CharField(max_length=20, default='#3B82F6')  # Blue default
+    # Additional info
+    contact_person = models.CharField(max_length=200, blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
     
     # Status
     is_published = models.BooleanField(default=True)

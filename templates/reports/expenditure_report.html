@@ -106,7 +106,7 @@
                     <tr>
                         <td class="font-medium">{{ item.category }}</td>
                         <td class="text-center">{{ item.count }}</td>
-                        <td class="text-right font-semibold">GH₵{{ item.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold">{{ item.amount|currency }}</td>
                         <td class="text-right text-gray-500">{{ item.percentage|floatformat:1 }}%</td>
                     </tr>
                     {% empty %}

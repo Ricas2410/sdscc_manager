@@ -156,14 +156,14 @@
                         </td>
                         <td class="text-gray-500">{{ c.branch.name|default:"-" }}</td>
                         <td class="text-gray-500">{{ c.get_month_display }} {{ c.year }}</td>
-                        <td class="text-right">GH₵{{ c.tithe_target|floatformat:2 }}</td>
-                        <td class="text-right font-medium">GH₵{{ c.tithe_achieved|floatformat:2 }}</td>
+                        <td class="text-right">{{ c.tithe_target|currency }}</td>
+                        <td class="text-right font-medium">{{ c.tithe_achieved|currency }}</td>
                         <td class="text-center">
                             <span class="badge {% if c.achievement_percentage >= 100 %}badge-success{% elif c.achievement_percentage >= 70 %}badge-warning{% else %}badge-danger{% endif %}">
                                 {{ c.achievement_percentage|floatformat:0 }}%
                             </span>
                         </td>
-                        <td class="text-right font-semibold text-green-600">GH₵{{ c.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold text-green-600">{{ c.amount|currency }}</td>
                         <td>
                             <span class="badge 
                                 {% if c.status == 'paid' %}badge-success

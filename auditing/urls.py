@@ -4,10 +4,20 @@ Auditing URL Configuration
 
 from django.urls import path
 from . import views
+from . import comprehensive_views
 
 app_name = 'auditing'
 
 urlpatterns = [
+    # Comprehensive Auditor Dashboard
+    path('dashboard/', comprehensive_views.auditor_dashboard, name='dashboard'),
+    path('financial-audit/', comprehensive_views.financial_audit_report, name='financial_audit'),
+    path('financial-audit/export-excel/', comprehensive_views.export_audit_report_excel, name='export_audit_excel'),
+    path('contribution-trail/', comprehensive_views.contribution_audit_trail, name='contribution_trail'),
+    path('expenditure-trail/', comprehensive_views.expenditure_audit_trail, name='expenditure_trail'),
+    path('variance-analysis/', comprehensive_views.variance_analysis, name='variance_analysis'),
+    
+    # Original audit views
     path('logs/', views.audit_logs, name='logs'),
     path('reports/', views.audit_reports, name='reports'),
     path('financial-reports/', views.auditor_financial_reports, name='financial_reports'),

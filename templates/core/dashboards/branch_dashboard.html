@@ -21,6 +21,10 @@
                 <span class="material-icons-outlined mr-1 text-lg">add</span>
                 Record Contribution
             </a>
+            <a href="{% url 'core:monthly_closing' %}" class="btn-secondary">
+                <span class="material-icons-outlined mr-1 text-lg">lock_clock</span>
+                Close Month
+            </a>
         </div>
     </div>
 
@@ -29,7 +33,7 @@
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h3 class="text-lg font-semibold opacity-90">Monthly Tithe Target</h3>
-                <p class="text-3xl font-bold mt-1">GH₵ {{ tithe_collected|default:"0.00"|floatformat:2 }} <span class="text-lg font-normal opacity-75">/ GH₵ {{ tithe_target|default:"0.00"|floatformat:2 }}</span></p>
+                <p class="text-3xl font-bold mt-1">{{ tithe_collected|default:"0.00"|currency }} <span class="text-lg font-normal opacity-75">/ {{ tithe_target|default:"0.00"|currency }}</span></p>
             </div>
             <div class="text-right">
                 <span class="text-4xl font-bold">{{ target_percentage|default:"0" }}%</span>
@@ -41,7 +45,7 @@
         </div>
         <div class="flex justify-between mt-2 text-sm opacity-75">
             <span>{{ days_remaining|default:"0" }} days remaining</span>
-            <span>{% if target_percentage >= 100 %}Target Achieved!{% else %}GH₵ {{ amount_remaining|default:"0.00"|floatformat:2 }} to go{% endif %}</span>
+            <span>{% if target_percentage >= 100 %}Target Achieved!{% else %}{{ amount_remaining|default:"0.00"|currency }} to go{% endif %}</span>
         </div>
     </div>
 
@@ -81,7 +85,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">This Week</dt>
-                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ weekly_contributions|default:"0.00"|floatformat:2 }}</dd>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ weekly_contributions|default:"0.00"|currency }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -125,7 +129,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Branch Balance</dt>
-                            <dd class="text-2xl font-semibold text-gray-900">GH₵ {{ branch_balance|default:"0.00"|floatformat:2 }}</dd>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ branch_balance|default:"0.00"|currency }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -166,7 +170,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {% if contribution.member %}{{ contribution.member.get_full_name }}{% else %}General{% endif %}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">GH₵ {{ contribution.amount|floatformat:2 }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">{{ contribution.amount|currency }}</td>
                         </tr>
                         {% empty %}
                         <tr>

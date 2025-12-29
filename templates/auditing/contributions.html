@@ -27,7 +27,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Contributions</p>
-                    <p class="text-2xl font-bold text-gray-900">GH₵{{ total_amount|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_amount|currency }}</p>
                 </div>
             </div>
         </div>
@@ -199,7 +199,7 @@
                             {{ contribution.member.get_full_name|default:"General" }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-right text-gray-900">
-                            GH₵{{ contribution.amount|floatformat:2 }}
+                            {{ contribution.amount|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ contribution.created_by.get_full_name|default:"System" }}

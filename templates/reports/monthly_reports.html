@@ -42,7 +42,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Due</p>
-                    <p class="text-2xl font-bold text-orange-600">GH₵{{ total_due|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ total_due|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-orange-500">account_balance</span>
             </div>
@@ -52,7 +52,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Overdue Amount</p>
-                    <p class="text-2xl font-bold text-red-600">GH₵{{ total_overdue|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-red-600">{{ total_overdue|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-red-500">warning</span>
             </div>
@@ -163,21 +163,21 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">GH₵{{ report.total_contributions|floatformat:2|intcomma }}</div>
+                            <div class="text-sm font-medium text-gray-900">{{ report.total_contributions|currency }}</div>
                             <div class="text-xs text-gray-500">
-                                Tithe: GH₵{{ report.tithe_amount|floatformat:2|intcomma }}
+                                Tithe: {{ report.tithe_amount|currency }}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium {% if report.mission_remittance_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">
-                                GH₵{{ report.mission_remittance_balance|floatformat:2|intcomma }}
+                                {{ report.mission_remittance_balance|currency }}
                             </div>
                             {% if report.mission_remittance_paid > 0 %}
-                            <div class="text-xs text-gray-500">Paid: GH₵{{ report.mission_remittance_paid|floatformat:2|intcomma }}</div>
+                            <div class="text-xs text-gray-500">Paid: {{ report.mission_remittance_paid|currency }}</div>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">GH₵{{ report.branch_balance|floatformat:2|intcomma }}</div>
+                            <div class="text-sm font-medium text-gray-900">{{ report.branch_balance|currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium

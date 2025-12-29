@@ -17,7 +17,7 @@
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800 mb-4">
                 {{ contribution.contribution_type.name }}
             </span>
-            <p class="text-4xl font-bold text-gray-900">GH₵ {{ contribution.amount|floatformat:2 }}</p>
+            <p class="text-4xl font-bold text-gray-900">{{ contribution.amount|currency }}</p>
             <p class="text-gray-500 mt-2">{{ contribution.date|date:"l, F d, Y" }}</p>
         </div>
         
@@ -64,7 +64,7 @@
                 <div class="flex-1">
                     <div class="flex justify-between text-sm mb-1">
                         <span>Branch ({{ contribution.contribution_type.branch_percentage }}%)</span>
-                        <span class="font-medium">GH₵ {{ contribution.branch_amount|floatformat:2 }}</span>
+                        <span class="font-medium">{{ contribution.branch_amount|currency }}</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="bg-green-500 h-2 rounded-full" style="width: {{ contribution.contribution_type.branch_percentage }}%"></div>
@@ -73,7 +73,7 @@
                 <div class="flex-1">
                     <div class="flex justify-between text-sm mb-1">
                         <span>Mission ({{ contribution.contribution_type.mission_percentage }}%)</span>
-                        <span class="font-medium">GH₵ {{ contribution.mission_amount|floatformat:2 }}</span>
+                        <span class="font-medium">{{ contribution.mission_amount|currency }}</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="bg-blue-500 h-2 rounded-full" style="width: {{ contribution.contribution_type.mission_percentage }}%"></div>

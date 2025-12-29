@@ -9,8 +9,9 @@
             <p class="mt-1 text-sm text-gray-500">Upcoming events and activities</p>
         </div>
         {% if user.role != 'member' %}
-        <a href="{% url 'announcements:event_add' %}" class="btn-primary">
-            <span class="material-icons-outlined mr-1">add</span> Add Event
+        <a href="{% url 'announcements:event_add' %}" 
+           class="inline-flex items-center px-4 py-2.5 bg-primary-600 border border-transparent text-sm font-medium rounded-lg text-white hover:bg-primary-700 transition-all duration-200 shadow-sm hover:shadow-lg">
+            <span class="material-icons-outlined mr-2">add</span> Add Event
         </a>
         {% endif %}
     </div>
@@ -40,8 +41,7 @@
                     </div>
                     <div class="ml-4 flex-1">
                         <h3 class="font-semibold text-gray-900">
-                            <a href="{% url 'announcements:event_detail' event.id %}" class="hover:text-primary-600">{{
-                                event.title }}</a>
+                            <a href="{% url 'announcements:event_detail' event.id %}" class="hover:text-primary-600">{{ event.title }}</a>
                         </h3>
                         <p class="text-sm text-gray-500 mt-1">
                             <span class="material-icons-outlined text-base align-middle mr-1">schedule</span>

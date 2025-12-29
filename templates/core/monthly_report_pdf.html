@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Monthly Report - {{ branch.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        .header h2 {
+            font-size: 18px;
+            margin: 5px 0;
+        }
+        .header h3 {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section h4 {
+            font-size: 14px;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .summary-box {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .summary-box p {
+            margin: 5px 0;
+        }
+        .summary-box .amount {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .total-row {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        .balance-positive {
+            background-color: #e8f5e8;
+        }
+        .balance-negative {
+            background-color: #f5e8e8;
+        }
+        .signatures {
+            margin-top: 50px;
+        }
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+        }
+        .signature-box {
+            text-align: center;
+        }
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 30px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SDSCC Church Management System</h1>
+        <h2>Monthly Financial Report</h2>
+        <h3>{{ branch.name }} Branch</h3>
+        <h3>{{ month_name }} {{ year }}</h3>
+        <p>Generated on: {{ generated_date|date:"Y-m-d H:i" }}</p>
+    </div>
+
+    <div class="section">
+        <h4>Financial Summary</h4>
+        <div class="summary-grid">
+            <div class="summary-box">
+                <p>Total Contributions</p>
+                <p class="amount">{{ summary.total_contributions|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Mission Allocation</p>
+                <p class="amount">{{ summary.total_mission|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Branch Retained</p>
+                <p class="amount">{{ summary.total_branch|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Total Expenditures</p>
+                <p class="amount">{{ summary.total_expenditure|currency }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h4>Contributions by Type</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Contribution Type</th>
+                    <th class="text-center">Number</th>
+                    <th class="text-right">Total Amount</th>
+                    <th class="text-right">Mission ({{ mission_percentage }}%)</th>
+                    <th class="text-right">Branch ({{ branch_percentage }}%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for type, data in summary.contributions_by_type.items %}
+                <tr>
+                    <td>{{ type }}</td>
+                    <td class="text-center">{{ data.count }}</td>
+                    <td class="text-right">{{ data.total|currency }}</td>
+                    <td class="text-right">{{ data.mission|currency }}</td>
+                    <td class="text-right">{{ data.branch|currency }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td class="text-center">{{ summary.contributions_by_type.values|sum:'count' }}</td>
+                    <td class="text-right">{{ summary.total_contributions|currency }}</td>
+                    <td class="text-right">{{ summary.total_mission|currency }}</td>
+                    <td class="text-right">{{ summary.total_branch|currency }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h4>Expenditures by Category</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Expenditure Category</th>
+                    <th class="text-center">Number</th>
+                    <th class="text-right">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, data in summary.expenditures_by_category.items %}
+                <tr>
+                    <td>{{ category }}</td>
+                    <td class="text-center">{{ data.count }}</td>
+                    <td class="text-right">{{ data.total|currency }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td class="text-center">{{ summary.expenditures_by_category.values|sum:'count' }}</td>
+                    <td class="text-right">{{ summary.total_expenditure|currency }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if summary.remittance %}
+    <div class="section">
+        <h4>Mission Remittance Status</h4>
+        <div class="summary-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="summary-box">
+                <p>Amount Due</p>
+                <p class="amount">{{ summary.remittance.amount_due|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Amount Sent</p>
+                <p class="amount">{{ summary.remittance.amount_sent|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Status</p>
+                <p class="amount">{{ summary.remittance.get_status_display|title }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h4>Net Balance</h4>
+        <div class="summary-grid {% if summary.net_balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="summary-box">
+                <p>Branch Retained</p>
+                <p class="amount">{{ summary.total_branch|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Total Expenditures</p>
+                <p class="amount">{{ summary.total_expenditure|currency }}</p>
+            </div>
+            <div class="summary-box">
+                <p>Net Balance</p>
+                <p class="amount">{{ summary.net_balance|currency }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if monthly_close %}
+    <div class="signatures">
+        <h4>Certification</h4>
+        <div class="signature-grid">
+            <div class="signature-box">
+                <p>Prepared by:</p>
+                <div class="signature-line"></div>
+                <p>{{ monthly_close.closed_by.get_full_name }}</p>
+                <p>{{ monthly_close.closed_by.get_role_display }}</p>
+                <p>{{ monthly_close.closed_at|date:"Y-m-d" }}</p>
+            </div>
+            <div class="signature-box">
+                <p>Approved by:</p>
+                <div class="signature-line"></div>
+                <p>Branch Administrator</p>
+                <p>_________________________</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</body>
+</html>

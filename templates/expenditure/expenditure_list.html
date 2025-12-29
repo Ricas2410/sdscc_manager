@@ -26,7 +26,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500">Total Expenditures</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">GH₵ {{ totals.total_amount|default:"0"|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ totals.total_amount|default:"0"|currency }}</p>
                     </div>
                     <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                         <span class="material-icons-outlined text-red-600">receipt_long</span>
@@ -39,7 +39,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500">Approved/Paid</p>
-                        <p class="text-2xl font-bold text-green-600 mt-1">GH₵ {{ totals.approved_amount|default:"0"|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold text-green-600 mt-1">{{ totals.approved_amount|default:"0"|currency }}</p>
                     </div>
                     <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                         <span class="material-icons-outlined text-green-600">check_circle</span>
@@ -52,7 +52,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500">Pending Approval</p>
-                        <p class="text-2xl font-bold text-yellow-600 mt-1">GH₵ {{ totals.pending_amount|default:"0"|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold text-yellow-600 mt-1">{{ totals.pending_amount|default:"0"|currency }}</p>
                     </div>
                     <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
                         <span class="material-icons-outlined text-yellow-600">pending</span>
@@ -185,7 +185,7 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-red-600">
-                            GH₵ {{ exp.amount|floatformat:2 }}
+                            {{ exp.amount|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                             <a href="{% url 'expenditure:detail' exp.id %}" class="text-primary-600 hover:text-primary-800 font-medium">

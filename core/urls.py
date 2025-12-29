@@ -5,6 +5,7 @@ Core URL Configuration
 from django.urls import path
 from . import views, financial_views
 from . import views_assets
+from . import monthly_closing_views
 
 app_name = 'core'
 
@@ -78,6 +79,14 @@ urlpatterns = [
     # Financial Statistics
     path('financial-statistics/', financial_views.branch_financial_statistics, name='branch_financial_statistics'),
     path('auditor/branch-statistics/', financial_views.auditor_branch_statistics, name='auditor_branch_statistics'),
+    
+    # Monthly Closing
+    path('monthly-closing/', monthly_closing_views.monthly_closing_dashboard, name='monthly_closing'),
+    path('monthly-closing/close/', monthly_closing_views.close_month, name='close_month'),
+    path('monthly-closing/reopen/', monthly_closing_views.reopen_month, name='reopen_month'),
+    path('monthly-closing/check-edit/', monthly_closing_views.check_edit_permission, name='check_edit_permission'),
+    path('monthly-report/', monthly_closing_views.monthly_report_view, name='monthly_report'),
+    path('monthly-report/pdf/', monthly_closing_views.monthly_report_pdf, name='monthly_report_pdf'),
     
     # Archives
     path('archives/', views.archives, name='archives'),

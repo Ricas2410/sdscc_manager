@@ -73,8 +73,8 @@ def sermon_add(request):
             return redirect('sermons:add')
         
         title = request.POST.get('title')
-        preacher = request.POST.get('preacher')
-        sermon_date = request.POST.get('date')
+        preacher_name = request.POST.get('preacher')
+        sermon_date = request.POST.get('sermon_date')
         category_id = request.POST.get('category')
         scripture_reference = request.POST.get('scripture_reference', '')
         summary = request.POST.get('summary', '')
@@ -85,7 +85,8 @@ def sermon_add(request):
             sermon = Sermon.objects.create(
                 title=title,
                 preacher=request.user,
-                date=sermon_date,
+                preacher_name=preacher_name,
+                sermon_date=sermon_date,
                 category_id=category_id if category_id else None,
                 scripture_reference=scripture_reference,
                 summary=summary,

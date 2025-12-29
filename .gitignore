@@ -65,3 +65,29 @@ node_modules/
 # Documentation with sensitive information
 DEPLOYMENT_GUIDE.md
 
+# Internal documentation and summaries (not for public repo)
+CHANGES_SUMMARY.md
+CLIENT_SUMMARY.md
+COMPREHENSIVE_FIXES.py
+DEPLOYMENT_FIXES_SUMMARY.md
+FINAL_SUMMARY.md
+FIXES_COMPLETED.md
+IMPLEMENTATION_COMPLETE.md
+MONTHLY_CLOSING_EXPLAINED.md
+SESSION_SUMMARY_*.md
+SYSTEM_ANALYSIS_REPORT.md
+TESTING_CHECKLIST.md
+TESTING_GUIDE.md
+USER_GUIDE_FIXES.md
+USER_QUICK_GUIDE.md
+QUICK_START_GUIDE.md
+logs.md
+updates.md
+task.md
+
+# Development files
+test_*.py
+fix_*.py
+*_fixes.py
+fix_currency_formatting.py
+

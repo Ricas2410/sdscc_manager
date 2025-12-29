@@ -30,7 +30,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Total Earnings (YTD)</p>
-                    <p class="text-xl font-bold text-gray-900">GH₵ {{ total_earnings|default:"0.00"|floatformat:2 }}</p>
+                    <p class="text-xl font-bold text-gray-900">{{ total_earnings|default:"0.00"|currency }}</p>
                 </div>
             </div>
         </div>
@@ -77,9 +77,9 @@
                     {% for slip in recent_payslips %}
                     <tr>
                         <td class="font-medium">{{ slip.payroll_run.month }}/{{ slip.payroll_run.year }}</td>
-                        <td>GH₵ {{ slip.gross_pay|floatformat:2 }}</td>
-                        <td>GH₵ {{ slip.total_deductions|floatformat:2 }}</td>
-                        <td class="text-right font-bold text-green-600">GH₵ {{ slip.net_pay|floatformat:2 }}</td>
+                        <td>{{ slip.gross_pay|currency }}</td>
+                        <td>{{ slip.total_deductions|currency }}</td>
+                        <td class="text-right font-bold text-green-600">{{ slip.net_pay|currency }}</td>
                     </tr>
                     {% empty %}
                     <tr>

@@ -130,9 +130,8 @@ def tithe_performance(request):
     # Overall statistics
     overall_percentage = (total_collected / total_target * 100) if total_target > 0 else 0
     
-    # Generate year list
-    current_year = date.today().year
-    years = list(range(current_year - 2, current_year + 2))
+    # Generate year list from fiscal years for consistency
+    years = list(FiscalYear.objects.order_by('-year').values_list('year', flat=True)[:5]) or [date.today().year]
     
     # Generate month list
     months = [(i, calendar.month_name[i]) for i in range(1, 13)]
@@ -322,9 +321,8 @@ def commission_management(request):
         total_pending=Sum('commission_amount', filter=Q(status='pending')),
     )
     
-    # Generate year list
-    current_year = date.today().year
-    years = list(range(current_year - 2, current_year + 2))
+    # Generate year list from fiscal years for consistency
+    years = list(FiscalYear.objects.order_by('-year').values_list('year', flat=True)[:5]) or [date.today().year]
     
     # Generate month list
     months = [(i, calendar.month_name[i]) for i in range(1, 13)]

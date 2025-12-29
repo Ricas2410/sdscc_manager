@@ -110,10 +110,10 @@
                         <td class="font-medium">{{ item.branch }}</td>
                         <td class="text-gray-500">{{ item.district }}</td>
                         <td class="text-gray-500">{{ item.area }}</td>
-                        <td class="text-right">GH₵{{ item.tithe|floatformat:2 }}</td>
-                        <td class="text-right">GH₵{{ item.offering|floatformat:2 }}</td>
-                        <td class="text-right">GH₵{{ item.other|floatformat:2 }}</td>
-                        <td class="text-right font-semibold">GH₵{{ item.total|floatformat:2 }}</td>
+                        <td class="text-right">{{ item.tithe|currency }}</td>
+                        <td class="text-right">{{ item.offering|currency }}</td>
+                        <td class="text-right">{{ item.other|currency }}</td>
+                        <td class="text-right font-semibold">{{ item.total|currency }}</td>
                     </tr>
                     {% empty %}
                     <tr>

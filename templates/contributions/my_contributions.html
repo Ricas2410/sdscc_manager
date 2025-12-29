@@ -21,7 +21,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm">Year-to-Date Total</p>
-                    <p class="text-3xl font-bold mt-1">GH₵{{ year_total|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold mt-1">{{ year_total|currency }}</p>
                     <p class="text-blue-100 text-xs mt-1">{{ fiscal_year.name }}</p>
                 </div>
                 <div class="bg-white/20 rounded-full p-3">
@@ -71,7 +71,7 @@
                     {% else %}bg-gray-100 text-gray-800{% endif %}">
                     {{ item.contribution_type__name }}
                 </span>
-                <p class="text-xl font-bold text-gray-900">GH₵{{ item.total|floatformat:2 }}</p>
+                <p class="text-xl font-bold text-gray-900">{{ item.total|currency }}</p>
             </div>
             {% endfor %}
         </div>
@@ -112,7 +112,7 @@
                             {{ contribution.branch.name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
-                            GH₵{{ contribution.amount|floatformat:2 }}
+                            {{ contribution.amount|currency }}
                         </td>
                     </tr>
                     {% empty %}

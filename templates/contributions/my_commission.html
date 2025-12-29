@@ -17,7 +17,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Earned</p>
-                    <p class="text-2xl font-bold text-gray-900">GH₵{{ total_earned|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_earned|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-green-500">payments</span>
             </div>
@@ -27,7 +27,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Amount Paid</p>
-                    <p class="text-2xl font-bold text-green-600">GH₵{{ total_paid|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-green-600">{{ total_paid|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-blue-500">check_circle</span>
             </div>
@@ -37,7 +37,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Pending</p>
-                    <p class="text-2xl font-bold text-orange-600">GH₵{{ total_pending|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ total_pending|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-orange-500">pending</span>
             </div>
@@ -47,7 +47,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">This Month</p>
-                    <p class="text-2xl font-bold text-purple-600">GH₵{{ current_month_commission|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ current_month_commission|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-purple-500">calendar_today</span>
             </div>
@@ -88,10 +88,10 @@
                             <div class="text-xs text-gray-500">{{ commission.branch.district.name }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">GH₵{{ commission.tithe_collected|floatformat:2|intcomma }}</div>
+                            <div class="text-sm font-medium text-gray-900">{{ commission.tithe_collected|currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">GH₵{{ commission.tithe_target|floatformat:2|intcomma }}</div>
+                            <div class="text-sm text-gray-900">{{ commission.tithe_target|currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if commission.achievement_percentage >= 100 %}
@@ -107,7 +107,7 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-bold text-gray-900">GH₵{{ commission.commission_amount|floatformat:2|intcomma }}</div>
+                            <div class="text-sm font-bold text-gray-900">{{ commission.commission_amount|currency }}</div>
                             {% if commission.commission_percentage %}
                             <div class="text-xs text-gray-500">{{ commission.commission_percentage|floatformat:1 }}% rate</div>
                             {% endif %}

@@ -155,7 +155,7 @@
                                 {% with payroll=u.payroll_profiles|first %}
                                 {% if payroll %}
                                 <div class="text-sm">
-                                    <p class="font-medium text-green-600">GH₵{{ payroll.base_salary|floatformat:2 }}</p>
+                                    <p class="font-medium text-green-600">{{ payroll.base_salary|currency }}</p>
                                     {% if u.is_commission_eligible %}
                                     <p class="text-xs text-blue-500">+ Commission</p>
                                     {% endif %}

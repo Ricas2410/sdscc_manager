@@ -245,14 +245,15 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for rem in remittances %}
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ rem.date|date:"d M Y" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₦{{ rem.amount|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ rem.payment_date|date:"d M Y"|default:"Pending" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ rem.amount_sent|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full 
-                                {% if rem.status == 'approved' %}bg-green-100 text-green-800
+                            <span class="px-2 py-1 text-xs font-medium rounded-full
+                                {% if rem.status == 'verified' %}bg-green-100 text-green-800
+                                {% elif rem.status == 'sent' %}bg-blue-100 text-blue-800
                                 {% elif rem.status == 'pending' %}bg-yellow-100 text-yellow-800
                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ rem.status|title }}
+                                {{ rem.get_status_display }}
                             </span>
                         </td>
                     </tr>

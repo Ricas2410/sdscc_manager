@@ -1356,10 +1356,35 @@ def manifest_json(request):
     host = request.get_host()
     base_url = f"{scheme}://{host}"
 
+    # Use uploaded logo from settings if available, otherwise use default SVG icons
+    logo_url = None
+    if settings_obj and settings_obj.site_logo:
+        logo_url = f"{base_url}{settings_obj.site_logo.url}"
+    elif settings_obj and settings_obj.site_logo_url:
+        logo_url = settings_obj.site_logo_url
+
+    # Build icon list - prefer uploaded logo
+    if logo_url:
+        icons = [
+            {"src": logo_url, "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": logo_url, "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+            {"src": logo_url, "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ]
+        shortcut_icon = {"src": logo_url, "sizes": "192x192"}
+    else:
+        icons = [
+            {"src": f"{base_url}/static/images/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any"},
+            {"src": f"{base_url}/static/images/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any"},
+            {"src": f"{base_url}/static/images/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable"},
+            {"src": f"{base_url}/static/images/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable"},
+        ]
+        shortcut_icon = {"src": f"{base_url}/static/images/icon-192.svg", "sizes": "192x192"}
+
     manifest = {
         "id": "/",
         "name": settings_obj.site_name or "SDSCC Church Management System",
-        "short_name": "SDSCC",
+        "short_name": settings_obj.site_name[:12] if settings_obj and settings_obj.site_name else "SDSCC",
         "description": settings_obj.tagline or "Seventh Day Sabbath Church of Christ - Church Management System",
         "start_url": "/?source=pwa",
         "scope": "/",
@@ -1371,32 +1396,7 @@ def manifest_json(request):
         "lang": "en",
         "dir": "ltr",
         "prefer_related_applications": False,
-        "icons": [
-            {
-                "src": f"{base_url}/static/images/icon-192.svg",
-                "sizes": "192x192",
-                "type": "image/svg+xml",
-                "purpose": "any"
-            },
-            {
-                "src": f"{base_url}/static/images/icon-512.svg",
-                "sizes": "512x512",
-                "type": "image/svg+xml",
-                "purpose": "any"
-            },
-            {
-                "src": f"{base_url}/static/images/icon-192.svg",
-                "sizes": "192x192",
-                "type": "image/svg+xml",
-                "purpose": "maskable"
-            },
-            {
-                "src": f"{base_url}/static/images/icon-512.svg",
-                "sizes": "512x512",
-                "type": "image/svg+xml",
-                "purpose": "maskable"
-            }
-        ],
+        "icons": icons,
         "categories": ["productivity", "utilities", "business"],
         "shortcuts": [
             {
@@ -1404,21 +1404,21 @@ def manifest_json(request):
                 "short_name": "Home",
                 "url": "/?source=pwa",
                 "description": "Go to your dashboard",
-                "icons": [{"src": f"{base_url}/static/images/icon-192.svg", "sizes": "192x192"}]
+                "icons": [shortcut_icon]
             },
             {
                 "name": "Announcements",
                 "short_name": "News",
                 "url": "/announcements/?source=pwa",
                 "description": "View church announcements",
-                "icons": [{"src": f"{base_url}/static/images/icon-192.svg", "sizes": "192x192"}]
+                "icons": [shortcut_icon]
             },
             {
                 "name": "Members",
                 "short_name": "Members",
                 "url": "/members/?source=pwa",
                 "description": "View church members",
-                "icons": [{"src": f"{base_url}/static/images/icon-192.svg", "sizes": "192x192"}]
+                "icons": [shortcut_icon]
             }
         ],
         "related_applications": [],
@@ -2013,25 +2013,44 @@ def celebrations(request):
 
 @login_required
 def export_members(request):
-    """Export members to Excel."""
+    """Export members to Excel with optional branch filter."""
     from .utils import export_to_excel
     from accounts.models import User
-    
+    from core.models import Branch
+
     if not request.user.is_any_admin:
         return HttpResponse("Access denied", status=403)
-    
+
+    # Get optional branch filter
+    branch_id = request.GET.get('branch')
+
     # Get members based on user scope
     if request.user.is_mission_admin:
         members = User.objects.filter(is_active=True)
+        if branch_id:
+            members = members.filter(branch_id=branch_id)
     elif request.user.is_area_executive:
         members = User.objects.filter(branch__district__area=request.user.managed_area)
+        if branch_id:
+            members = members.filter(branch_id=branch_id)
     elif request.user.is_district_executive:
         members = User.objects.filter(branch__district=request.user.managed_district)
+        if branch_id:
+            members = members.filter(branch_id=branch_id)
     else:
         members = User.objects.filter(branch=request.user.branch)
-    
-    members = members.select_related('branch').order_by('last_name', 'first_name')
-    
+
+    members = members.select_related('branch', 'branch__district', 'branch__district__area').order_by('branch__name', 'last_name', 'first_name')
+
+    # Get branch name for filename
+    branch_suffix = ''
+    if branch_id:
+        try:
+            branch = Branch.objects.get(pk=branch_id)
+            branch_suffix = f'_{branch.name.replace(" ", "_")}'
+        except Branch.DoesNotExist:
+            pass
+
     columns = [
         ('member_id', 'Member ID'),
         ('first_name', 'First Name'),
@@ -2039,13 +2058,17 @@ def export_members(request):
         ('phone', 'Phone'),
         ('email', 'Email'),
         ('branch.name', 'Branch'),
+        ('branch.district.name', 'District'),
         ('get_role_display', 'Role'),
         ('date_of_birth', 'Date of Birth'),
         ('gender', 'Gender'),
+        ('marital_status', 'Marital Status'),
+        ('occupation', 'Occupation'),
+        ('address', 'Address'),
         ('date_joined', 'Date Joined'),
     ]
-    
-    return export_to_excel(members, columns, f'members_export_{timezone.now().strftime("%Y%m%d")}')
+
+    return export_to_excel(members, columns, f'members_export{branch_suffix}_{timezone.now().strftime("%Y%m%d")}')
 
 
 @login_required
@@ -2423,35 +2446,24 @@ def close_month_action(request):
     if request.method == 'POST':
         year = int(request.POST.get('year'))
         month = int(request.POST.get('month'))
-        force = request.POST.get('force') == 'true'
-        
         try:
-            from .models import MonthlyClose, FiscalYear
+            from .monthly_closing import MonthlyClosingService
             from django.db import transaction
-            
-            fiscal_year = FiscalYear.get_current()
             branches = Branch.objects.filter(is_active=True)
             
             with transaction.atomic():
-                # Close the month for all branches
+                # Mission admin close applies to ALL branches using the service
                 for branch in branches:
-                    MonthlyClose.objects.update_or_create(
-                        fiscal_year=fiscal_year,
-                        branch=branch,
-                        month=month,
-                        year=year,
-                        defaults={
-                            'is_closed': True,
-                            'closed_at': timezone.now(),
-                            'closed_by': request.user
-                        }
-                    )
+                    service = MonthlyClosingService(branch, month, year)
+                    service.close_month(request.user)
             
             return JsonResponse({
                 'success': True,
-                'message': f'Successfully closed {timezone.now().strftime("%B")} {year}'
+                'message': f'Successfully closed {timezone.now().strftime("%B")} {year} for all branches'
             })
             
+        except ValueError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     

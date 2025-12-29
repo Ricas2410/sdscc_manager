@@ -46,7 +46,7 @@
         </div>
         <div style="text-align: right;">
             <strong>Total Branches:</strong> {{ commissions.count }}<br>
-            <strong>Total Commission:</strong> GH₵{{ grand_total.total_commission|floatformat:2 }}
+            <strong>Total Commission:</strong> {{ grand_total.total_commission|currency }}
         </div>
     </div>
 
@@ -67,12 +67,12 @@
         </thead>
         <tbody>
             <tr class="text-center">
-                <td>GH₵{{ grand_total.total_target|floatformat:2 }}</td>
-                <td>GH₵{{ grand_total.total_tithe|floatformat:2 }}</td>
+                <td>{{ grand_total.total_target|currency }}</td>
+                <td>{{ grand_total.total_tithe|currency }}</td>
                 <td>
                     {% widthratio grand_total.total_tithe grand_total.total_target 100 %}%
                 </td>
-                <td><strong>GH₵{{ grand_total.total_commission|floatformat:2 }}</strong></td>
+                <td><strong>{{ grand_total.total_commission|currency }}</strong></td>
                 <td>{{ commissions|length }}</td>
                 <td>10%</td>
             </tr>
@@ -82,7 +82,7 @@
     <!-- Detailed Breakdown by Area -->
     {% for area_name, area_data in areas_data.items %}
     <div class="area-header">
-        {{ area_name|upper }} AREA - Total Commission: GH₵{{ area_data.total_commission|floatformat:2 }}
+        {{ area_name|upper }} AREA - Total Commission: {{ area_data.total_commission|currency }}
     </div>
 
     {% for district_name, district_data in area_data.districts.items %}
@@ -106,17 +106,17 @@
             <tr>
                 <td>{{ commission.branch.name }}</td>
                 <td>{{ commission.recipient.get_full_name }}</td>
-                <td class="text-right">GH₵{{ commission.target_amount|floatformat:2 }}</td>
-                <td class="text-right">GH₵{{ commission.tithe_collected|floatformat:2 }}</td>
+                <td class="text-right">{{ commission.target_amount|currency }}</td>
+                <td class="text-right">{{ commission.tithe_collected|currency }}</td>
                 <td class="text-center">{{ commission.percentage_achieved|floatformat:1 }}%</td>
-                <td class="text-right"><strong>GH₵{{ commission.commission_amount|floatformat:2 }}</strong></td>
+                <td class="text-right"><strong>{{ commission.commission_amount|currency }}</strong></td>
             </tr>
             {% endfor %}
             <tr class="total-row">
                 <td colspan="3">District Total</td>
-                <td class="text-right">GH₵{{ district_data.total_tithe|floatformat:2 }}</td>
+                <td class="text-right">{{ district_data.total_tithe|currency }}</td>
                 <td class="text-center">-</td>
-                <td class="text-right"><strong>GH₵{{ district_data.total_commission|floatformat:2 }}</strong></td>
+                <td class="text-right"><strong>{{ district_data.total_commission|currency }}</strong></td>
             </tr>
         </tbody>
     </table>
@@ -127,8 +127,8 @@
     <table>
         <tr class="grand-total">
             <td style="width: 50%;">GRAND TOTAL - ALL AREAS</td>
-            <td class="text-right">Total Tithe: GH₵{{ grand_total.total_tithe|floatformat:2 }}</td>
-            <td class="text-right">Total Commission: GH₵{{ grand_total.total_commission|floatformat:2 }}</td>
+            <td class="text-right">Total Tithe: {{ grand_total.total_tithe|currency }}</td>
+            <td class="text-right">Total Commission: {{ grand_total.total_commission|currency }}</td>
         </tr>
     </table>
 

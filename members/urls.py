@@ -5,6 +5,7 @@ Members URL Configuration
 from django.urls import path
 from . import views
 from . import pastor_views
+from . import export_views
 
 app_name = 'members'
 
@@ -17,6 +18,12 @@ urlpatterns = [
     path('<uuid:member_id>/edit/', views.member_edit, name='edit'),
     path('api/districts/<uuid:area_id>/', views.get_districts, name='get_districts'),
     path('api/branches/<uuid:district_id>/', views.get_branches, name='get_branches'),
+    
+    # Member Export
+    path('export-page/', export_views.export_members_page, name='export_page'),
+    path('export-excel/', export_views.export_members_excel, name='export_excel'),
+    path('export-csv/', export_views.export_members_csv, name='export_csv'),
+    path('export-preview/', export_views.export_members_preview, name='export_preview'),
     
     # Pastor member management
     path('manage/', pastor_views.pastor_manage_members, name='pastor_manage'),

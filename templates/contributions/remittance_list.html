@@ -27,11 +27,11 @@
         </div>
         <div class="bg-white shadow rounded-lg p-4">
             <p class="text-sm text-gray-500">Total Remitted (MTD)</p>
-            <p class="text-2xl font-bold text-gray-900">GH₵ {{ month_total|default:"0"|floatformat:2 }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ month_total|default:"0"|currency }}</p>
         </div>
         <div class="bg-white shadow rounded-lg p-4">
             <p class="text-sm text-gray-500">Outstanding</p>
-            <p class="text-2xl font-bold text-red-600">GH₵ {{ outstanding|default:"0"|floatformat:2 }}</p>
+            <p class="text-2xl font-bold text-red-600">{{ outstanding|default:"0"|currency }}</p>
         </div>
     </div>
 
@@ -55,7 +55,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.date|date:"M d, Y" }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.branch.name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ remittance.period_month }}/{{ remittance.period_year }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">GH₵ {{ remittance.amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">{{ remittance.amount|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
                                 {% if remittance.status == 'approved' %}bg-green-100 text-green-800

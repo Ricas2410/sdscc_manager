@@ -1,0 +1,623 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Welfare Requests{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Welfare Requests</h1>
+                <p class="text-gray-600 mt-1">Review and manage welfare assistance requests</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Requests</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {% if is_mission_admin %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select id="areaFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Areas</option>
+                    {% for area in areas %}
+                    <option value="{{ area.id }}" {% if area.id|stringformat:"s" == selected_area %}selected{% endif %}>{{ area.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            {% if is_mission_admin or user.is_area_executive %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
+                <select id="districtFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Districts</option>
+                    {% for district in districts %}
+                    <option value="{{ district.id }}" {% if district.id|stringformat:"s" == selected_district %}selected{% endif %} data-area="{{ district.area.id }}">{{ district.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <select id="branchFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if branch.id|stringformat:"s" == selected_branch %}selected{% endif %} data-district="{{ branch.district.id }}">{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="paid" {% if selected_status == 'paid' %}selected{% endif %}>Paid</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select id="typeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Types</option>
+                    {% for choice_value, choice_name in welfare_types %}
+                    <option value="{{ choice_value }}" {% if choice_value == selected_type %}selected{% endif %}>{{ choice_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button onclick="applyFilters()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="material-icons mr-2">filter_list</i>
+                Apply Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Pending Requests</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ summary.pending_count }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.pending_amount|currency }}</p>
+                </div>
+                <div class="bg-orange-100 p-3 rounded-lg">
+                    <i class="material-icons text-orange-600">pending</i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Approved</p>
+                    <p class="text-2xl font-bold text-green-600">{{ summary.approved_count }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.approved_amount|currency }}</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <i class="material-icons text-green-600">check_circle</i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Rejected</p>
+                    <p class="text-2xl font-bold text-red-600">{{ summary.rejected_count }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.rejected_amount|currency }}</p>
+                </div>
+                <div class="bg-red-100 p-3 rounded-lg">
+                    <i class="material-icons text-red-600">cancel</i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Paid</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ summary.paid_count }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.paid_amount|currency }}</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <i class="material-icons text-blue-600">payments</i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    {% if perms.expenditure.can_approve_welfare and pending_requests %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-blue-800 font-medium">Bulk Actions</p>
+                <p class="text-blue-600 text-sm">Select multiple requests to approve at once</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="selectAll()" class="px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50">
+                    Select All
+                </button>
+                <button onclick="bulkApprove()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="material-icons mr-2">check_circle</i>
+                    Approve Selected
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Requests Table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Welfare Requests</h3>
+                <span class="text-sm text-gray-500">{{ page_obj.paginator.count }} total requests</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        {% if perms.expenditure.can_approve_welfare and pending_requests %}
+                        <th class="px-6 py-3 text-left">
+                            <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </th>
+                        {% endif %}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requester</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recipient</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for welfare_payment in page_obj %}
+                    <tr class="hover:bg-gray-50">
+                        {% if can_approve and not welfare_payment.approved_by %}
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="request-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="{{ welfare_payment.id }}">
+                        </td>
+                        {% endif %}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ welfare_payment.date|date:"Y-m-d" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ welfare_payment.created_by.get_full_name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ welfare_payment.branch.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ welfare_payment.get_welfare_type_display }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ welfare_payment.recipient_name|default:"--" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
+                            {{ welfare_payment.amount|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if not welfare_payment.approved_by %}
+                                <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Approved</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <button onclick="viewDetails('{{ welfare_payment.id }}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="material-icons text-sm">visibility</i>
+                            </button>
+                            {% if can_approve and not welfare_payment.approved_by %}
+                            <button onclick="approveRequest('{{ welfare_payment.id }}')" class="text-green-600 hover:text-green-900 mr-3">
+                                <i class="material-icons text-sm">check_circle</i>
+                            </button>
+                            <button onclick="rejectRequest('{{ welfare_payment.id }}')" class="text-red-600 hover:text-red-900">
+                                <i class="material-icons text-sm">cancel</i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if can_approve %}9{% else %}8{% endif %}" class="px-6 py-4 text-center text-gray-500">
+                            No welfare requests found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-700">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} results
+                </div>
+                <div class="flex gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            First
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Previous
+                        </a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-2 text-sm bg-blue-50 border border-blue-300 rounded-md">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Next
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                           class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Last
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Welfare Request Details</h3>
+                <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div id="detailContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Reject Request</h3>
+                <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <form id="rejectForm">
+                <input type="hidden" id="rejectRequestId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Rejection</label>
+                    <textarea id="rejectReason" rows="4" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Please provide a reason for rejecting this request..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeRejectModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Reject Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Hierarchical filtering
+document.addEventListener('DOMContentLoaded', function() {
+    const areaFilter = document.getElementById('areaFilter');
+    const districtFilter = document.getElementById('districtFilter');
+    const branchFilter = document.getElementById('branchFilter');
+
+    // Area filter change
+    if (areaFilter) {
+        areaFilter.addEventListener('change', function() {
+            const selectedArea = this.value;
+
+            // Filter districts
+            if (districtFilter) {
+                const districtOptions = districtFilter.querySelectorAll('option');
+                districtOptions.forEach(option => {
+                    if (option.value === '' || option.getAttribute('data-area') === selectedArea) {
+                        option.style.display = 'block';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+                districtFilter.value = '';
+            }
+
+            // Filter branches
+            filterBranches();
+        });
+    }
+
+    // District filter change
+    if (districtFilter) {
+        districtFilter.addEventListener('change', function() {
+            filterBranches();
+        });
+    }
+
+    function filterBranches() {
+        if (!branchFilter) return;
+
+        const selectedArea = areaFilter ? areaFilter.value : '';
+        const selectedDistrict = districtFilter ? districtFilter.value : '';
+
+        const branchOptions = branchFilter.querySelectorAll('option');
+        branchOptions.forEach(option => {
+            const branchDistrict = option.getAttribute('data-district');
+            if (option.value === '') {
+                option.style.display = 'block';
+            } else if (selectedDistrict && branchDistrict === selectedDistrict) {
+                option.style.display = 'block';
+            } else if (!selectedDistrict && selectedArea) {
+                // Show branches in districts under selected area
+                const districtOption = districtFilter ?
+                    districtFilter.querySelector(`option[value="${branchDistrict}"]`) : null;
+                if (districtOption && districtOption.getAttribute('data-area') === selectedArea) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            } else if (!selectedArea && !selectedDistrict) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        branchFilter.value = '';
+    }
+});
+
+function applyFilters() {
+    const area = document.getElementById('areaFilter')?.value || '';
+    const district = document.getElementById('districtFilter')?.value || '';
+    const branch = document.getElementById('branchFilter')?.value || '';
+    const status = document.getElementById('statusFilter')?.value || '';
+    const type = document.getElementById('typeFilter')?.value || '';
+
+    let url = new URL(window.location);
+
+    // Clear existing params
+    url.searchParams.delete('area');
+    url.searchParams.delete('district');
+    url.searchParams.delete('branch');
+    url.searchParams.delete('status');
+    url.searchParams.delete('type');
+    url.searchParams.delete('page');
+
+    // Set new params
+    if (area) url.searchParams.set('area', area);
+    if (district) url.searchParams.set('district', district);
+    if (branch) url.searchParams.set('branch', branch);
+    if (status) url.searchParams.set('status', status);
+    if (type) url.searchParams.set('type', type);
+
+    window.location = url.toString();
+}
+
+function viewDetails(requestId) {
+    fetch(`/expenditure/welfare/api/request/${requestId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const content = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Date</p>
+                            <p class="font-medium">${data.date}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Status</p>
+                            <span class="px-2 py-1 text-xs rounded-full bg-${data.status_color}-100 text-${data.status_color}-800">
+                                ${data.status_display}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Requester</p>
+                            <p class="font-medium">${data.requester}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Branch</p>
+                            <p class="font-medium">${data.branch}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Type</p>
+                        <p class="font-medium">${data.type}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Recipient</p>
+                        <p class="font-medium">${data.recipient || '--'}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Amount</p>
+                        <p class="font-medium text-xl">${data.amount}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Description</p>
+                        <p class="font-medium">${data.description || '--'}</p>
+                    </div>
+                    ${data.approved_by ? `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Approved By</p>
+                            <p class="font-medium">${data.approved_by}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Approved Date</p>
+                            <p class="font-medium">${data.approved_date}</p>
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${data.reject_reason ? `
+                    <div>
+                        <p class="text-sm text-gray-600">Rejection Reason</p>
+                        <p class="font-medium text-red-600">${data.reject_reason}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('detailContent').innerHTML = content;
+            document.getElementById('detailModal').classList.remove('hidden');
+        });
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').classList.add('hidden');
+}
+
+function approveRequest(requestId) {
+    if (!confirm('Are you sure you want to approve this welfare request?')) {
+        return;
+    }
+    
+    fetch(`/expenditure/welfare/${requestId}/approve/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    });
+}
+
+function rejectRequest(requestId) {
+    document.getElementById('rejectRequestId').value = requestId;
+    document.getElementById('rejectModal').classList.remove('hidden');
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+    document.getElementById('rejectForm').reset();
+}
+
+// Reject form submission
+document.getElementById('rejectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const requestId = document.getElementById('rejectRequestId').value;
+    const reason = document.getElementById('rejectReason').value;
+    
+    fetch(`/expenditure/welfare/${requestId}/reject/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            closeRejectModal();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    });
+});
+
+// Bulk actions
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.request-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+document.getElementById('selectAllCheckbox').addEventListener('change', selectAll);
+
+function bulkApprove() {
+    const selected = document.querySelectorAll('.request-checkbox:checked');
+    
+    if (selected.length === 0) {
+        showMessage('Please select at least one request to approve', 'error');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to approve ${selected.length} welfare request(s)?`)) {
+        return;
+    }
+    
+    const ids = Array.from(selected).map(cb => cb.value);
+    
+    fetch('/expenditure/welfare/bulk-approve/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({ ids: ids })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    });
+}
+
+function showMessage(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 flex items-center ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    alert.innerHTML = `
+        <i class="material-icons mr-2">${type === 'success' ? 'check_circle' : 'error'}</i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

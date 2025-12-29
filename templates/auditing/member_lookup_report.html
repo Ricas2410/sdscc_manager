@@ -74,7 +74,7 @@
             <div class="card-body">
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div class="bg-green-50 rounded-lg p-4 text-center">
-                        <p class="text-2xl font-bold text-green-600">GH₵ {{ contribution_summary.total_amount|floatformat:2|intcomma }}</p>
+                        <p class="text-2xl font-bold text-green-600">{{ contribution_summary.total_amount|currency }}</p>
                         <p class="text-sm text-gray-600">Total Amount</p>
                     </div>
                     <div class="bg-blue-50 rounded-lg p-4 text-center">
@@ -89,7 +89,7 @@
                     {% for item in contribution_summary.by_type %}
                     <div class="flex justify-between items-center py-2 border-b">
                         <span class="text-gray-700">{{ item.contribution_type__name }}</span>
-                        <span class="font-medium">GH₵ {{ item.total|floatformat:2|intcomma }}</span>
+                        <span class="font-medium">{{ item.total|currency }}</span>
                     </div>
                     {% endfor %}
                 </div>
@@ -144,7 +144,7 @@
                     <tr>
                         <td>{{ c.date|date:"M d, Y" }}</td>
                         <td>{{ c.contribution_type.name }}</td>
-                        <td class="font-medium text-green-600">GH₵ {{ c.amount|floatformat:2|intcomma }}</td>
+                        <td class="font-medium text-green-600">{{ c.amount|currency }}</td>
                         <td>{{ c.branch.name }}</td>
                     </tr>
                     {% empty %}

@@ -75,7 +75,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500">Total Target</p>
-                        <p class="text-2xl font-bold text-gray-900">GH₵{{ total_target|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_target|currency }}</p>
                     </div>
                     <span class="material-icons-outlined text-4xl text-gray-400">flag</span>
                 </div>
@@ -86,7 +86,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-500">Total Collected</p>
-                        <p class="text-2xl font-bold text-green-600">GH₵{{ total_collected|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold text-green-600">{{ total_collected|currency }}</p>
                     </div>
                     <span class="material-icons-outlined text-4xl text-green-600">payments</span>
                 </div>
@@ -158,8 +158,8 @@
                             <span class="text-gray-400">No Pastor</span>
                             {% endif %}
                         </td>
-                        <td class="text-right font-mono">GH₵{{ item.target|floatformat:2 }}</td>
-                        <td class="text-right font-mono font-semibold text-green-600">GH₵{{ item.collected|floatformat:2 }}</td>
+                        <td class="text-right font-mono">{{ item.target|currency }}</td>
+                        <td class="text-right font-mono font-semibold text-green-600">{{ item.collected|currency }}</td>
                         <td class="text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <div class="w-24 bg-gray-200 rounded-full h-2">
@@ -172,11 +172,11 @@
                             </div>
                         </td>
                         <td class="text-right font-mono {% if item.variance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                            {% if item.variance >= 0 %}+{% endif %}GH₵{{ item.variance|floatformat:2 }}
+                            {% if item.variance >= 0 %}+{% endif %}{{ item.variance|currency }}
                         </td>
                         <td class="text-right font-mono font-semibold text-blue-600">
                             {% if item.commission_amount > 0 %}
-                            GH₵{{ item.commission_amount|floatformat:2 }}
+                            {{ item.commission_amount|currency }}
                             {% else %}
                             <span class="text-gray-400">-</span>
                             {% endif %}
@@ -205,13 +205,13 @@
                 <tfoot class="bg-gray-50 font-semibold">
                     <tr>
                         <td colspan="2">TOTAL</td>
-                        <td class="text-right">GH₵{{ total_target|floatformat:2 }}</td>
-                        <td class="text-right text-green-600">GH₵{{ total_collected|floatformat:2 }}</td>
+                        <td class="text-right">{{ total_target|currency }}</td>
+                        <td class="text-right text-green-600">{{ total_collected|currency }}</td>
                         <td class="text-center">{{ overall_percentage|floatformat:1 }}%</td>
                         <td class="text-right {% if total_collected >= total_target %}text-green-600{% else %}text-red-600{% endif %}">
-                            {% if total_collected >= total_target %}+{% endif %}GH₵{{ total_collected|add:"-"|add:total_target|floatformat:2 }}
+                            {% if total_collected >= total_target %}+{% endif %}{{ total_collected|add:"-"|add:total_target|currency }}
                         </td>
-                        <td class="text-right text-blue-600">GH₵{{ total_commission|floatformat:2 }}</td>
+                        <td class="text-right text-blue-600">{{ total_commission|currency }}</td>
                         <td>{{ branches_met_target }}/{{ total_branches }}</td>
                     </tr>
                 </tfoot>

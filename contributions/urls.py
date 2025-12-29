@@ -5,6 +5,7 @@ Contributions URL Configuration
 from django.urls import path
 from . import views
 from . import tithe_tracking_views
+from . import branch_type_views
 
 app_name = 'contributions'
 
@@ -29,6 +30,13 @@ urlpatterns = [
     path('tithe-performance/', tithe_tracking_views.tithe_performance, name='tithe_performance'),
     path('commission-management/', tithe_tracking_views.commission_management, name='commission_management'),
     path('commission-report/print/', tithe_tracking_views.commission_report_print, name='commission_report_print'),
+    
+    # Branch Contribution Types
+    path('branch-types/', branch_type_views.branch_contribution_types, name='branch_types'),
+    path('branch-types/create/', branch_type_views.create_branch_contribution_type, name='create_branch_type'),
+    path('branch-types/<uuid:type_id>/edit/', branch_type_views.edit_branch_contribution_type, name='edit_branch_type'),
+    path('branch-types/<uuid:type_id>/deactivate/', branch_type_views.deactivate_branch_contribution_type, name='deactivate_branch_type'),
+    path('branch-types/<uuid:type_id>/activate/', branch_type_views.activate_branch_contribution_type, name='activate_branch_type'),
     
     path('<uuid:contribution_id>/', views.contribution_detail, name='detail'),
 ]

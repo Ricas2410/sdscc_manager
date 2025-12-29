@@ -12,13 +12,17 @@
                 <h1 class="text-2xl font-bold text-gray-900">Announcements</h1>
                 <p class="mt-1 text-sm text-gray-500">Stay updated with the latest church news and events</p>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <a href="{% url 'announcements:events' %}" class="btn-secondary flex items-center">
-                    <span class="material-icons-outlined text-lg mr-1">event</span> View Events
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'announcements:events' %}" 
+                   class="inline-flex items-center px-4 py-2.5 bg-white border border-gray-300 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <span class="material-icons-outlined text-lg mr-2">event</span>
+                    View Events
                 </a>
                 {% if user.is_authenticated and user.role != 'member' %}
-                <a href="{% url 'announcements:add' %}" class="btn-primary flex items-center">
-                    <span class="material-icons-outlined text-lg mr-1">add_circle</span> New Announcement
+                <a href="{% url 'announcements:add' %}" 
+                   class="inline-flex items-center px-4 py-2.5 bg-primary-600 border border-transparent text-sm font-medium rounded-lg text-white hover:bg-primary-700 transition-all duration-200 shadow-sm hover:shadow-lg">
+                    <span class="material-icons-outlined text-lg mr-2">add_circle</span>
+                    New Announcement
                 </a>
                 {% endif %}
             </div>
@@ -26,83 +30,160 @@
     </div>
 
     <!-- Announcements Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         {% for announcement in announcements %}
-        <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
+        <div class="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full border border-gray-100">
             <!-- Announcement Image -->
             {% if announcement.image %}
-            <div class="h-48 overflow-hidden">
-                <img src="{{ announcement.image.url }}" alt="{{ announcement.title }}" 
-                     class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+            <div class="relative h-32 sm:h-40 md:h-48 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                <img src="{{ announcement.image.url }}" 
+                     alt="{{ announcement.title }}" 
+                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <!-- Fallback placeholder -->
+                <div class="hidden absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
+                    <div class="text-center">
+                        <span class="material-icons-outlined text-2xl sm:text-3xl md:text-4xl text-primary-300 mb-1 sm:mb-2">campaign</span>
+                        <p class="text-xs sm:text-sm text-primary-600 font-medium hidden sm:block">{{ announcement.title|truncatechars:20 }}</p>
+                    </div>
+                </div>
+                {% if announcement.priority == 'high' %}
+                <div class="absolute top-2 right-2">
+                    <span class="bg-red-500 text-white px-1.5 py-1 rounded-full text-xs font-bold flex items-center">
+                        <span class="material-icons-outlined text-xs mr-1">priority_high</span>
+                        <span class="hidden sm:inline">URGENT</span>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <!-- No Image Placeholder -->
+            <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+                <div class="absolute inset-0 bg-white/30 backdrop-blur-sm"></div>
+                <div class="relative h-full flex flex-col items-center justify-center px-2">
+                    <span class="material-icons-outlined text-2xl sm:text-3xl md:text-5xl text-primary-400 mb-1 sm:mb-3">campaign</span>
+                    <div class="text-center">
+                        <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-1 line-clamp-2">{{ announcement.title }}</h4>
+                        <p class="text-xs text-gray-500 hidden sm:block">{{ announcement.scope|title }} Announcement</p>
+                    </div>
+                </div>
+                {% if announcement.priority == 'high' %}
+                <div class="absolute top-2 right-2">
+                    <span class="bg-red-500 text-white px-1.5 py-1 rounded-full text-xs font-bold flex items-center">
+                        <span class="material-icons-outlined text-xs mr-1">priority_high</span>
+                        <span class="hidden sm:inline">URGENT</span>
+                    </span>
+                </div>
+                {% endif %}
             </div>
             {% endif %}
             
             <!-- Announcement Content -->
-            <div class="p-6 flex-1 flex flex-col">
+            <div class="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
                 <!-- Priority Badge and Scope -->
-                <div class="flex flex-wrap items-center gap-2 mb-3">
+                <div class="flex flex-wrap items-center gap-1.5 mb-2 sm:mb-3">
                     {% if announcement.priority == 'high' %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <span class="material-icons-outlined text-xs mr-1">priority_high</span> Urgent
+                    <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                        <span class="material-icons-outlined text-xs mr-1">priority_high</span>
+                        <span class="hidden sm:inline">Urgent</span>
                     </span>
                     {% elif announcement.priority == 'medium' %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        <span class="material-icons-outlined text-xs mr-1">warning_amber</span> Important
+                    <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        <span class="material-icons-outlined text-xs mr-1">warning_amber</span>
+                        <span class="hidden sm:inline">Important</span>
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                        <span class="material-icons-outlined text-xs mr-1">info</span>
+                        <span class="hidden sm:inline">Standard</span>
+                    </span>
                     {% endif %}
                     
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
                         <span class="material-icons-outlined text-xs mr-1">
-                            {% if announcement.scope == 'mission' %}public{% else %}location_on{% endif %}
+                            {% if announcement.scope == 'mission' %}public
+                            {% elif announcement.scope == 'area' %}location_city
+                            {% elif announcement.scope == 'district' %}account_balance
+                            {% else %}location_on{% endif %}
                         </span>
-                        {{ announcement.scope|title }}
+                        <span class="hidden sm:inline">{{ announcement.scope|title }}</span>
                     </span>
+                    
+                    {% if announcement.is_pinned %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                        <span class="material-icons-outlined text-xs mr-1">push_pin</span>
+                        <span class="hidden sm:inline">Pinned</span>
+                    </span>
+                    {% endif %}
                 </div>
                 
                 <!-- Title and Content -->
-                <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                    <a href="{% url 'announcements:detail' announcement.id %}">{{ announcement.title }}</a>
+                <h3 class="text-sm sm:text-lg md:text-xl font-bold text-gray-900 mb-2 sm:mb-3 line-clamp-2 group-hover:text-primary-700 transition-colors duration-200">
+                    <a href="{% url 'announcements:detail' announcement.id %}" class="hover:underline">{{ announcement.title }}</a>
                 </h3>
                 
-                <p class="text-gray-600 line-clamp-3 mb-4 flex-grow">
-                    {{ announcement.content|striptags|truncatewords:25 }}
-                </p>
+                <div class="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 flex-grow line-clamp-2 sm:line-clamp-3 leading-relaxed">
+                    {{ announcement.content|striptags|truncatewords:15 }}
+                </div>
                 
                 <!-- Meta Info -->
-                <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <div class="flex items-center text-sm text-gray-500">
-                        <div class="flex items-center">
-                            <span class="material-icons-outlined text-base mr-1">person_outline</span>
-                            <span>{{ announcement.created_by.get_full_name|default:"System" }}</span>
-                        </div>
-                        <span class="mx-2">•</span>
-                        <div class="flex items-center">
-                            <span class="material-icons-outlined text-base mr-1">schedule</span>
-                            <span>{{ announcement.publish_date|date:"M d, Y" }}</span>
+                <div class="mt-auto pt-2 sm:pt-4 border-t border-gray-100">
+                    <div class="flex items-center justify-between text-xs text-gray-500 mb-2 sm:mb-3">
+                        <div class="flex items-center space-x-2 sm:space-x-3">
+                            <div class="flex items-center">
+                                <span class="material-icons-outlined text-xs sm:text-sm mr-1">person_outline</span>
+                                <span class="truncate max-w-12 sm:max-w-20 hidden sm:inline">{{ announcement.created_by.get_full_name|default:"System" }}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="material-icons-outlined text-xs sm:text-sm mr-1">schedule</span>
+                                <span>{{ announcement.publish_date|date:"M d" }}</span>
+                            </div>
+                            {% if announcement.view_count > 0 %}
+                            <div class="flex items-center hidden sm:flex">
+                                <span class="material-icons-outlined text-xs sm:text-sm mr-1">visibility</span>
+                                <span>{{ announcement.view_count }}</span>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     
                     <!-- Action Buttons -->
                     {% if user.is_authenticated and user.role != 'member' %}
                         {% if user == announcement.created_by or user.is_mission_admin %}
-                        <div class="flex items-center space-x-1">
+                        <div class="flex items-center justify-between">
                             <a href="{% url 'announcements:detail' announcement.id %}" 
-                               class="p-2 text-gray-500 hover:text-primary-600 rounded-full hover:bg-gray-100"
-                               title="View">
-                                <span class="material-icons-outlined text-xl">visibility</span>
+                               class="flex-1 text-center py-1.5 sm:py-2 px-2 sm:px-3 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center justify-center">
+                                <span class="material-icons-outlined text-xs sm:text-sm mr-1">visibility</span>
+                                <span class="hidden sm:inline">View</span>
                             </a>
-                            <a href="{% url 'announcements:edit' announcement.id %}" 
-                               class="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
-                               title="Edit">
-                                <span class="material-icons-outlined text-xl">edit</span>
-                            </a>
-                            <button type="button" 
-                                    class="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-red-50"
-                                    onclick="openDeleteModal('{% url 'announcements:delete' announcement.id %}', '{{ announcement.title|escapejs }}')"
-                                    title="Delete">
-                                <span class="material-icons-outlined text-xl">delete</span>
-                            </button>
+                            <div class="flex items-center space-x-1 ml-2">
+                                <a href="{% url 'announcements:edit' announcement.id %}" 
+                                   class="p-1.5 sm:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                   title="Edit">
+                                    <span class="material-icons-outlined text-sm sm:text-lg">edit</span>
+                                </a>
+                                <button type="button" 
+                                        class="p-1.5 sm:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                        onclick="openDeleteModal('{% url 'announcements:delete' announcement.id %}', '{{ announcement.title|escapejs }}')"
+                                        title="Delete">
+                                    <span class="material-icons-outlined text-sm sm:text-lg">delete</span>
+                                </button>
+                            </div>
                         </div>
+                        {% else %}
+                        <a href="{% url 'announcements:detail' announcement.id %}" 
+                           class="w-full text-center py-1.5 sm:py-2 px-2 sm:px-3 bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center">
+                            <span class="material-icons-outlined text-xs sm:text-sm mr-1">visibility</span>
+                            <span class="hidden sm:inline">View Details</span>
+                        </a>
                         {% endif %}
+                    {% else %}
+                        <a href="{% url 'announcements:detail' announcement.id %}" 
+                           class="w-full text-center py-1.5 sm:py-2 px-2 sm:px-3 bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center">
+                            <span class="material-icons-outlined text-xs sm:text-sm mr-1">visibility</span>
+                            <span class="hidden sm:inline">View Details</span>
+                        </a>
                     {% endif %}
                 </div>
             </div>

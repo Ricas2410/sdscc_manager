@@ -5,6 +5,7 @@ Accounts URL Configuration
 from django.urls import path
 from . import views
 from . import pastor_views
+from . import photo_upload_views
 
 app_name = 'accounts'
 
@@ -36,4 +37,9 @@ urlpatterns = [
     path('pastors/', pastor_views.pastors_list, name='pastors_list'),
     path('pastors/<uuid:pastor_id>/', pastor_views.pastor_detail, name='pastor_detail'),
     path('pastors/<uuid:pastor_id>/edit/', pastor_views.update_pastor_info, name='pastor_edit'),
+    
+    # Photo Upload
+    path('upload-photo/', photo_upload_views.upload_profile_photo, name='upload_photo'),
+    path('delete-photo/', photo_upload_views.delete_profile_photo, name='delete_photo'),
+    path('crop-photo/', photo_upload_views.crop_profile_photo, name='crop_photo'),
 ]

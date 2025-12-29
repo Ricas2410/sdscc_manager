@@ -46,26 +46,26 @@
                         </div>
                         <div class="flex-1">
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <button type="button" onclick="openCamera()" 
+                                <button type="button" onclick="takePhoto()" id="takePhotoBtn"
                                         class="btn btn-secondary btn-sm">
                                     <span class="material-icons-outlined mr-2">camera_alt</span>
                                     Take Photo
                                 </button>
-                                <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
+                                <button type="button" onclick="uploadPhoto()" id="uploadBtn"
                                         class="btn btn-secondary btn-sm">
                                     <span class="material-icons-outlined mr-2">upload_file</span>
                                     Upload
                                 </button>
                                 {% if member.profile_picture %}
-                                <button type="button" onclick="removePhoto()" 
+                                <button type="button" onclick="removePhoto()"
                                         class="btn btn-danger btn-sm">
                                     <span class="material-icons-outlined mr-2">delete</span>
                                     Remove
                                 </button>
                                 {% endif %}
                             </div>
-                            <input type="file" id="profilePictureInput" name="profile_picture" 
-                                   accept="image/*" capture="environment" style="display: none;"
+                            <input type="file" id="profilePictureInput" name="profile_picture"
+                                   accept="image/*" style="display: none;"
                                    onchange="previewPhoto(this)">
                             <p class="text-xs text-gray-500 mt-2">
                                 Use device camera or upload a passport-sized photo
@@ -587,6 +587,98 @@
     </form>
 </div>
 
+<script>
+    // Photo upload functions - Available for all user roles
+    // Check if device is mobile
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               window.innerWidth <= 768;
+    }
+
+    // Check if camera is available
+    function hasCameraSupport() {
+        return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    }
+
+    function takePhoto() {
+        const input = document.getElementById('profilePictureInput');
+
+        if (isMobileDevice()) {
+            // On mobile, use camera
+            input.setAttribute('capture', 'environment');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+        } else {
+            // On desktop, try to access camera if available
+            if (hasCameraSupport()) {
+                // Create a temporary input for desktop camera access
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.accept = 'image/*';
+                tempInput.capture = 'environment';
+                tempInput.style.display = 'none';
+
+                document.body.appendChild(tempInput);
+
+                tempInput.onchange = function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        // Use the captured image
+                        previewPhoto(e.target);
+                        // Copy the file to the main input
+                        input.files = e.target.files;
+                    }
+                    document.body.removeChild(tempInput);
+                };
+
+                tempInput.click();
+            } else {
+                alert('Camera access is not available on this device. Please use the "Upload" button to select an image file.');
+            }
+        }
+    }
+
+    function uploadPhoto() {
+        const input = document.getElementById('profilePictureInput');
+        // Always remove capture attribute for file selection
+        input.removeAttribute('capture');
+        input.click();
+    }
+
+    function previewPhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = `<img src="${e.target.result}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function removePhoto() {
+        const preview = document.getElementById('photoPreview');
+        const input = document.getElementById('profilePictureInput');
+
+        // Clear the preview
+        preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
+        preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
+
+        // Clear the input
+        input.value = '';
+
+        // Add a hidden field to indicate photo removal
+        let removeField = document.getElementById('removePhotoField');
+        if (!removeField) {
+            removeField = document.createElement('input');
+            removeField.type = 'hidden';
+            removeField.id = 'removePhotoField';
+            removeField.name = 'remove_photo';
+            removeField.value = 'true';
+            input.parentNode.appendChild(removeField);
+        }
+    }
+</script>
+
 {% if not is_branch_admin %}
 <script>
     function loadDistricts() {
@@ -672,7 +764,7 @@
         const roleSelect = document.querySelector('select[name="role"]');
         const pastoralRankGroup = document.getElementById('pastoralRankGroup');
         const pastorInfoSection = document.getElementById('pastorInfoSection');
-        
+
         if (roleSelect.value === 'pastor') {
             pastoralRankGroup.style.display = 'block';
             pastorInfoSection.style.display = 'block';
@@ -684,47 +776,6 @@
             document.querySelector('input[name="ordination_date"]').value = '';
             document.querySelector('input[name="ordination_place"]').value = '';
             document.querySelector('input[name="ordaining_minister"]').value = '';
-        }
-    }
-
-    function openCamera() {
-        const input = document.getElementById('profilePictureInput');
-        // Set capture to environment (back camera) by default
-        input.setAttribute('capture', 'environment');
-        input.click();
-    }
-
-    function previewPhoto(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('photoPreview');
-                preview.innerHTML = `<img src="${e.target.result}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function removePhoto() {
-        const preview = document.getElementById('photoPreview');
-        const input = document.getElementById('profilePictureInput');
-        
-        // Clear the preview
-        preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
-        preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
-        
-        // Clear the input
-        input.value = '';
-        
-        // Add a hidden field to indicate photo removal
-        let removeField = document.getElementById('removePhotoField');
-        if (!removeField) {
-            removeField = document.createElement('input');
-            removeField.type = 'hidden';
-            removeField.id = 'removePhotoField';
-            removeField.name = 'remove_photo';
-            removeField.value = 'true';
-            input.parentNode.appendChild(removeField);
         }
     }
 

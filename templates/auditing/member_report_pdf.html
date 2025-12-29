@@ -49,7 +49,7 @@
         <h3>Contribution Summary</h3>
         <div style="margin-bottom: 15px;">
             <div class="summary-box">
-                <div class="value positive">GH₵ {{ contribution_summary.total_amount|floatformat:2 }}</div>
+                <div class="value positive">{{ contribution_summary.total_amount|currency }}</div>
                 <div class="label">Total Amount</div>
             </div>
             <div class="summary-box">
@@ -71,7 +71,7 @@
                 <tr>
                     <td>{{ c.date|date:"M d, Y" }}</td>
                     <td>{{ c.contribution_type.name }}</td>
-                    <td class="amount positive">GH₵ {{ c.amount|floatformat:2 }}</td>
+                    <td class="amount positive">{{ c.amount|currency }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="3" style="text-align: center; color: #9ca3af;">No contributions found</td></tr>

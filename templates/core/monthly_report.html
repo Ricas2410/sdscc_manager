@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Monthly Report - {{ branch.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Monthly Financial Report</h1>
+                <p class="text-gray-600 mt-1">
+                    {{ branch.name }} - {{ month_name }} {{ year }}
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    <i class="material-icons mr-2">print</i>
+                    Print
+                </button>
+                <button onclick="downloadPDF()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="material-icons mr-2">picture_as_pdf</i>
+                    Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Content -->
+    <div class="bg-white rounded-lg shadow-sm p-8" id="reportContent">
+        <!-- Report Header -->
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">SDSCC Church Management System</h2>
+            <h3 class="text-xl text-gray-700 mt-2">Monthly Financial Report</h3>
+            <p class="text-lg text-gray-600 mt-4">
+                {{ branch.name }} Branch<br>
+                {{ month_name }} {{ year }}
+            </p>
+            <p class="text-sm text-gray-500 mt-2">
+                Generated on {% now "Y-m-d H:i" %}
+            </p>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Financial Summary</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-gray-50 rounded">
+                    <p class="text-sm text-gray-600">Total Contributions</p>
+                    <p class="text-xl font-bold text-gray-900">{{ summary.total_contributions|currency }}</p>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded">
+                    <p class="text-sm text-gray-600">Mission Allocation</p>
+                    <p class="text-xl font-bold text-blue-900">{{ summary.total_mission|currency }}</p>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded">
+                    <p class="text-sm text-gray-600">Branch Retained</p>
+                    <p class="text-xl font-bold text-green-900">{{ summary.total_branch|currency }}</p>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded">
+                    <p class="text-sm text-gray-600">Total Expenditures</p>
+                    <p class="text-xl font-bold text-red-900">{{ summary.total_expenditure|currency }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contributions Breakdown -->
+        <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Contributions by Type</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border p-2 text-left">Contribution Type</th>
+                            <th class="border p-2 text-center">Number</th>
+                            <th class="border p-2 text-right">Total Amount</th>
+                            <th class="border p-2 text-right">Mission ({{ mission_percentage }}%)</th>
+                            <th class="border p-2 text-right">Branch ({{ branch_percentage }}%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type, data in summary.contributions_by_type.items %}
+                        <tr>
+                            <td class="border p-2">{{ type }}</td>
+                            <td class="border p-2 text-center">{{ data.count }}</td>
+                            <td class="border p-2 text-right font-medium">{{ data.total|currency }}</td>
+                            <td class="border p-2 text-right">{{ data.mission|currency }}</td>
+                            <td class="border p-2 text-right">{{ data.branch|currency }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="bg-gray-100 font-bold">
+                            <td class="border p-2">TOTAL</td>
+                            <td class="border p-2 text-center">{{ summary.contributions_by_type.values|sum:'count' }}</td>
+                            <td class="border p-2 text-right">{{ summary.total_contributions|currency }}</td>
+                            <td class="border p-2 text-right">{{ summary.total_mission|currency }}</td>
+                            <td class="border p-2 text-right">{{ summary.total_branch|currency }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expenditures Breakdown -->
+        <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Expenditures by Category</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border p-2 text-left">Expenditure Category</th>
+                            <th class="border p-2 text-center">Number</th>
+                            <th class="border p-2 text-right">Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, data in summary.expenditures_by_category.items %}
+                        <tr>
+                            <td class="border p-2">{{ category }}</td>
+                            <td class="border p-2 text-center">{{ data.count }}</td>
+                            <td class="border p-2 text-right font-medium">{{ data.total|currency }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="bg-gray-100 font-bold">
+                            <td class="border p-2">TOTAL</td>
+                            <td class="border p-2 text-center">{{ summary.expenditures_by_category.values|sum:'count' }}</td>
+                            <td class="border p-2 text-right">{{ summary.total_expenditure|currency }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Remittance Status -->
+        {% if summary.remittance %}
+        <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Mission Remittance Status</h4>
+            <div class="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded">
+                <div>
+                    <p class="text-sm text-gray-600">Amount Due</p>
+                    <p class="text-xl font-bold text-gray-900">{{ summary.remittance.amount_due|currency }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Amount Sent</p>
+                    <p class="text-xl font-bold text-gray-900">{{ summary.remittance.amount_sent|currency }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Status</p>
+                    <p class="text-xl font-bold {% if summary.remittance.status == 'paid' %}text-green-600{% elif summary.remittance.status == 'sent' %}text-blue-600{% else %}text-orange-600{% endif %}">
+                        {{ summary.remittance.get_status_display|title }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Net Balance -->
+        <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Net Balance</h4>
+            <div class="grid grid-cols-3 gap-4 p-4 {% if summary.net_balance >= 0 %}bg-green-50{% else %}bg-red-50{% endif %} rounded">
+                <div>
+                    <p class="text-sm text-gray-600">Branch Retained</p>
+                    <p class="text-xl font-bold text-gray-900">{{ summary.total_branch|currency }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Total Expenditures</p>
+                    <p class="text-xl font-bold text-gray-900">{{ summary.total_expenditure|currency }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Net Balance</p>
+                    <p class="text-xl font-bold {% if summary.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        {{ summary.net_balance|currency }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        {% if is_closed %}
+        <div class="mt-12">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Certification</h4>
+            <div class="grid grid-cols-2 gap-8">
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-8">Prepared by:</p>
+                    <p class="font-medium">{{ monthly_close.closed_by.get_full_name }}</p>
+                    <p class="text-sm text-gray-600">{{ monthly_close.closed_by.get_role_display }}</p>
+                    <p class="text-sm text-gray-600">{{ monthly_close.closed_at|date:"Y-m-d" }}</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600 mb-8">Approved by:</p>
+                    <p class="font-medium">_________________________</p>
+                    <p class="text-sm text-gray-600">Branch Administrator</p>
+                    <p class="text-sm text-gray-600">_________________________</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadPDF() {
+    window.open(`/monthly-report/pdf/?branch={{ branch.id }}&month={{ month }}&year={{ year }}`, '_blank');
+}
+</script>
+{% endblock %}

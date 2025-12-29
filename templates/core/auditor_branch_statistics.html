@@ -149,7 +149,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Contributions</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.contributions|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ grand_total.contributions|currency }}</p>
                 </div>
             </div>
         </div>
@@ -160,7 +160,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Expenditures</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.expenditures|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ grand_total.expenditures|currency }}</p>
                 </div>
             </div>
         </div>
@@ -171,7 +171,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Payroll</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.payroll|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ grand_total.payroll|currency }}</p>
                 </div>
             </div>
         </div>
@@ -182,7 +182,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Remittances</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.remittances|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ grand_total.remittances|currency }}</p>
                 </div>
             </div>
         </div>
@@ -193,7 +193,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Coffer Balance</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ site_settings.currency_symbol }}{{ grand_total.coffer_balance|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ grand_total.coffer_balance|currency }}</p>
                 </div>
             </div>
         </div>
@@ -237,25 +237,25 @@
                             {{ stat.branch.district.name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ site_settings.currency_symbol }}{{ stat.contributions|floatformat:2|intcomma }}
+                            {{ stat.contributions|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ site_settings.currency_symbol }}{{ stat.expenditures|floatformat:2|intcomma }}
+                            {{ stat.expenditures|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ site_settings.currency_symbol }}{{ stat.payroll|floatformat:2|intcomma }}
+                            {{ stat.payroll|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ site_settings.currency_symbol }}{{ stat.remittances|floatformat:2|intcomma }}
+                            {{ stat.remittances|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ site_settings.currency_symbol }}{{ stat.coffer_balance|floatformat:2|intcomma }}
+                            {{ stat.coffer_balance|currency }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs font-medium rounded-full
                                 {% if stat.net_position >= 0 %}bg-green-100 text-green-800
                                 {% else %}bg-red-100 text-red-800{% endif %}">
-                                {{ site_settings.currency_symbol }}{{ stat.net_position|floatformat:2|intcomma }}
+                                {{ stat.net_position|currency }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -298,7 +298,7 @@
                     {% if stat.net_position < 0 %}
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">{{ stat.branch.name }}</span>
-                        <span class="text-sm font-medium text-red-600">{{ site_settings.currency_symbol }}{{ stat.net_position|floatformat:2|intcomma }}</span>
+                        <span class="text-sm font-medium text-red-600">{{ stat.net_position|currency }}</span>
                     </div>
                     {% endif %}
                 {% empty %}
@@ -317,13 +317,13 @@
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Average Contributions</span>
                     <span class="text-sm font-medium">
-                        {{ site_settings.currency_symbol }}{{ grand_total.contributions|div:branches_stats|length|floatformat:2|intcomma }}
+                        {{ grand_total.contributions|div:branches_stats|length|currency }}
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Mission Remittance (10%)</span>
                     <span class="text-sm font-medium">
-                        {{ site_settings.currency_symbol }}{{ grand_total.contributions|mul:"0.1"|floatformat:2|intcomma }}
+                        {{ grand_total.contributions|mul:"0.1"|currency }}
                     </span>
                 </div>
             </div>

@@ -84,7 +84,7 @@
                             <span class="font-medium text-gray-900">{{ run.get_month_display }} {{ run.year }}</span>
                         </td>
                         <td class="text-gray-500">{{ run.run_date|date:"M d, Y" }}</td>
-                        <td class="text-right font-semibold">GH₵{{ run.total_amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold">{{ run.total_amount|currency }}</td>
                         <td class="text-center">
                             <span class="badge badge-gray">{{ run.payslips.count }}</span>
                         </td>

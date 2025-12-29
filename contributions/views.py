@@ -6,21 +6,23 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.utils import timezone
 
 from .models import Contribution, ContributionType, Remittance, TitheCommission, MissionReturnsPeriod
 
 
 @login_required
 def contribution_list(request):
-    """List contributions."""
+    """List contributions aggregated by branch (not individual rows)."""
     from core.models import Area, District, Branch, FiscalYear
     from django.db.models import Sum, Count
     from django.utils import timezone
     from datetime import date
     
-    contributions = Contribution.objects.select_related('branch', 'contribution_type', 'member', 'branch__district', 'branch__district__area')
+    base_qs = Contribution.objects.select_related('branch', 'branch__district', 'branch__district__area')
     
     # Filter by user access
+    contributions = base_qs
     if request.user.is_branch_executive and request.user.branch:
         contributions = contributions.filter(branch=request.user.branch)
     elif request.user.is_district_executive and request.user.managed_district:
@@ -60,7 +62,7 @@ def contribution_list(request):
     if branch_id:
         contributions = contributions.filter(branch_id=branch_id)
     
-    # Calculate statistics BEFORE pagination
+    # Calculate statistics BEFORE aggregation
     today = date.today()
     from datetime import timedelta
     
@@ -73,7 +75,18 @@ def contribution_list(request):
     month_total = contributions.filter(date__year=today.year, date__month=today.month).aggregate(total=Sum('amount'))['total'] or 0
     year_total = contributions.filter(date__year=today.year).aggregate(total=Sum('amount'))['total'] or 0
     
-    # By contribution type (top 5)
+    # Aggregate by branch (totals only)
+    branch_totals = contributions.values(
+        'branch__id',
+        'branch__name',
+        'branch__district__name',
+        'branch__district__area__name'
+    ).annotate(
+        total_amount=Sum('amount'),
+        total_count=Count('id')
+    ).order_by('branch__name')
+    
+    # By contribution type (top 5) for overview
     by_type = contributions.values(
         'contribution_type__name'
     ).annotate(
@@ -81,12 +94,8 @@ def contribution_list(request):
         count=Count('id')
     ).order_by('-total')[:5]
     
-    paginator = Paginator(contributions.order_by('-date'), 25)
-    page = request.GET.get('page')
-    contributions = paginator.get_page(page)
-    
     context = {
-        'contributions': contributions,
+        'branch_totals': branch_totals,
         'contribution_types': ContributionType.objects.filter(is_active=True),
         'areas': Area.objects.filter(is_active=True),
         'districts': districts,
@@ -394,10 +403,18 @@ def weekly_entry(request):
             branch = Branch.objects.get(pk=branch_id)
     
     if request.method == 'POST':
+        # Validate that we have a branch
+        if not branch:
+            messages.error(request, 'Please select a branch to record contributions for.')
+            return redirect('contributions:weekly_entry')
+
         entry_date = request.POST.get('date')
         # Get general contribution types
         general_types = ContributionType.objects.filter(is_individual=False, is_closed=False)
-        
+
+        from core.models import FiscalYear
+        fiscal_year = FiscalYear.get_current()
+
         for ct in general_types:
             amount = request.POST.get(f'amount_{ct.id}')
             notes = request.POST.get(f'notes_{ct.id}', '')
@@ -407,10 +424,11 @@ def weekly_entry(request):
                     amount=amount,
                     date=entry_date,
                     branch=branch,
+                    fiscal_year=fiscal_year,
                     description=notes,
-                    recorded_by=request.user
+                    created_by=request.user
                 )
-        
+
         messages.success(request, 'Weekly contributions recorded successfully.')
         return redirect('contributions:list')
     
@@ -445,7 +463,10 @@ def individual_entry(request):
         entry_date = request.POST.get('date')
         ct_id = request.POST.get('contribution_type')
         contribution_type = ContributionType.objects.get(pk=ct_id)
-        
+
+        from core.models import FiscalYear
+        fiscal_year = FiscalYear.get_current()
+
         # Get all members and their amounts
         members = User.objects.filter(branch=branch, is_active=True)
         for member in members:
@@ -458,10 +479,11 @@ def individual_entry(request):
                     date=entry_date,
                     member=member,
                     branch=branch,
+                    fiscal_year=fiscal_year,
                     description=notes,
-                    recorded_by=request.user
+                    created_by=request.user
                 )
-        
+
         messages.success(request, 'Individual contributions recorded successfully.')
         return redirect('contributions:list')
     
@@ -887,7 +909,7 @@ def contribution_import(request):
                         description=description,
                         branch=member.branch or branch,
                         fiscal_year=fiscal_year,
-                        recorded_by=request.user,
+                        created_by=request.user,
                     )
                     success_count += 1
                     

@@ -112,8 +112,8 @@
                             <div class="text-gray-900">{{ commission.branch.name }}</div>
                             <div class="text-xs text-gray-500">{{ commission.branch.district.name }}</div>
                         </td>
-                        <td class="text-right font-mono text-sm">GH₵{{ commission.target_amount|floatformat:2 }}</td>
-                        <td class="text-right font-mono text-sm text-green-600">GH₵{{ commission.tithe_collected|floatformat:2 }}</td>
+                        <td class="text-right font-mono text-sm">{{ commission.target_amount|currency }}</td>
+                        <td class="text-right font-mono text-sm text-green-600">{{ commission.tithe_collected|currency }}</td>
                         <td class="text-center">
                             <span class="font-semibold text-sm {% if commission.is_qualified %}text-green-600{% else %}text-red-600{% endif %}">
                                 {{ commission.percentage_achieved|floatformat:0 }}%
@@ -121,7 +121,7 @@
                         </td>
                         <td class="text-right">
                             {% if commission.is_qualified %}
-                            <span class="font-mono font-bold text-blue-600">GH₵{{ commission.commission_amount|floatformat:2 }}</span>
+                            <span class="font-mono font-bold text-blue-600">{{ commission.commission_amount|currency }}</span>
                             {% else %}
                             <span class="text-gray-400 text-sm">Not Qualified</span>
                             {% endif %}

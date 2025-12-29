@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Financial Audit Report{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Financial Audit Report</h1>
+                <p class="text-gray-600 mt-1">Comprehensive financial analysis</p>
+            </div>
+            <div class="flex gap-2">
+                <input type="date" id="startDate" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ start_date }}">
+                <input type="date" id="endDate" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ end_date }}">
+                <select id="areaFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Areas</option>
+                    {% for area in areas %}
+                    <option value="{{ area.id }}" {% if area.id == selected_area %}selected{% endif %}>{{ area.name }}</option>
+                    {% endfor %}
+                </select>
+                <select id="districtFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Districts</option>
+                    {% for district in districts %}
+                    <option value="{{ district.id }}" {% if district.id == selected_district %}selected{% endif %}>{{ district.name }}</option>
+                    {% endfor %}
+                </select>
+                <select id="branchFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Branches</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if branch.id == selected_branch %}selected{% endif %}>{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+                <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Apply
+                </button>
+                <button onclick="exportToExcel()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="material-icons mr-2">download</i>
+                    Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Contributions</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.total_contributions|currency }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.contribution_count }} transactions</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <i class="material-icons text-green-600">trending_up</i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Mission Allocations</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.total_mission|currency }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.mission_percentage }}% of total</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <i class="material-icons text-blue-600">account_balance</i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Expenditures</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ summary.total_expenditures|currency }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.expenditure_count }} transactions</p>
+                </div>
+                <div class="bg-red-100 p-3 rounded-lg">
+                    <i class="material-icons text-red-600">money_off</i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Net Balance</p>
+                    <p class="text-2xl font-bold {% if summary.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">{{ summary.net_balance|currency }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ summary.branch_count }} branches</p>
+                </div>
+                <div class="{% if summary.net_balance >= 0 %}bg-green-100{% else %}bg-red-100{% endif %} p-3 rounded-lg">
+                    <i class="material-icons {% if summary.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">balance</i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch Breakdown -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Branch Financial Breakdown</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Area</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">District</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Contributions</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Mission Due</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Expenditures</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Net Balance</th>
+                        <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Remittance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for branch in branch_data %}
+                    <tr>
+                        <td class="px-4 py-2 text-sm text-gray-900">{{ branch.name }}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900">{{ branch.area }}</td>
+                        <td class="px-4 py-2 text-sm text-gray-900">{{ branch.district }}</td>
+                        <td class="px-4 py-2 text-sm text-right font-medium text-gray-900">{{ branch.contributions|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-900">{{ branch.mission_due|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-900">{{ branch.expenditures|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right font-medium {% if branch.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ branch.net_balance|currency }}
+                        </td>
+                        <td class="px-4 py-2 text-sm text-center">
+                            {% if branch.remittance_status == 'paid' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Paid</span>
+                            {% elif branch.remittance_status == 'sent' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Sent</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="bg-gray-100 font-bold">
+                        <td class="px-4 py-2 text-sm text-gray-900">TOTAL</td>
+                        <td class="px-4 py-2" colspan="2"></td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-900">{{ summary.total_contributions|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-900">{{ summary.total_mission|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-900">{{ summary.total_expenditures|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right {% if summary.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ summary.net_balance|currency }}
+                        </td>
+                        <td class="px-4 py-2"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Contribution Types Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Contributions by Type</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Count</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for type, data in contribution_types.items %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-900">{{ type }}</td>
+                            <td class="px-4 py-2 text-sm text-right text-gray-900">{{ data.count }}</td>
+                            <td class="px-4 py-2 text-sm text-right font-medium text-gray-900">{{ data.total|currency }}</td>
+                            <td class="px-4 py-2 text-sm text-right text-gray-900">{{ data.percentage }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Expenditures by Category</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Count</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for category, data in expenditure_categories.items %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-gray-900">{{ category }}</td>
+                            <td class="px-4 py-2 text-sm text-right text-gray-900">{{ data.count }}</td>
+                            <td class="px-4 py-2 text-sm text-right font-medium text-gray-900">{{ data.total|currency }}</td>
+                            <td class="px-4 py-2 text-sm text-right text-gray-900">{{ data.percentage }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Trend -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Trend Analysis</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Contributions</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Growth %</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Expenditures</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Growth %</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Net Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for month in monthly_trend %}
+                    <tr>
+                        <td class="px-4 py-2 text-sm text-gray-900">{{ month.month }}</td>
+                        <td class="px-4 py-2 text-sm text-right font-medium text-gray-900">{{ month.contributions|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right {% if month.contribution_growth > 0 %}text-green-600{% elif month.contribution_growth < 0 %}text-red-600{% else %}text-gray-600{% endif %}">
+                            {% if month.contribution_growth %}{{ month.contribution_growth|floatformat:1 }}%{% else %}--{% endif %}
+                        </td>
+                        <td class="px-4 py-2 text-sm text-right text-gray-900">{{ month.expenditures|currency }}</td>
+                        <td class="px-4 py-2 text-sm text-right {% if month.expenditure_growth > 0 %}text-green-600{% elif month.expenditure_growth < 0 %}text-red-600{% else %}text-gray-600{% endif %}">
+                            {% if month.expenditure_growth %}{{ month.expenditure_growth|floatformat:1 }}%{% else %}--{% endif %}
+                        </td>
+                        <td class="px-4 py-2 text-sm text-right font-medium {% if month.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ month.net_balance|currency }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilters() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const areaId = document.getElementById('areaFilter').value;
+    const districtId = document.getElementById('districtFilter').value;
+    const branchId = document.getElementById('branchFilter').value;
+    
+    let url = new URL(window.location);
+    if (startDate) url.searchParams.set('start_date', startDate);
+    if (endDate) url.searchParams.set('end_date', endDate);
+    if (areaId) url.searchParams.set('area', areaId);
+    if (districtId) url.searchParams.set('district', districtId);
+    if (branchId) url.searchParams.set('branch', branchId);
+    
+    window.location = url.toString();
+}
+
+function exportToExcel() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const areaId = document.getElementById('areaFilter').value;
+    const districtId = document.getElementById('districtFilter').value;
+    const branchId = document.getElementById('branchFilter').value;
+    
+    let url = `/auditing/financial-audit/export-excel/`;
+    const params = new URLSearchParams();
+    
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (areaId) params.append('area', areaId);
+    if (districtId) params.append('district', districtId);
+    if (branchId) params.append('branch', branchId);
+    
+    if (params.toString()) {
+        url += '?' + params.toString();
+    }
+    
+    window.open(url, '_blank');
+}
+
+// Load districts when area changes
+document.getElementById('areaFilter').addEventListener('change', function() {
+    const areaId = this.value;
+    const districtSelect = document.getElementById('districtFilter');
+    const branchSelect = document.getElementById('branchFilter');
+    
+    // Reset district and branch filters
+    districtSelect.innerHTML = '<option value="">All Districts</option>';
+    branchSelect.innerHTML = '<option value="">All Branches</option>';
+    
+    if (areaId) {
+        fetch(`/api/districts/${areaId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district.id;
+                    option.textContent = district.name;
+                    districtSelect.appendChild(option);
+                });
+            });
+    }
+});
+
+// Load branches when district changes
+document.getElementById('districtFilter').addEventListener('change', function() {
+    const districtId = this.value;
+    const branchSelect = document.getElementById('branchFilter');
+    
+    // Reset branch filter
+    branchSelect.innerHTML = '<option value="">All Branches</option>';
+    
+    if (districtId) {
+        fetch(`/api/branches/${districtId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch.id;
+                    option.textContent = branch.name;
+                    branchSelect.appendChild(option);
+                });
+            });
+    }
+});
+</script>
+{% endblock %}

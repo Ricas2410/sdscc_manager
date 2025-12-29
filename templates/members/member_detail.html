@@ -55,7 +55,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Total Contributions</p>
-                        <p class="font-semibold text-green-600">GH₵ {{ total_contributions|floatformat:2 }}</p>
+                        <p class="font-semibold text-green-600">{{ total_contributions|currency }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Attendance Rate</p>
@@ -204,7 +204,7 @@
     <div class="card">
         <div class="card-header flex items-center justify-between">
             <h3 class="font-semibold text-gray-900">Contribution History</h3>
-            <span class="text-lg font-bold text-green-600">Total: GH₵ {{ total_contributions|floatformat:2 }}</span>
+            <span class="text-lg font-bold text-green-600">Total: {{ total_contributions|currency }}</span>
         </div>
         <div class="table-container">
             <table class="data-table">
@@ -226,7 +226,7 @@
                                 {{ c.contribution_type.get_category_display }}
                             </span>
                         </td>
-                        <td class="text-right font-semibold text-green-600">GH₵ {{ c.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold text-green-600">{{ c.amount|currency }}</td>
                     </tr>
                     {% empty %}
                     <tr>

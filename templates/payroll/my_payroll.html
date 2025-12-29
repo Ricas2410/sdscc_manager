@@ -41,7 +41,7 @@
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-600">Base Salary</p>
-                <p class="text-sm font-bold text-gray-900 mt-1">GH₵{{ staff_profile.base_salary|floatformat:2|intcomma }}</p>
+                <p class="text-sm font-bold text-gray-900 mt-1">{{ staff_profile.base_salary|currency }}</p>
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-600">Payment Cycle</p>
@@ -80,7 +80,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Earned (YTD)</p>
-                    <p class="text-2xl font-bold text-gray-900">GH₵{{ total_paid|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_paid|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-green-500">account_balance_wallet</span>
             </div>
@@ -90,7 +90,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Pending Payments</p>
-                    <p class="text-2xl font-bold text-orange-600">GH₵{{ total_pending|floatformat:2|intcomma }}</p>
+                    <p class="text-2xl font-bold text-orange-600">{{ total_pending|currency }}</p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-orange-500">pending</span>
             </div>
@@ -101,7 +101,7 @@
                 <div>
                     <p class="text-sm font-medium text-gray-600">Last Payment</p>
                     <p class="text-2xl font-bold text-blue-600">
-                        {% if payslips.0 %}GH₵{{ payslips.0.net_pay|floatformat:2|intcomma }}{% else %}--{% endif %}
+                        {% if payslips.0 %}{{ payslips.0.net_pay|currency }}{% else %}--{% endif %}
                     </p>
                 </div>
                 <span class="material-icons-outlined text-3xl text-blue-500">payments</span>
@@ -165,10 +165,10 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">GH₵{{ payslip.base_salary|floatformat:2|intcomma }}</div>
+                            <div class="text-sm text-gray-900">{{ payslip.base_salary|currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-green-600">+GH₵{{ payslip.total_allowances|floatformat:2|intcomma }}</div>
+                            <div class="text-sm text-green-600">+{{ payslip.total_allowances|currency }}</div>
                             {% if payslip.allowances_breakdown %}
                             <button onclick="showBreakdown('allowances', '{{ payslip.allowances_breakdown|escapejs }}')" class="text-xs text-blue-600 hover:text-blue-800">
                                 View details
@@ -176,7 +176,7 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-red-600">-GH₵{{ payslip.total_deductions|floatformat:2|intcomma }}</div>
+                            <div class="text-sm text-red-600">-{{ payslip.total_deductions|currency }}</div>
                             {% if payslip.deductions_breakdown %}
                             <button onclick="showBreakdown('deductions', '{{ payslip.deductions_breakdown|escapejs }}')" class="text-xs text-blue-600 hover:text-blue-800">
                                 View details
@@ -184,10 +184,10 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">GH₵{{ payslip.gross_pay|floatformat:2|intcomma }}</div>
+                            <div class="text-sm font-medium text-gray-900">{{ payslip.gross_pay|currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-bold text-green-600">GH₵{{ payslip.net_pay|floatformat:2|intcomma }}</div>
+                            <div class="text-sm font-bold text-green-600">{{ payslip.net_pay|currency }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if payslip.status == 'paid' %}

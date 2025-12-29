@@ -2,6 +2,7 @@
 Announcements Views
 """
 
+import datetime as dt
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -72,7 +73,7 @@ def announcement_add(request):
         if publish_date_str:
             try:
                 publish_date = timezone.make_aware(
-                    datetime.strptime(publish_date_str, '%Y-%m-%d %H:%M')
+                    dt.datetime.strptime(publish_date_str, '%Y-%m-%d %H:%M')
                 )
             except (ValueError, TypeError):
                 publish_date = timezone.now()
@@ -85,13 +86,16 @@ def announcement_add(request):
         if expiry_date_str:
             try:
                 expiry_date = timezone.make_aware(
-                    datetime.strptime(expiry_date_str, '%Y-%m-%d %H:%M')
+                    dt.datetime.strptime(expiry_date_str, '%Y-%m-%d %H:%M')
                 )
             except (ValueError, TypeError):
                 pass
                 
         priority = request.POST.get('priority', 'normal')
         branch_id = request.POST.get('branch')
+        
+        # Handle image upload
+        image = request.FILES.get('image')
         
         try:
             # If scope is branch, ensure branch is set
@@ -106,6 +110,7 @@ def announcement_add(request):
                 expiry_date=expiry_date if expiry_date else None,
                 priority=priority,
                 branch_id=branch_id if branch_id else None,
+                image=image,
                 created_by=request.user,
                 is_published=True
             )
@@ -158,7 +163,7 @@ def event_list(request):
 def event_add(request):
     """Add new event."""
     from core.models import Branch, District, Area
-    from datetime import datetime, time
+    from datetime import time
     
     if not (request.user.is_any_admin or request.user.role == request.user.Role.PASTOR):
         messages.error(request, 'Access denied.')
@@ -177,8 +182,8 @@ def event_add(request):
         
         try:
             # Convert date and time strings to datetime objects
-            start_datetime = datetime.strptime(f"{start_date} {start_time}", '%Y-%m-%d %H:%M')
-            end_datetime = datetime.strptime(f"{end_date} {end_time}", '%Y-%m-%d %H:%M')
+            start_datetime = dt.datetime.strptime(f"{start_date} {start_time}", '%Y-%m-%d %H:%M')
+            end_datetime = dt.datetime.strptime(f"{end_date} {end_time}", '%Y-%m-%d %H:%M')
             
             event = Event.objects.create(
                 title=title,
@@ -206,8 +211,8 @@ def event_add(request):
     context = {
         'branches': branches,
         'areas': Area.objects.filter(is_active=True),
-        'today': datetime.now().strftime('%Y-%m-%d'),
-        'now': datetime.now().strftime('%H:%M'),
+        'today': dt.datetime.now().strftime('%Y-%m-%d'),
+        'now': dt.datetime.now().strftime('%H:%M'),
         'is_branch_admin': request.user.is_branch_executive and not request.user.is_mission_admin,
     }
     return render(request, 'announcements/event_form.html', context)
@@ -224,7 +229,6 @@ def event_detail(request, event_id):
 def event_edit(request, event_id):
     """Edit event."""
     from core.models import Branch, District, Area
-    from datetime import datetime
     
     event = get_object_or_404(Event, pk=event_id)
     
@@ -306,7 +310,6 @@ def event_delete(request, event_id):
 def announcement_edit(request, announcement_id):
     """Edit announcement."""
     from core.models import Branch, District, Area
-    from datetime import datetime
     
     announcement = get_object_or_404(Announcement, id=announcement_id)
     
@@ -328,7 +331,7 @@ def announcement_edit(request, announcement_id):
         if publish_date_str:
             try:
                 publish_date = timezone.make_aware(
-                    datetime.strptime(publish_date_str, '%Y-%m-%d %H:%M')
+                    dt.datetime.strptime(publish_date_str, '%Y-%m-%d %H:%M')
                 )
             except (ValueError, TypeError):
                 publish_date = announcement.publish_date  # Keep original if invalid
@@ -341,13 +344,16 @@ def announcement_edit(request, announcement_id):
         if expiry_date_str:
             try:
                 expiry_date = timezone.make_aware(
-                    datetime.strptime(expiry_date_str, '%Y-%m-%d %H:%M')
+                    dt.datetime.strptime(expiry_date_str, '%Y-%m-%d %H:%M')
                 )
             except (ValueError, TypeError):
                 pass
                 
         priority = request.POST.get('priority', 'normal')
         branch_id = request.POST.get('branch')
+        
+        # Handle image upload
+        image = request.FILES.get('image')
         
         try:
             # If scope is branch, ensure branch is set
@@ -362,6 +368,11 @@ def announcement_edit(request, announcement_id):
             announcement.priority = priority
             announcement.branch_id = branch_id if branch_id else None
             announcement.updated_by = request.user
+            
+            # Update image if a new one is uploaded
+            if image:
+                announcement.image = image
+                
             announcement.save()
             
             messages.success(request, f'Announcement "{title}" updated successfully.')
@@ -382,8 +393,8 @@ def announcement_edit(request, announcement_id):
         'expiry_date': announcement.expiry_date.strftime('%Y-%m-%d %H:%M') if announcement.expiry_date else '',
         'is_branch_admin': request.user.is_branch_executive and not request.user.is_mission_admin,
         'is_edit': True,
-        'today': datetime.now().strftime('%Y-%m-%d'),
-        'now': datetime.now().strftime('%H:%M'),
+        'today': dt.datetime.now().strftime('%Y-%m-%d'),
+        'now': dt.datetime.now().strftime('%H:%M'),
     }
     return render(request, 'announcements/announcement_form.html', context)
 

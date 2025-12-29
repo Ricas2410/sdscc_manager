@@ -96,6 +96,10 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.site_settings',
+                'core.notification_context_processor.notification_counts',
+            ],
+            'builtins': [
+                'core.templatetags.core_tags',
             ],
         },
     },
@@ -260,8 +264,9 @@ if not DEBUG:
 # Configure Django-Q before it's imported
 import os
 # Set Django-Q configuration as environment variables to ensure early loading
-os.environ.setdefault('Q_RETRY', '360')
-os.environ.setdefault('Q_TIMEOUT', '300')
+# Force correct values to avoid misconfiguration
+os.environ['Q_RETRY'] = '360'
+os.environ['Q_TIMEOUT'] = '300'
 
 Q_SETTINGS = {
     'retry': 360,  # 6 minutes in seconds - MUST be larger than timeout

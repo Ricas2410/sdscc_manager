@@ -25,7 +25,7 @@
                     {{ year_data.date__year }}
                 </p>
                 <p class="text-sm text-gray-500">{{ year_data.count }} records</p>
-                <p class="text-lg font-semibold text-green-600">GH₵{{ year_data.total|floatformat:2 }}</p>
+                <p class="text-lg font-semibold text-green-600">{{ year_data.total|currency }}</p>
                 {% if year_data.date__year == current_year %}
                 <span class="badge badge-primary mt-1">Current</span>
                 {% endif %}
@@ -77,7 +77,7 @@
                             {% else %}bg-gray-100 text-gray-800{% endif %}">
                             {{ item.contribution_type__name }}
                         </span>
-                        <p class="text-lg font-bold text-gray-900">GH₵{{ item.total|floatformat:2 }}</p>
+                        <p class="text-lg font-bold text-gray-900">{{ item.total|currency }}</p>
                         <p class="text-xs text-gray-500">{{ item.count }} records</p>
                     </div>
                     {% endfor %}
@@ -116,7 +116,7 @@
                             </span>
                         </td>
                         <td class="text-sm text-gray-500">{{ contribution.branch.name }}</td>
-                        <td class="text-right font-semibold text-gray-900">GH₵{{ contribution.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold text-gray-900">{{ contribution.amount|currency }}</td>
                     </tr>
                     {% empty %}
                     <tr>

@@ -169,7 +169,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                             {% if pastor.payroll_profile %}
-                            <span class="font-semibold text-gray-900">GH₵{{ pastor.payroll_profile.gross_salary|floatformat:2 }}</span>
+                            <span class="font-semibold text-gray-900">{{ pastor.payroll_profile.gross_salary|currency }}</span>
                             {% else %}
                             <span class="text-gray-400">No Salary</span>
                             {% endif %}

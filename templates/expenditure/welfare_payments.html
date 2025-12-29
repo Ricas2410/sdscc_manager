@@ -20,7 +20,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500">Total Welfare Disbursed</p>
-                    <p class="text-3xl font-bold text-green-600">GH₵ {{ total_welfare|floatformat:2 }}</p>
+                    <p class="text-3xl font-bold text-green-600">{{ total_welfare|currency }}</p>
                 </div>
                 <div class="p-4 rounded-lg bg-green-100">
                     <span class="material-icons-outlined text-4xl text-green-600">volunteer_activism</span>
@@ -53,7 +53,7 @@
                         <td>{{ payment.get_welfare_type_display }}</td>
                         <td>{{ payment.recipient_name }}</td>
                         <td>{{ payment.branch.name }}</td>
-                        <td class="text-right font-semibold text-green-600">GH₵ {{ payment.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold text-green-600">{{ payment.amount|currency }}</td>
                         <td>{{ payment.approved_by.get_full_name|default:"-" }}</td>
                     </tr>
                     {% empty %}

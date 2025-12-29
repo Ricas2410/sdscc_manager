@@ -59,7 +59,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Monthly Contributions</p>
-                    <p class="text-2xl font-bold text-gray-900">GH₵{{ monthly_contributions|floatformat:0 }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ monthly_contributions|currency:0 }}</p>
                 </div>
             </div>
             <a href="{% url 'contributions:list' %}" class="mt-3 text-sm text-primary-600 hover:text-primary-700 flex items-center">
@@ -74,7 +74,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Monthly Expenditure</p>
-                    <p class="text-2xl font-bold text-gray-900">GH₵{{ monthly_expenditure|floatformat:0 }}</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ monthly_expenditure|currency:0 }}</p>
                 </div>
             </div>
             <a href="{% url 'expenditure:list' %}" class="mt-3 text-sm text-primary-600 hover:text-primary-700 flex items-center">
@@ -179,7 +179,7 @@
                         <tr>
                             <td class="font-medium">{{ remittance.branch.name }}</td>
                             <td class="text-gray-500">{{ remittance.period_start|date:"M Y" }}</td>
-                            <td class="text-right font-semibold">GH₵{{ remittance.total_amount|floatformat:2 }}</td>
+                            <td class="text-right font-semibold">{{ remittance.total_amount|currency }}</td>
                             <td>
                                 <span class="badge {% if remittance.status == 'pending' %}badge-warning{% elif remittance.status == 'sent' %}badge-info{% endif %}">
                                     {{ remittance.get_status_display }}
@@ -276,7 +276,7 @@
                             </span>
                         </td>
                         <td class="text-gray-500">{{ c.member.get_full_name|default:"General" }}</td>
-                        <td class="text-right font-semibold">GH₵{{ c.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold">{{ c.amount|currency }}</td>
                     </tr>
                     {% empty %}
                     <tr>

@@ -23,7 +23,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Electricity</p>
-                    <p class="text-xl font-bold text-yellow-600">GH₵ {{ summaries.electricity|floatformat:2 }}</p>
+                    <p class="text-xl font-bold text-yellow-600">{{ summaries.electricity|currency }}</p>
                 </div>
             </div>
         </div>
@@ -34,7 +34,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Water</p>
-                    <p class="text-xl font-bold text-blue-600">GH₵ {{ summaries.water|floatformat:2 }}</p>
+                    <p class="text-xl font-bold text-blue-600">{{ summaries.water|currency }}</p>
                 </div>
             </div>
         </div>
@@ -45,7 +45,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Internet</p>
-                    <p class="text-xl font-bold text-purple-600">GH₵ {{ summaries.internet|floatformat:2 }}</p>
+                    <p class="text-xl font-bold text-purple-600">{{ summaries.internet|currency }}</p>
                 </div>
             </div>
         </div>
@@ -56,7 +56,7 @@
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Total This Month</p>
-                    <p class="text-xl font-bold text-gray-900">GH₵ {{ summaries.total|floatformat:2 }}</p>
+                    <p class="text-xl font-bold text-gray-900">{{ summaries.total|currency }}</p>
                 </div>
             </div>
         </div>
@@ -109,7 +109,7 @@
                         <td>{{ bill.branch.name }}</td>
                         <td>{{ bill.provider|default:"-" }}</td>
                         <td>{{ bill.month }}/{{ bill.year }}</td>
-                        <td class="text-right font-semibold">GH₵ {{ bill.amount|floatformat:2 }}</td>
+                        <td class="text-right font-semibold">{{ bill.amount|currency }}</td>
                         <td>
                             {% if bill.is_paid %}
                             <span class="badge badge-success">Paid</span>

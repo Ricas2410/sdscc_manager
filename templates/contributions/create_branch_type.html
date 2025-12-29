@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Branch Contribution Type{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Create Branch Contribution Type</h1>
+                <p class="text-gray-600 mt-1">Define a new contribution type for your branch</p>
+            </div>
+            <a href="{% url 'contributions:branch_types' %}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                <i class="material-icons mr-2">arrow_back</i>
+                Back to Types
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <form method="post" id="createTypeForm" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="name" name="name" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="e.g., First Fruits Offering">
+                        {% if form.name.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+                            Category <span class="text-red-500">*</span>
+                        </label>
+                        <select id="category" name="category" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Category</option>
+                            <option value="tithe">Tithe</option>
+                            <option value="offering">Offering</option>
+                            <option value="special">Special</option>
+                            <option value="project">Project</option>
+                            <option value="welfare">Welfare</option>
+                            <option value="other">Other</option>
+                        </select>
+                        {% if form.category.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.category.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                    </label>
+                    <textarea id="description" name="description" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Optional description of this contribution type"></textarea>
+                </div>
+            </div>
+
+            <!-- Allocation Percentages -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Allocation Percentages</h3>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-blue-800">
+                        <i class="material-icons text-blue-600 mr-2">info</i>
+                        Define how contributions of this type will be allocated. Percentages must sum to 100%.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label for="mission_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                            Mission Headquarters <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="mission_percentage" name="mission_percentage" 
+                                   required min="0" max="100" value="0" step="1"
+                                   class="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="absolute right-3 top-2.5 text-gray-500">%</span>
+                        </div>
+                        {% if form.mission_percentage.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.mission_percentage.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="area_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                            Area Level <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="area_percentage" name="area_percentage" 
+                                   required min="0" max="100" value="0" step="1"
+                                   class="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="absolute right-3 top-2.5 text-gray-500">%</span>
+                        </div>
+                        {% if form.area_percentage.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.area_percentage.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="district_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                            District Level <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="district_percentage" name="district_percentage" 
+                                   required min="0" max="100" value="0" step="1"
+                                   class="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="absolute right-3 top-2.5 text-gray-500">%</span>
+                        </div>
+                        {% if form.district_percentage.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.district_percentage.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="branch_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                            Branch Level <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="branch_percentage" name="branch_percentage" 
+                                   required min="0" max="100" value="100" step="1"
+                                   class="w-full px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="absolute right-3 top-2.5 text-gray-500">%</span>
+                        </div>
+                        {% if form.branch_percentage.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.branch_percentage.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span class="text-sm font-medium text-gray-700">Total Allocation:</span>
+                        <span id="totalPercentage" class="text-lg font-bold text-gray-900">100%</span>
+                    </div>
+                    <p id="percentageError" class="mt-1 text-sm text-red-600 hidden">
+                        Percentages must sum to 100%
+                    </p>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSection" class="hidden">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-600">Mission:</p>
+                            <p class="font-medium"><span id="previewMission">0</span>%</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Area:</p>
+                            <p class="font-medium"><span id="previewArea">0</span>%</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">District:</p>
+                            <p class="font-medium"><span id="previewDistrict">0</span>%</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Branch:</p>
+                            <p class="font-medium"><span id="previewBranch">100</span>%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex justify-between pt-6 border-t">
+                <a href="{% url 'contributions:branch_types' %}" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="material-icons mr-2">save</i>
+                    Create Contribution Type
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Calculate total percentage
+function calculateTotal() {
+    const mission = parseInt(document.getElementById('mission_percentage').value) || 0;
+    const area = parseInt(document.getElementById('area_percentage').value) || 0;
+    const district = parseInt(document.getElementById('district_percentage').value) || 0;
+    const branch = parseInt(document.getElementById('branch_percentage').value) || 0;
+    const total = mission + area + district + branch;
+    
+    // Update total display
+    const totalElement = document.getElementById('totalPercentage');
+    totalElement.textContent = total + '%';
+    
+    // Update preview
+    document.getElementById('previewMission').textContent = mission;
+    document.getElementById('previewArea').textContent = area;
+    document.getElementById('previewDistrict').textContent = district;
+    document.getElementById('previewBranch').textContent = branch;
+    
+    // Show/hide error
+    const errorElement = document.getElementById('percentageError');
+    if (total !== 100) {
+        errorElement.classList.remove('hidden');
+        totalElement.classList.add('text-red-600');
+        totalElement.classList.remove('text-gray-900');
+    } else {
+        errorElement.classList.add('hidden');
+        totalElement.classList.remove('text-red-600');
+        totalElement.classList.add('text-gray-900');
+    }
+    
+    // Show preview if any percentage is set
+    const previewSection = document.getElementById('previewSection');
+    if (mission > 0 || area > 0 || district > 0 || branch !== 100) {
+        previewSection.classList.remove('hidden');
+    } else {
+        previewSection.classList.add('hidden');
+    }
+}
+
+// Add event listeners to percentage inputs
+['mission_percentage', 'area_percentage', 'district_percentage', 'branch_percentage'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calculateTotal);
+});
+
+// Form validation
+document.getElementById('createTypeForm').addEventListener('submit', function(e) {
+    const mission = parseInt(document.getElementById('mission_percentage').value) || 0;
+    const area = parseInt(document.getElementById('area_percentage').value) || 0;
+    const district = parseInt(document.getElementById('district_percentage').value) || 0;
+    const branch = parseInt(document.getElementById('branch_percentage').value) || 0;
+    const total = mission + area + district + branch;
+    
+    if (total !== 100) {
+        e.preventDefault();
+        document.getElementById('percentageError').classList.remove('hidden');
+        document.getElementById('totalPercentage').classList.add('text-red-600');
+    }
+});
+
+// Initialize
+calculateTotal();
+</script>
+{% endblock %}
