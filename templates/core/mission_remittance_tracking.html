@@ -149,7 +149,7 @@
                 <div class="flex items-end">
                     <div class="text-sm text-gray-500">
                         <span class="material-icons-outlined text-sm mr-1">info</span>
-                        Showing {% if month %}{{ months|dictlookup:month }} {{ year }}{% else %}All of {{ year }}{% endif %}
+                        Showing {% if month %}{% for m_num, m_name in months %}{% if m_num == month %}{{ m_name }}{% endif %}{% endfor %} {{ year }}{% else %}All of {{ year }}{% endif %}
                     </div>
                 </div>
             </form>
