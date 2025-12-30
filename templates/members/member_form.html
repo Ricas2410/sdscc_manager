@@ -45,20 +45,28 @@
                             {% endif %}
                         </div>
                         <div class="flex-1">
-                            <p class="text-sm text-gray-600 mb-3">
-                                <strong>Profile Picture Upload Temporarily Disabled</strong><br>
-                                Due to technical issues, profile picture uploads have been temporarily disabled. 
-                                You can still update all other member information.
-                            </p>
-                            {% if member.profile_picture %}
+                            <p class="text-sm text-gray-600 mb-3">Upload a passport photograph (optional)</p>
                             <div class="flex gap-2">
-                                <button type="button" onclick="removePhoto()" 
+                                <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
+                                        class="btn btn-secondary btn-sm">
+                                    <span class="material-icons-outlined mr-2">upload_file</span>
+                                    Choose Photo
+                                </button>
+                                {% if member.profile_picture %}
+                                <button type="button" onclick="removeProfilePicture()" 
                                         class="btn btn-danger btn-sm">
                                     <span class="material-icons-outlined mr-2">delete</span>
                                     Remove Photo
                                 </button>
+                                {% endif %}
                             </div>
-                            {% endif %}
+                            <input type="file" id="profilePictureInput" 
+                                   accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;"
+                                   onchange="handlePictureUpload(this)">
+                            <p class="text-xs text-gray-500 mt-2">
+                                Accepted formats: JPG, PNG, GIF, WebP (max 2MB)
+                            </p>
+                            <div id="uploadStatus" class="mt-2 text-sm"></div>
                         </div>
                     </div>
                 </div>
@@ -670,6 +678,150 @@
         const preview = document.getElementById('photoPreview');
         preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
         preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
+    }
+
+    function handlePictureUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        // Client-side validation
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        
+        if (file.size > maxSize) {
+            showUploadStatus('File is too large! Please choose an image smaller than 2MB.', 'error');
+            input.value = '';
+            return;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+            showUploadStatus('Invalid file type! Please choose a JPG, PNG, GIF, or WebP image.', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Show loading status
+        showUploadStatus('Uploading...', 'loading');
+        
+        // Create FormData for AJAX upload
+        const formData = new FormData();
+        formData.append('profile_picture', file);
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // AJAX upload
+        fetch(`{% if member %}{% url 'members:upload_picture' member.id %}{% endif %}`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showUploadStatus('Profile picture updated successfully!', 'success');
+                // Update preview
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = `<img src="${data.picture_url}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
+                // Show remove button if it doesn't exist
+                updateRemoveButton(true);
+            } else {
+                showUploadStatus(data.error || 'Upload failed. Please try again.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            showUploadStatus('Upload failed. Please check your connection and try again.', 'error');
+        })
+        .finally(() => {
+            // Clear the input
+            input.value = '';
+        });
+    }
+    
+    function removeProfilePicture() {
+        if (!confirm('Are you sure you want to remove this profile picture?')) {
+            return;
+        }
+        
+        showUploadStatus('Removing...', 'loading');
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // AJAX removal
+        fetch(`{% if member %}{% url 'members:remove_picture' member.id %}{% endif %}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showUploadStatus('Profile picture removed successfully!', 'success');
+                // Update preview
+                const preview = document.getElementById('photoPreview');
+                preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
+                preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
+                // Hide remove button
+                updateRemoveButton(false);
+            } else {
+                showUploadStatus(data.error || 'Failed to remove picture. Please try again.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Remove error:', error);
+            showUploadStatus('Failed to remove picture. Please check your connection and try again.', 'error');
+        });
+    }
+    
+    function showUploadStatus(message, type) {
+        const statusDiv = document.getElementById('uploadStatus');
+        statusDiv.textContent = message;
+        
+        // Remove existing classes
+        statusDiv.className = 'mt-2 text-sm';
+        
+        // Add appropriate class
+        if (type === 'success') {
+            statusDiv.classList.add('text-green-600');
+        } else if (type === 'error') {
+            statusDiv.classList.add('text-red-600');
+        } else if (type === 'loading') {
+            statusDiv.classList.add('text-blue-600');
+        }
+        
+        // Clear status after 5 seconds for success/error messages
+        if (type !== 'loading') {
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'mt-2 text-sm';
+            }, 5000);
+        }
+    }
+    
+    function updateRemoveButton(show) {
+        const container = document.querySelector('.flex-1 .flex.gap-2');
+        if (!container) return;
+        
+        const existingRemoveBtn = container.querySelector('button[onclick*="removeProfilePicture"]');
+        
+        if (show && !existingRemoveBtn) {
+            // Add remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.onclick = removeProfilePicture;
+            removeBtn.className = 'btn btn-danger btn-sm';
+            removeBtn.innerHTML = '<span class="material-icons-outlined mr-2">delete</span>Remove Photo';
+            container.appendChild(removeBtn);
+        } else if (!show && existingRemoveBtn) {
+            // Remove remove button
+            existingRemoveBtn.remove();
+        }
     }
 
     // Initialize field visibility

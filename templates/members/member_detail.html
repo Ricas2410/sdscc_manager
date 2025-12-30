@@ -11,8 +11,7 @@
             </a>
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">{{ member.get_full_name }}</h1>
-                <p class="text-sm text-gray-500">Member ID: <span class="font-mono text-primary-600">{{ member.member_id
-                        }}</span></p>
+                <p class="text-sm text-gray-500">Member ID: <span class="font-mono text-primary-600">{{ member.member_id }}</span></p>
             </div>
         </div>
         <div class="flex gap-2">
@@ -63,8 +62,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Pastor</p>
-                        <p class="font-semibold text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not
-                            Assigned" }}</p>
+                        <p class="font-semibold text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Status</p>
@@ -203,14 +201,12 @@
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">Pastor</dt>
-                        <dd class="font-medium text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not
-                            Assigned" }}</dd>
+                        <dd class="font-medium text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">District / Area</dt>
                         <dd class="font-medium text-gray-900">
-                            {% if member.branch %}{{ member.branch.district.name }} / {{
-                            member.branch.district.area.name }}{% else %}-{% endif %}
+                            {% if member.branch %}{{ member.branch.district.name }} / {{ member.branch.district.area.name }}{% else %}-{% endif %}
                         </dd>
                     </div>
                     <div>

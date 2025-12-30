@@ -6,6 +6,7 @@ from django.urls import path
 from . import views
 from . import pastor_views
 from . import export_views
+from . import ajax_views
 
 app_name = 'members'
 
@@ -18,6 +19,10 @@ urlpatterns = [
     path('<uuid:member_id>/edit/', views.member_edit, name='edit'),
     path('api/districts/<uuid:area_id>/', views.get_districts, name='get_districts'),
     path('api/branches/<uuid:district_id>/', views.get_branches, name='get_branches'),
+    
+    # AJAX Profile Picture Upload
+    path('<uuid:member_id>/upload-picture/', ajax_views.upload_profile_picture, name='upload_picture'),
+    path('<uuid:member_id>/remove-picture/', ajax_views.remove_profile_picture, name='remove_picture'),
     
     # Member Export
     path('export-page/', export_views.export_members_page, name='export_page'),
