@@ -333,7 +333,7 @@
     <!-- Branch Statistics -->
     <div class="hierarchical-card">
         <div class="hierarchical-header">
-            <h2 class="hierarchical-title">Branch Statistics</h2>
+            <h2 class="hierarchical-title">Branch Financial Details</h2>
         </div>
         <div class="hierarchical-body">
             <div class="overflow-x-auto">
@@ -341,13 +341,12 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Contributions</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Generated</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">For Mission</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Kept at Branch</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Expenditures</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tithe</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Mission Remittance</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Branch Balance</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Avg per Member</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -355,37 +354,106 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 <div>
-                                    <div>{{ stat.branch.name }}</div>
+                                    <div class="font-semibold">{{ stat.branch.name }}</div>
                                     <div class="text-xs text-gray-500">{{ stat.branch.code }}</div>
+                                    {% if stat.branch.district %}
+                                    <div class="text-xs text-gray-400">{{ stat.branch.district.name }}</div>
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                {{ site_settings.currency_symbol }}{{ stat.total_contributions|intcomma }}
+                                <div class="font-semibold text-green-600">
+                                    {{ site_settings.currency_symbol }}{{ stat.total_contributions|intcomma }}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                {{ site_settings.currency_symbol }}{{ stat.total_expenditures|intcomma }}
+                                <div class="text-blue-600">
+                                    {{ site_settings.currency_symbol }}{{ stat.mission_remittance|intcomma }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {% if stat.total_contributions > 0 %}
+                                    {{ stat.mission_remittance|div:stat.total_contributions|mul:100|floatformat:1 }}%
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                {{ site_settings.currency_symbol }}{{ stat.tithe_amount|intcomma }}
+                                <div class="text-purple-600">
+                                    {{ site_settings.currency_symbol }}{{ stat.total_contributions|add:stat.mission_remittance|negate|intcomma }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {% if stat.total_contributions > 0 %}
+                                    {{ stat.total_contributions|add:stat.mission_remittance|negate|div:stat.total_contributions|mul:100|floatformat:1 }}%
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                {{ site_settings.currency_symbol }}{{ stat.mission_remittance|intcomma }}
+                                <div class="text-red-600">
+                                    {{ site_settings.currency_symbol }}{{ stat.total_expenditures|intcomma }}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                <span class="{% if stat.branch_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                <div class="{% if stat.branch_balance >= 0 %}text-green-600 font-semibold{% else %}text-red-600 font-semibold{% endif %}">
                                     {{ site_settings.currency_symbol }}{{ stat.branch_balance|intcomma }}
-                                </span>
+                                </div>
+                                {% if stat.branch_balance < 0 %}
+                                <div class="text-xs text-red-500">Negative Balance</div>
+                                {% endif %}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                                {{ stat.member_count }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                {{ site_settings.currency_symbol }}{{ stat.avg_contribution_per_member|intcomma }}
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex justify-center space-x-2">
+                                    <a href="{% url 'expenditure:expenditure_list' %}?branch={{ stat.branch.id }}" 
+                                       class="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 text-xs font-medium">
+                                        <span class="material-icons-outlined text-sm mr-1">receipt_long</span>
+                                        Expenditures
+                                    </a>
+                                    <a href="{% url 'core:branch_financial_overview' %}?branch={{ stat.branch.id }}" 
+                                       class="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 text-xs font-medium">
+                                        <span class="material-icons-outlined text-sm mr-1">account_balance</span>
+                                        Financial Report
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-green-600 mr-3">trending_up</span>
+                        <div>
+                            <p class="text-sm font-medium text-green-800">Total Generated</p>
+                            <p class="text-xl font-bold text-green-900">
+                                {{ site_settings.currency_symbol }}{{ total_contributions|intcomma }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-blue-600 mr-3">account_balance</span>
+                        <div>
+                            <p class="text-sm font-medium text-blue-800">For Mission (10% Tithe)</p>
+                            <p class="text-xl font-bold text-blue-900">
+                                {{ site_settings.currency_symbol }}{{ mission_remittance_due|intcomma }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-purple-600 mr-3">account_balance_wallet</span>
+                        <div>
+                            <p class="text-sm font-medium text-purple-800">Kept at Branches</p>
+                            <p class="text-xl font-bold text-purple-900">
+                                {{ site_settings.currency_symbol }}{{ total_contributions|add:mission_remittance_due|negate|intcomma }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

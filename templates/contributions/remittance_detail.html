@@ -89,7 +89,10 @@
                 <div class="p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <span class="material-icons-outlined mr-2 text-indigo-600">pie_chart</span>
-                        Contribution Breakdown (Money Sent to Mission)
+                        Contribution Breakdown (Money Generated for Mission)
+                        {% if remittance.month %}
+                        <span class="text-sm text-gray-500 ml-2">- {{ remittance.month|month_name }} {{ remittance.year }}</span>
+                        {% endif %}
                     </h2>
                     <div class="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
                         {% if contributions_breakdown %}
