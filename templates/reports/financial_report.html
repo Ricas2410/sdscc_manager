@@ -4,7 +4,7 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Professional Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-6 text-white">
+    <div class="bg-blue-700 rounded-lg shadow-lg p-6 text-white">
         <div class="sm:flex sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-white">Financial Report</h1>
@@ -13,65 +13,130 @@
                 <p class="mt-1 text-sm text-blue-200">Fiscal Year: {{ fiscal_year.name }} ({{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }})</p>
                 {% endif %}
             </div>
-            <div class="mt-4 sm:mt-0 flex space-x-2">
-                <button onclick="window.print()" class="bg-white text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 font-medium">
+            <div class="mt-4 sm:mt-0 flex space-x-3">
+                <button onclick="window.print()" class="bg-white text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 font-medium shadow-md transition-colors">
                     <span class="material-icons-outlined mr-1">print</span> Print Report
                 </button>
-                <a href="?export=pdf" class="bg-blue-800 text-white px-4 py-2 rounded-md hover:bg-blue-900 font-medium">
+                <a href="?export=pdf" class="bg-blue-800 text-white px-4 py-2 rounded-lg hover:bg-blue-900 font-medium shadow-md transition-colors">
                     <span class="material-icons-outlined mr-1">download</span> Export PDF
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Date Filter -->
-    <div class="bg-white shadow rounded-lg p-4">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-6 gap-4" id="filterForm">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Area</label>
-                <select name="area" id="areaFilter" class="input-field">
-                    <option value="">All Areas</option>
-                    {% for area in areas %}
-                    <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
-                        {{ area.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+    <!-- Enhanced Filter Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <span class="material-icons-outlined mr-2 text-blue-600">filter_list</span>
+                    Choose What to View
+                </h2>
+                <div class="text-sm text-gray-500 bg-blue-50 px-3 py-1 rounded-lg">
+                    <span class="material-icons-outlined text-sm mr-1">info</span>
+                    Filter your financial data
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
-                <select name="district" id="districtFilter" class="input-field">
-                    <option value="">All Districts</option>
-                    {% for district in districts %}
-                    <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>
-                        {{ district.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                <select name="branch" class="input-field">
-                    <option value="">All Branches</option>
-                    {% for branch in branches %}
-                    <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>
-                        {{ branch.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                <input type="date" name="from_date" value="{{ request.GET.from_date }}" class="input-field">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                <input type="date" name="to_date" value="{{ request.GET.to_date }}" class="input-field">
-            </div>
-            <div class="flex items-end">
-                <button type="submit" class="btn-primary w-full">Generate</button>
-            </div>
-        </form>
+        </div>
+        <div class="p-6">
+            <form method="get" class="space-y-6">
+                <!-- Location Filters -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-2">location_on</span>
+                        Location Filters
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">location_city</span>
+                                Area (Optional)
+                            </label>
+                            <select name="area" id="areaFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Areas</option>
+                                {% for area in areas %}
+                                <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ area.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">map</span>
+                                District (Optional)
+                            </label>
+                            <select name="district" id="districtFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Districts</option>
+                                {% for district in districts %}
+                                <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ district.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">church</span>
+                                Branch (Optional)
+                            </label>
+                            <select name="branch" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Branches</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ branch.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Filters -->
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-2">date_range</span>
+                        Date Range
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">calendar_today</span>
+                                From Date
+                            </label>
+                            <input type="date" name="from_date" value="{{ request.GET.from_date }}" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">event</span>
+                                To Date
+                            </label>
+                            <input type="date" name="to_date" value="{{ request.GET.to_date }}" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined mr-2 text-sm">search</span>
+                            Apply Filters
+                        </button>
+                        <a href="{% url 'reports:financial' %}" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined mr-2 text-sm">refresh</span>
+                            Clear All
+                        </a>
+                    </div>
+                    <div class="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                        <span class="material-icons-outlined text-sm mr-1">lightbulb</span>
+                        Use filters to focus on specific data
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Enhanced Summary Cards -->
@@ -143,16 +208,16 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Income Analysis -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-3">
                 <h3 class="text-lg font-semibold text-white flex items-center">
                     <span class="material-icons-outlined mr-2">payments</span>
                     Income Analysis
                 </h3>
             </div>
             
-            <!-- Visual Chart -->
-            <div class="p-6 border-b">
-                <canvas id="incomeChart" height="200"></canvas>
+            <!-- Visual Chart - Reduced Size -->
+            <div class="p-4 border-b">
+                <canvas id="incomeChart" height="150"></canvas>
             </div>
             
             <!-- Detailed Text Report -->
@@ -215,16 +280,16 @@
 
         <!-- Expenditure Analysis -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-3">
                 <h3 class="text-lg font-semibold text-white flex items-center">
                     <span class="material-icons-outlined mr-2">receipt_long</span>
                     Expenditure Analysis
                 </h3>
             </div>
             
-            <!-- Visual Chart -->
-            <div class="p-6 border-b">
-                <canvas id="expenseChart" height="200"></canvas>
+            <!-- Visual Chart - Reduced Size -->
+            <div class="p-4 border-b">
+                <canvas id="expenseChart" height="150"></canvas>
             </div>
             
             <!-- Detailed Text Report -->
