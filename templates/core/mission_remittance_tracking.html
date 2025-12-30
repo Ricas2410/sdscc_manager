@@ -112,44 +112,92 @@
             </div>
         </div>
         <div id="filtersSection" class="p-6">
-            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <span class="material-icons-outlined text-sm mr-1">calendar_today</span>
-                        Year
-                    </label>
-                    <select name="year" class="form-input form-select" onchange="this.form.submit()">
-                        {% for y in available_years %}
-                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                        {% endfor %}
-                    </select>
+            <form method="get" class="space-y-4">
+                <!-- Date Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">calendar_today</span>
+                            Year
+                        </label>
+                        <select name="year" class="form-input form-select" onchange="this.form.submit()">
+                            {% for y in available_years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">date_range</span>
+                            Month (Optional)
+                        </label>
+                        <select name="month" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Months</option>
+                            {% for m_num, m_name in months %}
+                            <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}">{{ m_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <span class="material-icons-outlined text-sm mr-1">date_range</span>
-                        Month (Optional)
-                    </label>
-                    <select name="month" class="form-input form-select" onchange="this.form.submit()">
-                        <option value="">All Months</option>
-                        {% for m_num, m_name in months %}
-                        <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
-                        {% endfor %}
-                    </select>
+
+                <!-- Hierarchy Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">location_city</span>
+                            Area (Optional)
+                        </label>
+                        <select name="area" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Areas</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}" {% if area_id == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">map</span>
+                            District (Optional)
+                        </label>
+                        <select name="district" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Districts</option>
+                            {% for district in districts %}
+                            <option value="{{ district.id }}" {% if district_id == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">church</span>
+                            Branch (Optional)
+                        </label>
+                        <select name="branch" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Branches</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if branch_id == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="flex items-end space-x-2">
-                    <button type="submit" class="btn btn-primary">
-                        <span class="material-icons-outlined mr-2">search</span>
-                        Apply Filters
-                    </button>
-                    <a href="{% url 'core:mission_remittance_tracking' %}" class="btn btn-secondary">
-                        <span class="material-icons-outlined mr-2">refresh</span>
-                        Reset
-                    </a>
-                </div>
-                <div class="flex items-end">
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-icons-outlined mr-2">search</span>
+                            Apply Filters
+                        </button>
+                        <a href="{% url 'core:mission_remittance_tracking' %}" class="btn btn-secondary">
+                            <span class="material-icons-outlined mr-2">refresh</span>
+                            Reset
+                        </a>
+                    </div>
                     <div class="text-sm text-gray-500">
                         <span class="material-icons-outlined text-sm mr-1">info</span>
                         Showing {% if month %}{% for m_num, m_name in months %}{% if m_num == month %}{{ m_name }}{% endif %}{% endfor %} {{ year }}{% else %}All of {{ year }}{% endif %}
+                        {% if area_id or district_id or branch_id %}
+                        - Filtered by hierarchy
+                        {% endif %}
                     </div>
                 </div>
             </form>
@@ -174,7 +222,7 @@
                 {% for item in branch_summary %}
                 <div class="branch-item">
                     <div class="p-6 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleBranch('{{ forloop.counter }}')">
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <div class="flex items-center space-x-4">
                                 <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
                                     <span class="material-icons text-indigo-600">church</span>
@@ -186,20 +234,22 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="flex items-center space-x-6">
-                                <div class="text-right">
-                                    <p class="text-sm text-gray-500">Due</p>
+                            
+                            <!-- Financial Summary - Better Spacing -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 lg:gap-8">
+                                <div class="text-center sm:text-right">
+                                    <p class="text-sm text-gray-500 mb-1">Due</p>
                                     <p class="font-semibold text-gray-900">{{ item.total_due|currency }}</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-sm text-gray-500">Sent</p>
+                                <div class="text-center sm:text-right">
+                                    <p class="text-sm text-gray-500 mb-1">Sent</p>
                                     <p class="font-semibold text-green-600">{{ item.total_sent|currency }}</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-sm text-gray-500">Outstanding</p>
+                                <div class="text-center sm:text-right">
+                                    <p class="text-sm text-gray-500 mb-1">Outstanding</p>
                                     <p class="font-semibold text-red-600">{{ item.outstanding|currency }}</p>
                                 </div>
-                                <div class="flex items-center space-x-1">
+                                <div class="flex items-center justify-center sm:justify-end space-x-1">
                                     {% if item.outstanding > 0 %}
                                     <span class="w-2 h-2 bg-red-500 rounded-full"></span>
                                     {% else %}
