@@ -46,22 +46,22 @@
                         </div>
                         <div class="flex-1">
                             <p class="text-sm text-gray-600 mb-3">Upload a passport photograph (optional)</p>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <button type="button" onclick="openCamera()" 
-                                        class="btn btn-primary btn-sm">
-                                    <span class="material-icons-outlined mr-2">camera_alt</span>
-                                    Take Photo
+                                        class="btn btn-primary btn-sm flex items-center gap-2">
+                                    <span class="material-icons-outlined text-base">camera_alt</span>
+                                    <span class="hidden sm:inline">Take Photo</span>
                                 </button>
                                 <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
-                                        class="btn btn-secondary btn-sm">
-                                    <span class="material-icons-outlined mr-2">upload_file</span>
-                                    Choose File
+                                        class="btn btn-secondary btn-sm flex items-center gap-2">
+                                    <span class="material-icons-outlined text-base">upload_file</span>
+                                    <span class="hidden sm:inline">Choose File</span>
                                 </button>
                                 {% if member.profile_picture %}
                                 <button type="button" onclick="removeProfilePicture()" 
-                                        class="btn btn-danger btn-sm">
-                                    <span class="material-icons-outlined mr-2">delete</span>
-                                    Remove Photo
+                                        class="btn btn-danger btn-sm flex items-center gap-2">
+                                    <span class="material-icons-outlined text-base">delete</span>
+                                    <span class="hidden sm:inline">Remove</span>
                                 </button>
                                 {% endif %}
                             </div>
@@ -764,18 +764,18 @@
     }
     
     function updateRemoveButton(show) {
-        const container = document.querySelector('.flex-1 .flex.gap-2');
+        const container = document.querySelector('.flex-1 .flex-wrap');
         if (!container) return;
         
         const existingRemoveBtn = container.querySelector('button[onclick*="removeProfilePicture"]');
         
         if (show && !existingRemoveBtn) {
-            // Add remove button
+            // Add remove button with mobile-friendly design
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.onclick = removeProfilePicture;
-            removeBtn.className = 'btn btn-danger btn-sm';
-            removeBtn.innerHTML = '<span class="material-icons-outlined mr-2">delete</span>Remove Photo';
+            removeBtn.className = 'btn btn-danger btn-sm flex items-center gap-2';
+            removeBtn.innerHTML = '<span class="material-icons-outlined text-base">delete</span><span class="hidden sm:inline">Remove</span>';
             container.appendChild(removeBtn);
         } else if (!show && existingRemoveBtn) {
             // Remove remove button
