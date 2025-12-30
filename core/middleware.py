@@ -71,7 +71,7 @@ class MultipartErrorHandler:
     def __call__(self, request):
         try:
             return self.get_response(request)
-        except (RequestDataTooBig, OSError, ValueError) as e:
+        except (RequestDataTooBig, OSError, ValueError, ConnectionResetError) as e:
             # Log the error for debugging
             logger.error(f"Multipart parser error: {e}", exc_info=True)
             
@@ -79,16 +79,33 @@ class MultipartErrorHandler:
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 # AJAX request
                 return HttpResponse(
-                    json.dumps({'error': 'File upload too large or invalid format'}),
+                    json.dumps({'error': 'File upload failed: File too large or connection interrupted. Please try again.'}),
                     content_type='application/json',
                     status=413
                 )
             else:
-                # Regular form submission - redirect back with error message
-                from django.contrib import messages
-                messages.error(request, 'File upload failed: File too large or invalid format. Please try again.')
-                # Redirect to the same page or a safe fallback
-                return HttpResponse(status=413)  # Let the browser handle it
+                # For regular form submissions, we need to handle this differently
+                # since we can't add messages after the response has started
+                return HttpResponse(
+                    """
+                    <html>
+                    <head><title>Upload Error</title></head>
+                    <body>
+                        <h1>File Upload Error</h1>
+                        <p>The file upload failed. This could be due to:</p>
+                        <ul>
+                            <li>File size too large (maximum 5MB)</li>
+                            <li>Poor internet connection</li>
+                            <li>Invalid file format</li>
+                        </ul>
+                        <p>Please go back and try again with a smaller file or better connection.</p>
+                        <button onclick="history.back()">Go Back</button>
+                    </body>
+                    </html>
+                    """,
+                    status=413
+                )
         except Exception as e:
             # Re-raise other exceptions
+            logger.error(f"Unexpected error in MultipartErrorHandler: {e}", exc_info=True)
             raise e

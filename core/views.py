@@ -2514,7 +2514,22 @@ def error_405(request, exception=None):
 
 
 def error_500(request):
-    """Handle 500 Internal Server errors."""
+    """Handle 500 Internal Server errors with special handling for upload issues."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Check if this might be an upload-related error
+    referer = request.META.get('HTTP_REFERER', '')
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    
+    logger.error(f"500 error occurred. Referer: {referer}, User-Agent: {user_agent}")
+    
+    # If the referer contains member edit or add, it's likely an upload error
+    if 'member' in referer and ('edit' in referer or 'add' in referer):
+        logger.error(f"Likely upload error on member form. Referer: {referer}")
+        return render(request, 'core/upload_error.html', status=500)
+    
+    # Default 500 handler for other errors
     return render(request, '500.html', status=500)
 
 

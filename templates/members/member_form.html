@@ -637,12 +637,30 @@
 
     function previewPhoto(input) {
         if (input.files && input.files[0]) {
+            const file = input.files[0];
+            
+            // Client-side file size validation (2MB limit)
+            const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+            if (file.size > maxSize) {
+                alert('File is too large! Please choose an image smaller than 2MB.');
+                input.value = ''; // Clear the file input
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Invalid file type! Please choose a JPG, PNG, GIF, or WebP image.');
+                input.value = ''; // Clear the file input
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const preview = document.getElementById('photoPreview');
                 preview.innerHTML = `<img src="${e.target.result}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
         }
     }
 
@@ -707,10 +725,26 @@
     {% endif %}
     
     // Handle form enctype dynamically
-    document.getElementById('memberForm').addEventListener('submit', function(e) {
-        const profilePictureInput = document.getElementById('profile_picture');
+    const memberForm = document.getElementById('memberForm');
+    const profilePictureInput = document.getElementById('profile_picture');
+    
+    // Set enctype when file is selected
+    if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                memberForm.enctype = 'multipart/form-data';
+            } else {
+                memberForm.enctype = 'application/x-www-form-urlencoded';
+            }
+        });
+    }
+    
+    // Double-check on submit
+    memberForm.addEventListener('submit', function(e) {
         if (profilePictureInput && profilePictureInput.files.length > 0) {
             this.enctype = 'multipart/form-data';
+        } else {
+            this.enctype = 'application/x-www-form-urlencoded';
         }
     });
 </script>

@@ -85,6 +85,34 @@
 
 **Impact**: Fixes critical deployment issue that was causing gunicorn workers to exit, restoring full functionality to the production application.
 
+### 2025-12-30 - Comprehensive Multipart Parser Fix
+
+**Issue**: Persistent SystemExit: 1 errors in gunicorn workers due to multipart parser failures.
+
+**Root Cause**: Fixed enctype="multipart/form-data" was always present, causing multipart parser to activate even when no files were uploaded, leading to parsing errors.
+
+**Comprehensive Solution**:
+1. **Dynamic enctype handling** - Modified member form template to only set multipart enctype when files are actually selected (JavaScript-based)
+2. **Error handling middleware** - Created `MultipartErrorHandler` middleware to catch and gracefully handle multipart parser errors
+3. **Robust file upload settings** - Maintained proper file upload limits and permissions
+
+**Technical Changes**:
+- **Template fix**: `member_form.html` - Removed static enctype, added JavaScript to dynamically set it when profile picture is selected
+- **Middleware**: `core/middleware.py` - Added `MultipartErrorHandler` class to catch `RequestDataTooBig`, `OSError`, and `ValueError` exceptions
+- **Settings**: `sdscc/settings.py` - Added the new middleware to the stack
+
+**Deployment Details**:
+- Successfully deployed commit 2e74555
+- Both machines updated and smoke-checked
+- DNS configuration verified
+- Application live at https://sdscc.fly.dev/
+
+**Impact**: 
+- Eliminates SystemExit: 1 errors that were crashing gunicorn workers
+- Provides graceful error handling for file upload issues
+- Maintains full functionality for member profile picture uploads
+- Improves overall application stability
+
 ---
 
 ## Previous Development Notes
