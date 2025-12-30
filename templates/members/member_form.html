@@ -47,10 +47,15 @@
                         <div class="flex-1">
                             <p class="text-sm text-gray-600 mb-3">Upload a passport photograph (optional)</p>
                             <div class="flex gap-2">
+                                <button type="button" onclick="openCamera()" 
+                                        class="btn btn-primary btn-sm">
+                                    <span class="material-icons-outlined mr-2">camera_alt</span>
+                                    Take Photo
+                                </button>
                                 <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
                                         class="btn btn-secondary btn-sm">
                                     <span class="material-icons-outlined mr-2">upload_file</span>
-                                    Choose Photo
+                                    Choose File
                                 </button>
                                 {% if member.profile_picture %}
                                 <button type="button" onclick="removeProfilePicture()" 
@@ -63,8 +68,11 @@
                             <input type="file" id="profilePictureInput" 
                                    accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;"
                                    onchange="handlePictureUpload(this)">
+                            <input type="file" id="cameraInput" 
+                                   accept="image/jpeg,image/png,image/gif,image/webp" capture="environment" style="display: none;"
+                                   onchange="handlePictureUpload(this)">
                             <p class="text-xs text-gray-500 mt-2">
-                                Accepted formats: JPG, PNG, GIF, WebP (max 2MB)
+                                Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
                             </p>
                             <div id="uploadStatus" class="mt-2 text-sm"></div>
                         </div>
@@ -626,60 +634,11 @@
     }
 
     function openCamera() {
-        const input = document.getElementById('profilePictureInput');
-        // Set capture to environment (back camera) by default
-        input.setAttribute('capture', 'environment');
-        input.click();
+        const cameraInput = document.getElementById('cameraInput');
+        // Try to open camera directly
+        cameraInput.click();
     }
-
-    function previewPhoto(input) {
-        if (input.files && input.files[0]) {
-            const file = input.files[0];
-            
-            // Client-side file size validation (2MB limit)
-            const maxSize = 2 * 1024 * 1024; // 2MB in bytes
-            if (file.size > maxSize) {
-                alert('File is too large! Please choose an image smaller than 2MB.');
-                input.value = ''; // Clear the file input
-                return;
-            }
-            
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-                alert('Invalid file type! Please choose a JPG, PNG, GIF, or WebP image.');
-                input.value = ''; // Clear the file input
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('photoPreview');
-                preview.innerHTML = `<img src="${e.target.result}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function removePhoto() {
-        // Add a hidden field to indicate photo removal
-        const form = document.getElementById('memberForm');
-        let removeField = document.getElementById('removePhotoField');
-        if (!removeField) {
-            removeField = document.createElement('input');
-            removeField.type = 'hidden';
-            removeField.id = 'removePhotoField';
-            removeField.name = 'remove_photo';
-            removeField.value = 'true';
-            form.appendChild(removeField);
-        }
-        
-        // Update preview
-        const preview = document.getElementById('photoPreview');
-        preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
-        preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
-    }
-
+    
     function handlePictureUpload(input) {
         const file = input.files[0];
         if (!file) return;
@@ -689,7 +648,7 @@
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         
         if (file.size > maxSize) {
-            showUploadStatus('File is too large! Please choose an image smaller than 2MB.', 'error');
+            showUploadStatus('File is too large! Please choose an image smaller than 5MB.', 'error');
             input.value = '';
             return;
         }

@@ -178,15 +178,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'  # Default fallback
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# File upload settings - more conservative to prevent errors
-FILE_UPLOAD_MAX_MEMORY_SIZE = 2097152  # 2MB (reduced from 5MB)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 2097152  # 2MB (reduced from 5MB)
+# File upload settings - increased to 5MB for better user experience
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 FILE_UPLOAD_PERMISSIONS = 0o644
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
 # Additional upload constraints
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
-FILE_UPLOAD_MAX_MEMORY_SIZE = 2097152  # 2MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 
 # Parse CLOUDINARY_URL if provided (format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME)
 CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')

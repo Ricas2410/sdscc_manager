@@ -35,10 +35,10 @@ def upload_profile_picture(request, member_id):
         if file.content_type not in allowed_types:
             return JsonResponse({'success': False, 'error': 'Invalid file type. Please use JPG, PNG, GIF, or WebP.'}, status=400)
         
-        # Validate file size (2MB max)
-        max_size = 2 * 1024 * 1024  # 2MB
+        # Validate file size (5MB max)
+        max_size = 5 * 1024 * 1024  # 5MB
         if file.size > max_size:
-            return JsonResponse({'success': False, 'error': 'File too large. Maximum size is 2MB.'}, status=400)
+            return JsonResponse({'success': False, 'error': 'File too large. Maximum size is 5MB.'}, status=400)
         
         # Delete old picture if exists
         if member.profile_picture:
