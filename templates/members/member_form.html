@@ -45,31 +45,20 @@
                             {% endif %}
                         </div>
                         <div class="flex-1">
-                            <div class="flex flex-col sm:flex-row gap-3">
-                                <button type="button" onclick="openCamera()" 
-                                        class="btn btn-secondary btn-sm">
-                                    <span class="material-icons-outlined mr-2">camera_alt</span>
-                                    Take Photo
-                                </button>
-                                <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
-                                        class="btn btn-secondary btn-sm">
-                                    <span class="material-icons-outlined mr-2">upload_file</span>
-                                    Upload
-                                </button>
-                                {% if member.profile_picture %}
+                            <p class="text-sm text-gray-600 mb-3">
+                                <strong>Profile Picture Upload Temporarily Disabled</strong><br>
+                                Due to technical issues, profile picture uploads have been temporarily disabled. 
+                                You can still update all other member information.
+                            </p>
+                            {% if member.profile_picture %}
+                            <div class="flex gap-2">
                                 <button type="button" onclick="removePhoto()" 
                                         class="btn btn-danger btn-sm">
                                     <span class="material-icons-outlined mr-2">delete</span>
-                                    Remove
+                                    Remove Photo
                                 </button>
-                                {% endif %}
                             </div>
-                            <input type="file" id="profilePictureInput" name="profile_picture" 
-                                   accept="image/*" capture="environment" style="display: none;"
-                                   onchange="previewPhoto(this)">
-                            <p class="text-xs text-gray-500 mt-2">
-                                Use device camera or upload a passport-sized photo
-                            </p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -665,17 +654,8 @@
     }
 
     function removePhoto() {
-        const preview = document.getElementById('photoPreview');
-        const input = document.getElementById('profilePictureInput');
-        
-        // Clear the preview
-        preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
-        preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
-        
-        // Clear the input
-        input.value = '';
-        
         // Add a hidden field to indicate photo removal
+        const form = document.getElementById('memberForm');
         let removeField = document.getElementById('removePhotoField');
         if (!removeField) {
             removeField = document.createElement('input');
@@ -683,22 +663,25 @@
             removeField.id = 'removePhotoField';
             removeField.name = 'remove_photo';
             removeField.value = 'true';
-            input.parentNode.appendChild(removeField);
+            form.appendChild(removeField);
         }
+        
+        // Update preview
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = '<span class="material-icons-outlined text-gray-400 text-3xl">person</span>';
+        preview.className = 'h-24 w-24 rounded-full bg-gray-200 border-4 border-gray-200 flex items-center justify-center';
     }
 
-    // Initialize salary fields visibility
+    // Initialize field visibility
     document.addEventListener('DOMContentLoaded', function() {
         toggleSalaryFields();
+        toggleBaptismFields();
         
         // Initialize pastor fields if editing a pastor
         const roleSelect = document.querySelector('select[name="role"]');
         if (roleSelect && roleSelect.value === 'pastor') {
             togglePastorFields();
         }
-        
-        // Initialize baptism fields
-        toggleBaptismFields();
     });
 
     // Load existing data for edit mode
@@ -723,30 +706,6 @@
         }
     });
     {% endif %}
-    
-    // Handle form enctype dynamically
-    const memberForm = document.getElementById('memberForm');
-    const profilePictureInput = document.getElementById('profile_picture');
-    
-    // Set enctype when file is selected
-    if (profilePictureInput) {
-        profilePictureInput.addEventListener('change', function() {
-            if (this.files.length > 0) {
-                memberForm.enctype = 'multipart/form-data';
-            } else {
-                memberForm.enctype = 'application/x-www-form-urlencoded';
-            }
-        });
-    }
-    
-    // Double-check on submit
-    memberForm.addEventListener('submit', function(e) {
-        if (profilePictureInput && profilePictureInput.files.length > 0) {
-            this.enctype = 'multipart/form-data';
-        } else {
-            this.enctype = 'application/x-www-form-urlencoded';
-        }
-    });
 </script>
 {% endif %}
 {% endblock %}

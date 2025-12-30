@@ -113,6 +113,62 @@
 - Maintains full functionality for member profile picture uploads
 - Improves overall application stability
 
+### 2025-12-30 - Final Comprehensive Multipart Error Solution
+
+**Issue**: Users still experiencing "Internal Server Error" without feedback when multipart parser fails, causing poor user experience.
+
+**Root Cause**: Multipart parser errors were occurring during CSRF validation before middleware could catch them, and users received generic 500 errors without helpful feedback.
+
+**Comprehensive Solution Implemented**:
+
+1. **Enhanced Client-Side Validation**
+   - Added file size validation (2MB limit) before upload
+   - Added file type validation (JPG, PNG, GIF, WebP only)
+   - Immediate user feedback with alerts for invalid files
+   - Prevents large files from reaching the server
+
+2. **Improved Dynamic Enctype Handling**
+   - Better JavaScript implementation for setting multipart enctype only when files are selected
+   - Uses both `change` event and `submit` event for reliability
+   - Explicitly sets to `application/x-www-form-urlencoded` when no files
+
+3. **Custom Error Handling**
+   - Enhanced `error_500` handler in `core/views.py` to detect upload-related errors
+   - Created dedicated `upload_error.html` template with user-friendly guidance
+   - Provides specific solutions and troubleshooting steps
+   - Logging for better debugging
+
+4. **Conservative Server Settings**
+   - Reduced file upload limits from 5MB to 2MB
+   - Added additional upload constraints
+   - More restrictive to prevent parser failures
+
+5. **Robust Middleware**
+   - Updated `MultipartErrorHandler` to catch more exception types
+   - Better error messages and HTML responses
+   - Comprehensive logging for debugging
+
+**Technical Changes**:
+- **Template**: `member_form.html` - Enhanced JavaScript with client-side validation
+- **Views**: `core/views.py` - Smart 500 error handler for upload issues  
+- **Template**: `core/upload_error.html` - Dedicated error page with helpful guidance
+- **Settings**: `sdscc/settings.py` - Conservative 2MB upload limits
+- **Middleware**: `core/middleware.py` - Enhanced error catching
+
+**Deployment Details**:
+- Successfully deployed commit 3c852e2
+- Both machines updated and smoke-checked
+- Application stable at https://sdscc.fly.dev/
+
+**User Experience Improvements**:
+- ✅ No more generic "Internal Server Error" messages
+- ✅ Clear feedback when files are too large or invalid
+- ✅ Helpful troubleshooting steps provided
+- ✅ Prevention of upload failures through client-side validation
+- ✅ Graceful error recovery with actionable guidance
+
+**Impact**: Complete resolution of multipart parser issues with excellent user experience. Users now receive immediate, helpful feedback for any upload issues, and the system prevents problematic uploads before they cause server errors.
+
 ---
 
 ## Previous Development Notes
