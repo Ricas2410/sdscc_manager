@@ -378,11 +378,11 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                                 <div class="text-purple-600">
-                                    {{ site_settings.currency_symbol }}{{ stat.total_contributions|add:stat.mission_remittance|negate|intcomma }}
+                                    {{ site_settings.currency_symbol }}{{ stat.branch_kept_at_branch|intcomma }}
                                 </div>
                                 <div class="text-xs text-gray-500">
                                     {% if stat.total_contributions > 0 %}
-                                    {{ stat.total_contributions|add:stat.mission_remittance|negate|div:stat.total_contributions|mul:100|floatformat:1 }}%
+                                    {{ stat.branch_kept_at_branch|div:stat.total_contributions|mul:100|floatformat:1 }}%
                                     {% endif %}
                                 </div>
                             </td>
@@ -449,7 +449,7 @@
                         <div>
                             <p class="text-sm font-medium text-purple-800">Kept at Branches</p>
                             <p class="text-xl font-bold text-purple-900">
-                                {{ site_settings.currency_symbol }}{{ total_contributions|add:mission_remittance_due|negate|intcomma }}
+                                {{ site_settings.currency_symbol }}{{ total_kept_at_branches|intcomma }}
                             </p>
                         </div>
                     </div>

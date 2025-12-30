@@ -737,6 +737,9 @@ def comprehensive_statistics(request):
     total_tithe = contributions.filter(contribution_type__category='tithe').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     mission_remittance_due = total_tithe * Decimal('0.10')
     
+    # Calculate total kept at branches
+    total_kept_at_branches = total_contributions - mission_remittance_due
+    
     # Branch-level statistics
     branch_stats = []
     for branch in branches:
@@ -749,6 +752,9 @@ def comprehensive_statistics(request):
         branch_remittance = branch_tithe * Decimal('0.10')
         branch_balance = branch_total_contrib - branch_total_exp - branch_remittance
         
+        # Calculate amount kept at branch (total - mission remittance)
+        branch_kept_at_branch = branch_total_contrib - branch_remittance
+        
         member_count = Member.objects.filter(user__branch=branch, user__is_active=True).count()
         
         branch_stats.append({
@@ -757,6 +763,7 @@ def comprehensive_statistics(request):
             'total_expenditures': branch_total_exp,
             'tithe_amount': branch_tithe,
             'mission_remittance': branch_remittance,
+            'branch_kept_at_branch': branch_kept_at_branch,
             'branch_balance': branch_balance,
             'member_count': member_count,
             'avg_contribution_per_member': branch_total_contrib / member_count if member_count > 0 else Decimal('0.00')
@@ -826,6 +833,7 @@ def comprehensive_statistics(request):
         'net_balance': net_balance,
         'total_tithe': total_tithe,
         'mission_remittance_due': mission_remittance_due,
+        'total_kept_at_branches': total_kept_at_branches,
         
         # Hierarchical stats
         'branch_stats': branch_stats,
