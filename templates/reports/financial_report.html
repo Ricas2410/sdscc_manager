@@ -362,16 +362,17 @@
                         <div class="mt-2 p-2 bg-blue-100 rounded">
                             <p class="text-xs text-blue-800">
                                 {% if total_income > 0 %}
-                                    {% assign efficiency = total_expense|div:total_income|mul:100 %}
-                                    {% if efficiency < 70 %}
-                                        ✅ Excellent efficiency - low expense ratio
-                                    {% elif efficiency < 85 %}
-                                        👍 Good efficiency - reasonable expense ratio
-                                    {% elif efficiency < 100 %}
-                                        ⚠️ Moderate efficiency - high expense ratio
-                                    {% else %}
-                                        🚨 Poor efficiency - expense exceeds income
-                                    {% endif %}
+                                    {% with efficiency = total_expense|div:total_income|mul:100 %}
+                                        {% if efficiency < 70 %}
+                                            ✅ Excellent efficiency - low expense ratio
+                                        {% elif efficiency < 85 %}
+                                            👍 Good efficiency - reasonable expense ratio
+                                        {% elif efficiency < 100 %}
+                                            ⚠️ Moderate efficiency - high expense ratio
+                                        {% else %}
+                                            🚨 Poor efficiency - expense exceeds income
+                                        {% endif %}
+                                    {% endwith %}
                                 {% else %}
                                     ℹ️ No income data for efficiency analysis
                                 {% endif %}
@@ -396,14 +397,15 @@
                         {% endif %}
                         
                         {% if total_income > 0 %}
-                            {% assign efficiency = total_expense|div:total_income|mul:100 %}
-                            {% if efficiency > 85 %}
-                            <div class="p-2 bg-yellow-100 rounded">
-                                <p class="text-xs text-yellow-800">
-                                    💡 Consider cost optimization measures
-                                </p>
-                            </div>
-                            {% endif %}
+                            {% with efficiency = total_expense|div:total_income|mul:100 %}
+                                {% if efficiency > 85 %}
+                                <div class="p-2 bg-yellow-100 rounded">
+                                    <p class="text-xs text-yellow-800">
+                                        💡 Consider cost optimization measures
+                                    </p>
+                                </div>
+                                {% endif %}
+                            {% endwith %}
                         {% endif %}
                         
                         {% if income_by_type|length == 1 %}

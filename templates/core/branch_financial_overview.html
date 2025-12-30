@@ -18,17 +18,17 @@
                         </div>
                         <div>
                             <h1 class="text-3xl font-bold text-white">Branch Financial Overview</h1>
-                            <p class="text-green-100 mt-1">Local branch finances and expenditures</p>
+                            <p class="text-green-100 mt-1">Local branch finances and expenditures - Easy to understand</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-6 text-sm">
                         <div class="flex items-center">
                             <span class="w-2 h-2 bg-green-300 rounded-full mr-2"></span>
-                            <span class="text-green-100">{{ overall_totals.total_contributions|currency }} Total Contributions</span>
+                            <span class="text-green-100">{{ overall_totals.total_contributions|currency }} Total Money Received</span>
                         </div>
                         <div class="flex items-center">
                             <span class="w-2 h-2 bg-yellow-300 rounded-full mr-2"></span>
-                            <span class="text-green-100">{{ overall_totals.total_local_balance|currency }} Local Balance</span>
+                            <span class="text-green-100">{{ overall_totals.total_local_balance|currency }} Money Available</span>
                         </div>
                     </div>
                 </div>
@@ -54,9 +54,9 @@
             <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Total Contributions</p>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Money Received</p>
                         <p class="text-2xl font-bold text-gray-900 mt-1">{{ overall_totals.total_contributions|currency }}</p>
-                        <p class="text-xs text-gray-500 mt-2">Local branch income</p>
+                        <p class="text-xs text-gray-500 mt-2">All contributions</p>
                     </div>
                     <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                         <span class="material-icons text-green-600">savings</span>
@@ -66,9 +66,9 @@
             <div class="bg-white rounded-xl shadow-lg p-6 border border-orange-200">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Total Expenditures</p>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Money Spent</p>
                         <p class="text-2xl font-bold text-orange-600 mt-1">{{ overall_totals.total_expenditures|currency }}</p>
-                        <p class="text-xs text-gray-500 mt-2">Local branch expenses</p>
+                        <p class="text-xs text-gray-500 mt-2">All expenses</p>
                     </div>
                     <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                         <span class="material-icons text-orange-600">payments</span>
@@ -78,9 +78,9 @@
             <div class="bg-white rounded-xl shadow-lg p-6 border border-teal-200">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Local Balance</p>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Money Available</p>
                         <p class="text-2xl font-bold text-teal-600 mt-1">{{ overall_totals.total_local_balance|currency }}</p>
-                        <p class="text-xs text-gray-500 mt-2">Net local funds</p>
+                        <p class="text-xs text-gray-500 mt-2">What's left to use</p>
                     </div>
                     <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
                         <span class="material-icons text-teal-600">account_balance_wallet</span>
@@ -108,7 +108,7 @@
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                     <span class="material-icons-outlined mr-2 text-green-600">filter_list</span>
-                    Filter Branch Finances
+                    Choose What to View
                 </h2>
                 <button onclick="toggleFilters()" class="text-gray-500 hover:text-gray-700">
                     <span class="material-icons-outlined">expand_more</span>
@@ -214,7 +214,7 @@
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                     <span class="material-icons-outlined mr-2 text-green-600">account_tree</span>
-                    Branch Financial Summary
+                    Branch Money Details
                 </h2>
                 <div class="text-sm text-gray-500">
                     {{ branch_summary|length }} branches
@@ -242,15 +242,15 @@
                             <!-- Financial Summary - Better Spacing -->
                             <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 lg:gap-8">
                                 <div class="text-center sm:text-right">
-                                    <p class="text-sm text-gray-500 mb-1">Contributions</p>
+                                    <p class="text-sm text-gray-500 mb-1">Money Received</p>
                                     <p class="font-semibold text-green-600">{{ item.total_contributions|currency }}</p>
                                 </div>
                                 <div class="text-center sm:text-right">
-                                    <p class="text-sm text-gray-500 mb-1">Expenditures</p>
+                                    <p class="text-sm text-gray-500 mb-1">Money Spent</p>
                                     <p class="font-semibold text-orange-600">{{ item.total_expenditures|currency }}</p>
                                 </div>
                                 <div class="text-center sm:text-right">
-                                    <p class="text-sm text-gray-500 mb-1">Local Balance</p>
+                                    <p class="text-sm text-gray-500 mb-1">Money Available</p>
                                     <p class="font-semibold text-teal-600">{{ item.local_balance|currency }}</p>
                                 </div>
                                 <div class="flex items-center justify-center sm:justify-end space-x-1">
@@ -280,10 +280,10 @@
                             <p class="text-xs text-gray-500 mt-1">
                                 {% if item.total_contributions > 0 %}
                                 {% with expenditure_ratio=item.total_expenditures|div:item.total_contributions|mul:100 %}
-                                {{ expenditure_ratio|default:0|floatformat:1 }}% of contributions spent locally
+                                {{ expenditure_ratio|default:0|floatformat:1 }}% of money received was spent
                                 {% endwith %}
                                 {% else %}
-                                No contributions recorded for this period
+                                No money received for this period
                                 {% endif %}
                             </p>
                         </div>
