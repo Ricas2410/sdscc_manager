@@ -3,21 +3,21 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Professional Header with Better Contrast -->
-    <div class="bg-blue-800 rounded-lg shadow-lg p-6 text-white">
+    <!-- Simple Dark Header -->
+    <div class="bg-gray-900 rounded-lg shadow-lg p-6 text-white">
         <div class="sm:flex sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-white">Financial Report</h1>
-                <p class="mt-2 text-white text-opacity-90">Comprehensive financial analysis and reporting</p>
+                <p class="mt-2 text-gray-300">Comprehensive financial analysis and reporting</p>
                 {% if fiscal_year %}
-                <p class="mt-1 text-sm text-white text-opacity-80">Fiscal Year: {{ fiscal_year.name }} ({{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }})</p>
+                <p class="mt-1 text-sm text-gray-400">Fiscal Year: {{ fiscal_year.name }} ({{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }})</p>
                 {% endif %}
             </div>
             <div class="mt-4 sm:mt-0 flex space-x-3">
-                <button onclick="window.print()" class="bg-white text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-50 font-medium shadow-md transition-colors">
+                <button onclick="window.print()" class="bg-white text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 font-medium shadow-md transition-colors">
                     <span class="material-icons-outlined mr-1">print</span> Print Report
                 </button>
-                <a href="?export=pdf" class="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-950 font-medium shadow-md transition-colors">
+                <a href="?export=pdf" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 font-medium shadow-md transition-colors">
                     <span class="material-icons-outlined mr-1">download</span> Export PDF
                 </a>
             </div>
@@ -215,9 +215,9 @@
                 </h3>
             </div>
             
-            <!-- Visual Chart - Further Reduced Size -->
-            <div class="p-3 border-b">
-                <canvas id="incomeChart" height="120"></canvas>
+            <!-- Visual Chart - Very Small -->
+            <div class="p-2 border-b">
+                <canvas id="incomeChart" height="80"></canvas>
             </div>
             
             <!-- Detailed Text Report -->
@@ -287,9 +287,9 @@
                 </h3>
             </div>
             
-            <!-- Visual Chart - Further Reduced Size -->
-            <div class="p-3 border-b">
-                <canvas id="expenseChart" height="120"></canvas>
+            <!-- Visual Chart - Very Small -->
+            <div class="p-2 border-b">
+                <canvas id="expenseChart" height="80"></canvas>
             </div>
             
             <!-- Detailed Text Report -->

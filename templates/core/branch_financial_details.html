@@ -7,32 +7,32 @@
 
 {% block content %}
 <div class="px-4 py-6">
-    <!-- Clean Header with Better Contrast -->
+    <!-- Simple Dark Header -->
     <div class="mb-6">
-        <div class="bg-gradient-to-r from-green-900 to-teal-900 rounded-lg p-6 text-white shadow-xl">
+        <div class="bg-gray-900 rounded-lg p-6 text-white shadow-xl">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div class="mb-4 lg:mb-0">
                     <div class="flex items-center mb-2">
-                        <div class="w-10 h-10 bg-white/30 rounded-lg flex items-center justify-center mr-3 shadow">
-                            <span class="material-icons text-xl">church</span>
+                        <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center mr-3">
+                            <span class="material-icons text-xl text-gray-900">church</span>
                         </div>
                         <div>
                             <h1 class="text-2xl font-bold text-white">{{ branch.name }}</h1>
-                            <p class="text-white text-opacity-90 text-sm">Branch Financial Details</p>
+                            <p class="text-gray-300 text-sm">Branch Financial Details</p>
                             {% if branch.district %}
-                            <p class="text-white text-opacity-80 text-xs">{{ branch.district.name }} District</p>
+                            <p class="text-gray-400 text-xs">{{ branch.district.name }} District</p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <a href="{% url 'core:branch_financial_overview' %}" 
-                       class="px-4 py-2 bg-white text-green-800 hover:bg-green-50 rounded-lg font-medium shadow">
+                       class="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg font-medium shadow">
                         <span class="material-icons-outlined mr-1 text-sm">arrow_back</span>
                         Back
                     </a>
                     <button onclick="window.print()" 
-                            class="px-4 py-2 bg-white text-green-800 hover:bg-green-50 rounded-lg font-medium shadow">
+                            class="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg font-medium shadow">
                         <span class="material-icons-outlined mr-1 text-sm">print</span>
                         Print
                     </button>
