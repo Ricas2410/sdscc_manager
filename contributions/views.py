@@ -568,7 +568,30 @@ def remittance_detail(request, remittance_id):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     
-    return render(request, 'contributions/remittance_detail.html', {'remittance': remittance})
+    # Get contribution breakdown for this remittance period
+    # Only include contributions that have mission_amount > 0 (sent to mission)
+    from django.db.models import Sum, Count
+    from contributions.models import Contribution
+    
+    contributions_breakdown = Contribution.objects.filter(
+        branch=remittance.branch,
+        date__year=remittance.year,
+        date__month=remittance.month,
+        mission_amount__gt=0,  # Only contributions sent to mission
+        status='verified'
+    ).values('contribution_type__name', 'contribution_type__id').annotate(
+        total_amount=Sum('mission_amount'),
+        count=Count('id')
+    ).order_by('-total_amount')
+    
+    # Calculate total from breakdown for verification
+    breakdown_total = sum(item['total_amount'] for item in contributions_breakdown)
+    
+    return render(request, 'contributions/remittance_detail.html', {
+        'remittance': remittance,
+        'contributions_breakdown': contributions_breakdown,
+        'breakdown_total': breakdown_total
+    })
 
 
 @login_required
