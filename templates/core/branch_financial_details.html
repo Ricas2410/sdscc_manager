@@ -6,218 +6,171 @@
 {% block title %}{{ branch.name }} Financial Details - {{ site_settings.church_name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-6">
-    <!-- Professional Header with Better Contrast -->
-    <div class="mb-8">
-        <div class="bg-gradient-to-r from-green-800 to-teal-900 rounded-2xl p-8 text-white shadow-2xl">
+<div class="px-4 py-6">
+    <!-- Clean Header -->
+    <div class="mb-6">
+        <div class="bg-gradient-to-r from-green-700 to-teal-800 rounded-lg p-6 text-white shadow-lg">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                <div class="mb-6 lg:mb-0">
-                    <div class="flex items-center mb-3">
-                        <div class="w-14 h-14 bg-white/30 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                            <span class="material-icons text-3xl">church</span>
+                <div class="mb-4 lg:mb-0">
+                    <div class="flex items-center mb-2">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                            <span class="material-icons text-xl">church</span>
                         </div>
                         <div>
-                            <h1 class="text-4xl font-bold text-white">{{ branch.name }}</h1>
-                            <p class="text-green-100 mt-2 text-lg">Branch Financial Details - Professional Report</p>
+                            <h1 class="text-2xl font-bold text-white">{{ branch.name }}</h1>
+                            <p class="text-green-100 text-sm">Branch Financial Details</p>
                             {% if branch.district %}
-                            <p class="text-green-200 text-sm mt-1">{{ branch.district.name }} District</p>
+                            <p class="text-green-200 text-xs">{{ branch.district.name }} District</p>
                             {% endif %}
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-4 mt-4">
-                        <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                            <p class="text-green-100 text-sm">Total Money Received</p>
-                            <p class="text-white font-bold text-xl">{{ branch_data.total_contributions|currency }}</p>
-                        </div>
-                        <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                            <p class="text-green-100 text-sm">Money in Coffers</p>
-                            <p class="text-white font-bold text-xl">{{ branch_data.branch_coffer_balance|currency }}</p>
-                        </div>
-                    </div>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex flex-wrap gap-2">
                     <a href="{% url 'core:branch_financial_overview' %}" 
-                       class="px-6 py-3 bg-white text-green-800 hover:bg-green-50 border-2 border-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105">
-                        <span class="material-icons-outlined mr-2">arrow_back</span>
-                        Back to Overview
+                       class="px-4 py-2 bg-white text-green-700 hover:bg-green-50 rounded-lg font-medium">
+                        <span class="material-icons-outlined mr-1 text-sm">arrow_back</span>
+                        Back
                     </a>
                     <button onclick="window.print()" 
-                            class="px-6 py-3 bg-white text-green-800 hover:bg-green-50 border-2 border-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105">
-                        <span class="material-icons-outlined mr-2">print</span>
-                        Print Report
-                    </button>
-                    <button onclick="exportToPDF()" 
-                            class="px-6 py-3 bg-white text-green-800 hover:bg-green-50 border-2 border-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105">
-                        <span class="material-icons-outlined mr-2">picture_as_pdf</span>
-                        Export PDF
+                            class="px-4 py-2 bg-white text-green-700 hover:bg-green-50 rounded-lg font-medium">
+                        <span class="material-icons-outlined mr-1 text-sm">print</span>
+                        Print
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- Clear Money Breakdown Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 -mt-6 px-4">
+        <!-- Simple Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             <!-- Total Money Received -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 border-2 border-green-100 hover:shadow-2xl transition-shadow">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span class="material-icons text-white text-2xl">savings</span>
+            <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-green-600 text-sm">savings</span>
                     </div>
                     <div class="text-right">
-                        <p class="text-green-600 text-xs font-semibold uppercase tracking-wider">Total Received</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ branch_data.total_contributions|currency }}</p>
+                        <p class="text-green-600 text-xs font-semibold">Total Received</p>
+                        <p class="text-lg font-bold text-gray-900">{{ branch_data.total_contributions|currency }}</p>
                     </div>
                 </div>
-                <div class="bg-green-50 rounded-lg p-3">
-                    <p class="text-xs text-green-700">
-                        <span class="material-icons-outlined text-xs mr-1">info</span>
-                        All money collected at this branch
-                    </p>
-                </div>
+                <p class="text-xs text-gray-500">All money collected</p>
             </div>
 
             <!-- Money for Mission -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 border-2 border-purple-100 hover:shadow-2xl transition-shadow">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span class="material-icons text-white text-2xl">account_balance</span>
+            <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-purple-600 text-sm">account_balance</span>
                     </div>
                     <div class="text-right">
-                        <p class="text-purple-600 text-xs font-semibold uppercase tracking-wider">For Mission</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ branch_data.mission_remittance|currency }}</p>
+                        <p class="text-purple-600 text-xs font-semibold">For Mission</p>
+                        <p class="text-lg font-bold text-gray-900">{{ branch_data.mission_remittance|currency }}</p>
                     </div>
                 </div>
-                <div class="bg-purple-50 rounded-lg p-3">
-                    <p class="text-xs text-purple-700">
-                        <span class="material-icons-outlined text-xs mr-1">trending_up</span>
-                        10% of tithes sent to mission
-                    </p>
-                </div>
+                <p class="text-xs text-gray-500">10% of tithes</p>
             </div>
 
             <!-- Money Spent -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 border-2 border-orange-100 hover:shadow-2xl transition-shadow">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span class="material-icons text-white text-2xl">payments</span>
+            <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-orange-600 text-sm">payments</span>
                     </div>
                     <div class="text-right">
-                        <p class="text-orange-600 text-xs font-semibold uppercase tracking-wider">Money Spent</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ branch_data.money_spent_by_branch|currency }}</p>
+                        <p class="text-orange-600 text-xs font-semibold">Money Spent</p>
+                        <p class="text-lg font-bold text-gray-900">{{ branch_data.money_spent_by_branch|currency }}</p>
                     </div>
                 </div>
-                <div class="bg-orange-50 rounded-lg p-3">
-                    <p class="text-xs text-orange-700">
-                        <span class="material-icons-outlined text-xs mr-1">shopping_cart</span>
-                        Local branch expenses
-                    </p>
-                </div>
+                <p class="text-xs text-gray-500">Branch expenses</p>
             </div>
 
             <!-- Money in Coffers -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 border-2 border-teal-100 hover:shadow-2xl transition-shadow">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-14 h-14 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <span class="material-icons text-white text-2xl">account_balance_wallet</span>
+            <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-teal-600 text-sm">account_balance_wallet</span>
                     </div>
                     <div class="text-right">
-                        <p class="text-teal-600 text-xs font-semibold uppercase tracking-wider">In Coffers</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ branch_data.branch_coffer_balance|currency }}</p>
+                        <p class="text-teal-600 text-xs font-semibold">In Coffers</p>
+                        <p class="text-lg font-bold text-gray-900">{{ branch_data.branch_coffer_balance|currency }}</p>
                     </div>
                 </div>
-                <div class="bg-teal-50 rounded-lg p-3">
-                    <p class="text-xs text-teal-700">
-                        <span class="material-icons-outlined text-xs mr-1">security</span>
-                        Money available for branch use
-                    </p>
-                </div>
+                <p class="text-xs text-gray-500">Available for use</p>
             </div>
         </div>
     </div>
 
-    <!-- Money Flow Explanation -->
-    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border-2 border-blue-200">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-            <span class="material-icons-outlined mr-3 text-blue-600">account_balance</span>
+    <!-- Simple Money Flow Explanation -->
+    <div class="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
+        <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
+            <span class="material-icons-outlined mr-2 text-blue-600">account_balance</span>
             How Money Flows at {{ branch.name }}
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-white rounded-xl p-4 border border-blue-200">
-                <div class="flex items-center mb-2">
-                    <span class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <span class="material-icons text-green-600 text-sm">arrow_downward</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-white rounded-lg p-3 border border-blue-200">
+                <div class="flex items-center mb-1">
+                    <span class="w-6 h-6 bg-green-100 rounded flex items-center justify-center mr-2">
+                        <span class="material-icons text-green-600 text-xs">arrow_downward</span>
                     </span>
-                    <span class="font-semibold text-gray-900">Money In</span>
+                    <span class="font-medium text-gray-900 text-sm">Money In</span>
                 </div>
-                <p class="text-2xl font-bold text-green-600">{{ branch_data.total_contributions|currency }}</p>
-                <p class="text-xs text-gray-600 mt-1">Total collected</p>
+                <p class="text-lg font-bold text-green-600">{{ branch_data.total_contributions|currency }}</p>
+                <p class="text-xs text-gray-600">Total collected</p>
             </div>
             
-            <div class="bg-white rounded-xl p-4 border border-purple-200">
-                <div class="flex items-center mb-2">
-                    <span class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                        <span class="material-icons text-purple-600 text-sm">arrow_upward</span>
+            <div class="bg-white rounded-lg p-3 border border-blue-200">
+                <div class="flex items-center mb-1">
+                    <span class="w-6 h-6 bg-purple-100 rounded flex items-center justify-center mr-2">
+                        <span class="material-icons text-purple-600 text-xs">arrow_upward</span>
                     </span>
-                    <span class="font-semibold text-gray-900">To Mission</span>
+                    <span class="font-medium text-gray-900 text-sm">To Mission</span>
                 </div>
-                <p class="text-2xl font-bold text-purple-600">{{ branch_data.mission_remittance|currency }}</p>
-                <p class="text-xs text-gray-600 mt-1">10% of tithes</p>
+                <p class="text-lg font-bold text-purple-600">{{ branch_data.mission_remittance|currency }}</p>
+                <p class="text-xs text-gray-600">10% of tithes</p>
             </div>
             
-            <div class="bg-white rounded-xl p-4 border border-orange-200">
-                <div class="flex items-center mb-2">
-                    <span class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
-                        <span class="material-icons text-orange-600 text-sm">shopping_cart</span>
+            <div class="bg-white rounded-lg p-3 border border-blue-200">
+                <div class="flex items-center mb-1">
+                    <span class="w-6 h-6 bg-orange-100 rounded flex items-center justify-center mr-2">
+                        <span class="material-icons text-orange-600 text-xs">shopping_cart</span>
                     </span>
-                    <span class="font-semibold text-gray-900">Spent Locally</span>
+                    <span class="font-medium text-gray-900 text-sm">Spent Locally</span>
                 </div>
-                <p class="text-2xl font-bold text-orange-600">{{ branch_data.money_spent_by_branch|currency }}</p>
-                <p class="text-xs text-gray-600 mt-1">Branch expenses</p>
+                <p class="text-lg font-bold text-orange-600">{{ branch_data.money_spent_by_branch|currency }}</p>
+                <p class="text-xs text-gray-600">Branch expenses</p>
             </div>
             
-            <div class="bg-white rounded-xl p-4 border border-teal-200">
-                <div class="flex items-center mb-2">
-                    <span class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
-                        <span class="material-icons text-teal-600 text-sm">account_balance_wallet</span>
+            <div class="bg-white rounded-lg p-3 border border-blue-200">
+                <div class="flex items-center mb-1">
+                    <span class="w-6 h-6 bg-teal-100 rounded flex items-center justify-center mr-2">
+                        <span class="material-icons text-teal-600 text-xs">account_balance_wallet</span>
                     </span>
-                    <span class="font-semibold text-gray-900">Remaining</span>
+                    <span class="font-medium text-gray-900 text-sm">Remaining</span>
                 </div>
-                <p class="text-2xl font-bold text-teal-600">{{ branch_data.branch_coffer_balance|currency }}</p>
-                <p class="text-xs text-gray-600 mt-1">In branch coffers</p>
+                <p class="text-lg font-bold text-teal-600">{{ branch_data.branch_coffer_balance|currency }}</p>
+                <p class="text-xs text-gray-600">In branch coffers</p>
             </div>
         </div>
     </div>
-                        <p class="text-xs text-gray-500 mt-2">Financial health</p>
-                    </div>
-                    <div class="w-12 h-12 {% if branch_data.local_balance >= 0 %}bg-green-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
-                        <span class="material-icons {% if branch_data.local_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                            {% if branch_data.local_balance >= 0 %}check_circle{% else %}warning{% endif %}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Detailed Financial Breakdown -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Detailed Financial Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Contributions Breakdown -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
-                <h2 class="text-xl font-bold text-white flex items-center">
+        <div class="bg-white rounded-lg shadow border border-gray-200">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
+                <h2 class="text-lg font-bold text-white flex items-center">
                     <span class="material-icons-outlined mr-2">savings</span>
                     Money Received Breakdown
                 </h2>
             </div>
-            <div class="p-6">
+            <div class="p-4">
                 {% if contributions_by_type %}
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         {% for contribution_type, amount in contributions_by_type.items %}
-                        <div class="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200 hover:bg-green-100 transition-colors">
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                             <div class="flex items-center">
-                                <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
                                 <div>
-                                    <span class="font-semibold text-gray-900">{{ contribution_type }}</span>
+                                    <span class="font-medium text-gray-900">{{ contribution_type }}</span>
                                     <p class="text-xs text-gray-600 mt-1">
                                         {% if branch_data.total_contributions > 0 %}
                                         {{ amount|div:branch_data.total_contributions|mul:100|floatformat:1 }}% of total
@@ -225,13 +178,13 @@
                                     </p>
                                 </div>
                             </div>
-                            <span class="font-bold text-green-600 text-lg">{{ amount|currency }}</span>
+                            <span class="font-bold text-green-600">{{ amount|currency }}</span>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-8">
-                        <span class="material-icons-outlined text-5xl text-gray-300 mb-3">savings</span>
+                    <div class="text-center py-6">
+                        <span class="material-icons-outlined text-4xl text-gray-300 mb-2">savings</span>
                         <p class="text-gray-500">No contribution data available</p>
                     </div>
                 {% endif %}
@@ -239,22 +192,22 @@
         </div>
 
         <!-- Expenditures Breakdown -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
-                <h2 class="text-xl font-bold text-white flex items-center">
+        <div class="bg-white rounded-lg shadow border border-gray-200">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+                <h2 class="text-lg font-bold text-white flex items-center">
                     <span class="material-icons-outlined mr-2">payments</span>
                     Money Spent Breakdown
                 </h2>
             </div>
-            <div class="p-6">
+            <div class="p-4">
                 {% if expenditures_by_category %}
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         {% for category, amount in expenditures_by_category.items %}
-                        <div class="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-200 hover:bg-orange-100 transition-colors">
+                        <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
                             <div class="flex items-center">
-                                <span class="w-3 h-3 bg-orange-500 rounded-full mr-3"></span>
+                                <span class="w-2 h-2 bg-orange-500 rounded-full mr-3"></span>
                                 <div>
-                                    <span class="font-semibold text-gray-900">{{ category }}</span>
+                                    <span class="font-medium text-gray-900">{{ category }}</span>
                                     <p class="text-xs text-gray-600 mt-1">
                                         {% if branch_data.money_spent_by_branch > 0 %}
                                         {{ amount|div:branch_data.money_spent_by_branch|mul:100|floatformat:1 }}% of expenses
@@ -262,13 +215,13 @@
                                     </p>
                                 </div>
                             </div>
-                            <span class="font-bold text-orange-600 text-lg">{{ amount|currency }}</span>
+                            <span class="font-bold text-orange-600">{{ amount|currency }}</span>
                         </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-8">
-                        <span class="material-icons-outlined text-5xl text-gray-300 mb-3">payments</span>
+                    <div class="text-center py-6">
+                        <span class="material-icons-outlined text-4xl text-gray-300 mb-2">payments</span>
                         <p class="text-gray-500">No expenditure data available</p>
                     </div>
                 {% endif %}
@@ -277,10 +230,10 @@
     </div>
 
     <!-- Recent Transactions -->
-    <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
-        <div class="p-6 border-b border-gray-200">
+    <div class="bg-white rounded-lg shadow border border-gray-200">
+        <div class="p-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                <h2 class="text-lg font-bold text-gray-900 flex items-center">
                     <span class="material-icons-outlined mr-2 text-blue-600">receipt_long</span>
                     Recent Transactions
                 </h2>
@@ -293,22 +246,22 @@
         <div class="divide-y divide-gray-200">
             {% if recent_transactions %}
                 {% for transaction in recent_transactions %}
-                <div class="p-6 hover:bg-gray-50 transition-colors">
+                <div class="p-4 hover:bg-gray-50">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 {% if transaction.type == 'contribution' %}bg-green-100{% else %}bg-orange-100{% endif %} rounded-xl flex items-center justify-center">
-                                <span class="material-icons {% if transaction.type == 'contribution' %}text-green-600{% else %}text-orange-600{% endif %} text-xl">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 {% if transaction.type == 'contribution' %}bg-green-100{% else %}bg-orange-100{% endif %} rounded-lg flex items-center justify-center">
+                                <span class="material-icons {% if transaction.type == 'contribution' %}text-green-600{% else %}text-orange-600{% endif %}">
                                     {% if transaction.type == 'contribution' %}arrow_downward{% else %}arrow_upward{% endif %}
                                 </span>
                             </div>
                             <div>
-                                <p class="font-semibold text-gray-900 text-lg">{{ transaction.description }}</p>
+                                <p class="font-medium text-gray-900">{{ transaction.description }}</p>
                                 <p class="text-sm text-gray-500">{{ transaction.date|date:"M d, Y" }}</p>
                                 <p class="text-xs text-gray-400 mt-1">{{ transaction.category }}</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="font-bold {% if transaction.type == 'contribution' %}text-green-600{% else %}text-orange-600{% endif %} text-xl">
+                            <p class="font-bold {% if transaction.type == 'contribution' %}text-green-600{% else %}text-orange-600{% endif %}">
                                 {% if transaction.type == 'contribution' %}+{% endif %}{{ transaction.amount|currency }}
                             </p>
                             <p class="text-xs text-gray-500 mt-1">
@@ -319,17 +272,17 @@
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="text-center py-12">
-                    <span class="material-icons-outlined text-6xl text-gray-300 mb-4">receipt_long</span>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Recent Transactions</h3>
-                    <p class="text-gray-500">No transactions found in the last 30 days</p>
-                </div>
+            <div class="text-center py-8">
+                <span class="material-icons-outlined text-5xl text-gray-300 mb-3">receipt_long</span>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Recent Transactions</h3>
+                <p class="text-gray-500">No transactions found in the last 30 days</p>
+            </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Enhanced Print Styles -->
+<!-- Simple Print Styles -->
 <style>
 @media print {
     .no-print {
@@ -342,7 +295,7 @@
         color: #000 !important;
     }
     
-    .shadow-xl, .shadow-2xl {
+    .shadow {
         box-shadow: none !important;
         border: 1px solid #e5e7eb !important;
     }
@@ -357,18 +310,6 @@
     
     .hover\:bg-gray-50:hover {
         background-color: transparent !important;
-    }
-    
-    .hover\:shadow-2xl:hover {
-        box-shadow: none !important;
-    }
-    
-    .hover\:scale-105:hover {
-        transform: none !important;
-    }
-    
-    .transition-all, .transition-colors, .transition-shadow {
-        transition: none !important;
     }
     
     /* Church Header */
@@ -392,7 +333,7 @@
         font-size: 12px;
         margin-top: 20px;
         color: #6b7280;
-        border-top: 2px solid #e5e7eb;
+        border-top: 1px solid #e5e7eb;
         padding-top: 10px;
     }
     
@@ -407,7 +348,7 @@
     }
     
     /* Keep borders for structure */
-    .border-2, .border {
+    .border {
         border-color: #e5e7eb !important;
     }
 }
@@ -415,8 +356,6 @@
 
 <script>
 function exportToPDF() {
-    // Simple PDF export using window.print for now
-    // In a real implementation, you might use a library like jsPDF
     window.print();
 }
 </script>
