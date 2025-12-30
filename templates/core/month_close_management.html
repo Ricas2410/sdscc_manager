@@ -236,7 +236,7 @@ function confirmCloseMonth() {
     button.innerHTML = '<span class="material-icons-outlined animate-spin mr-1">hourglass_empty</span> Processing...';
     button.disabled = true;
     
-    fetch('/core/management/close-month/', {
+    fetch('/management/close-month/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
