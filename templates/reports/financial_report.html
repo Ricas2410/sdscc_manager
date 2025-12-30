@@ -3,22 +3,22 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Simple Dark Header -->
-    <div class="bg-gray-900 rounded-lg shadow-lg p-6 text-white">
-        <div class="sm:flex sm:items-center sm:justify-between">
+    <!-- Very Simple Dark Header -->
+    <div style="background-color: #1a1a1a; color: white; padding: 24px; border-radius: 8px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
-                <h1 class="text-3xl font-bold text-white">Financial Report</h1>
-                <p class="mt-2 text-gray-300">Comprehensive financial analysis and reporting</p>
+                <h1 style="color: white; font-size: 32px; font-weight: bold; margin: 0;">Financial Report</h1>
+                <p style="color: #d1d5db; margin: 8px 0 0 0;">Comprehensive financial analysis and reporting</p>
                 {% if fiscal_year %}
-                <p class="mt-1 text-sm text-gray-400">Fiscal Year: {{ fiscal_year.name }} ({{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }})</p>
+                <p style="color: #9ca3af; font-size: 14px; margin: 4px 0 0 0;">Fiscal Year: {{ fiscal_year.name }} ({{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }})</p>
                 {% endif %}
             </div>
-            <div class="mt-4 sm:mt-0 flex space-x-3">
-                <button onclick="window.print()" class="bg-white text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 font-medium shadow-md transition-colors">
-                    <span class="material-icons-outlined mr-1">print</span> Print Report
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                <button onclick="window.print()" style="background-color: white; color: #1a1a1a; padding: 8px 16px; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                    <span style="vertical-align: middle; margin-right: 4px;">🖨️</span> Print Report
                 </button>
-                <a href="?export=pdf" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 font-medium shadow-md transition-colors">
-                    <span class="material-icons-outlined mr-1">download</span> Export PDF
+                <a href="?export=pdf" style="background-color: #374151; color: white; padding: 8px 16px; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                    <span style="vertical-align: middle; margin-right: 4px;">📥</span> Export PDF
                 </a>
             </div>
         </div>
