@@ -1,8 +1,11 @@
 import logging
+import json
 from django.utils import timezone
 from django.shortcuts import render
 from django.core.cache import cache
 from django.conf import settings
+from django.http import HttpResponse
+from django.core.exceptions import RequestDataTooBig
 from .models import SiteSettings
 
 logger = logging.getLogger('core')
@@ -58,3 +61,34 @@ class AuditLogMiddleware:
             )
             
         return response
+
+class MultipartErrorHandler:
+    """Handle multipart parser errors that cause SystemExit in gunicorn workers."""
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        try:
+            return self.get_response(request)
+        except (RequestDataTooBig, OSError, ValueError) as e:
+            # Log the error for debugging
+            logger.error(f"Multipart parser error: {e}", exc_info=True)
+            
+            # Return a user-friendly error response
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                # AJAX request
+                return HttpResponse(
+                    json.dumps({'error': 'File upload too large or invalid format'}),
+                    content_type='application/json',
+                    status=413
+                )
+            else:
+                # Regular form submission - redirect back with error message
+                from django.contrib import messages
+                messages.error(request, 'File upload failed: File too large or invalid format. Please try again.')
+                # Redirect to the same page or a safe fallback
+                return HttpResponse(status=413)  # Let the browser handle it
+        except Exception as e:
+            # Re-raise other exceptions
+            raise e

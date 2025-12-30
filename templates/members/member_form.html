@@ -18,7 +18,7 @@
         </a>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-6">
+    <form method="post" id="memberForm" class="space-y-6">
         {% csrf_token %}
 
         <!-- Personal Information -->
@@ -705,6 +705,14 @@
         }
     });
     {% endif %}
+    
+    // Handle form enctype dynamically
+    document.getElementById('memberForm').addEventListener('submit', function(e) {
+        const profilePictureInput = document.getElementById('profile_picture');
+        if (profilePictureInput && profilePictureInput.files.length > 0) {
+            this.enctype = 'multipart/form-data';
+        }
+    });
 </script>
 {% endif %}
 {% endblock %}

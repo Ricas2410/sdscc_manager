@@ -80,6 +80,7 @@ MIDDLEWARE = [
     'core.middleware.MaintenanceMiddleware',
     'core.middleware.ActiveUserMiddleware',
     'core.middleware.AuditLogMiddleware',
+    'core.middleware.MultipartErrorHandler',
 ]
 
 
