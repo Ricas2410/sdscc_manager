@@ -9,96 +9,100 @@
             <p class="mt-1 text-sm text-gray-500">System activity and changes trail</p>
         </div>
         <div class="mt-4 sm:mt-0 flex space-x-2">
-            <a href="{% url 'auditing:flags' %}" class="btn-secondary">
-                <span class="material-icons-outlined mr-1">flag</span> Flags
+            <a href="{% url 'auditing:flags' %}" class="btn btn-secondary inline-flex items-center">
+                <span class="material-icons-outlined mr-1 text-lg">flag</span> Flags
             </a>
-            <a href="{% url 'auditing:reports' %}" class="btn-secondary">
-                <span class="material-icons-outlined mr-1">assessment</span> Reports
+            <a href="{% url 'auditing:financial_reports' %}" class="btn btn-secondary inline-flex items-center">
+                <span class="material-icons-outlined mr-1 text-lg">assessment</span> Reports
             </a>
+            <button onclick="window.print()" class="btn btn-primary inline-flex items-center">
+                <span class="material-icons-outlined mr-1 text-lg">print</span> Print
+            </button>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white shadow rounded-lg p-4">
+    <div class="card">
         <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
-                <select name="action" class="input-field">
+            <div class="form-group">
+                <label class="form-label">Action</label>
+                <select name="action" class="form-input form-select">
                     <option value="">All Actions</option>
-                    <option value="create">Create</option>
-                    <option value="update">Update</option>
-                    <option value="delete">Delete</option>
+                    <option value="create" {% if request.GET.action == 'create' %}selected{% endif %}>Create</option>
+                    <option value="update" {% if request.GET.action == 'update' %}selected{% endif %}>Update</option>
+                    <option value="delete" {% if request.GET.action == 'delete' %}selected{% endif %}>Delete</option>
+                    <option value="view" {% if request.GET.action == 'view' %}selected{% endif %}>View</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Module</label>
-                <select name="module" class="input-field">
+            <div class="form-group">
+                <label class="form-label">Module</label>
+                <select name="module" class="form-input form-select">
                     <option value="">All Modules</option>
-                    <option value="contributions">Contributions</option>
-                    <option value="expenditure">Expenditure</option>
-                    <option value="members">Members</option>
-                    <option value="attendance">Attendance</option>
+                    <option value="contributions" {% if request.GET.module == 'contributions' %}selected{% endif %}>Contributions</option>
+                    <option value="expenditure" {% if request.GET.module == 'expenditure' %}selected{% endif %}>Expenditure</option>
+                    <option value="members" {% if request.GET.module == 'members' %}selected{% endif %}>Members</option>
+                    <option value="attendance" {% if request.GET.module == 'attendance' %}selected{% endif %}>Attendance</option>
+                    <option value="payroll" {% if request.GET.module == 'payroll' %}selected{% endif %}>Payroll</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                <input type="date" name="from_date" value="{{ request.GET.from_date }}" class="input-field">
+            <div class="form-group">
+                <label class="form-label">From Date</label>
+                <input type="date" name="from_date" value="{{ request.GET.from_date }}" class="form-input">
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                <input type="date" name="to_date" value="{{ request.GET.to_date }}" class="input-field">
+            <div class="form-group">
+                <label class="form-label">To Date</label>
+                <input type="date" name="to_date" value="{{ request.GET.to_date }}" class="form-input">
             </div>
             <div class="flex items-end">
-                <button type="submit" class="btn-primary w-full">Filter</button>
+                <button type="submit" class="btn btn-primary w-full">
+                    <span class="material-icons-outlined mr-1 text-lg">filter_list</span>
+                    Filter
+                </button>
             </div>
         </form>
     </div>
 
     <!-- Logs Table -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Module</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Module</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for log in logs %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ log.created_at|date:"M d, Y H:i" }}
+                    <tr>
+                        <td class="text-sm text-gray-500">
+                            {{ log.timestamp|date:"M d, Y H:i" }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td>
                             <div class="flex items-center">
-                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
-                                    {{ log.user.first_name|slice:":1" }}{{ log.user.last_name|slice:":1" }}
+                                <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-xs font-medium text-primary-700">
+                                    {{ log.user_name|slice:":1"|default:"S" }}{{ log.user_name|slice:"1:2"|default:"Y" }}
                                 </div>
                                 <div class="ml-3">
-                                    <p class="text-sm font-medium text-gray-900">{{ log.user.get_full_name }}</p>
-                                    <p class="text-xs text-gray-500">{{ log.user.role }}</p>
+                                    <p class="text-sm font-medium text-gray-900">{{ log.user_name|default:"System" }}</p>
+                                    <p class="text-xs text-gray-500">{{ log.user_role|title|default:"-" }}</p>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
-                                {% if log.action == 'create' %}bg-green-100 text-green-800
-                                {% elif log.action == 'update' %}bg-blue-100 text-blue-800
-                                {% elif log.action == 'delete' %}bg-red-100 text-red-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ log.action|title }}
+                        <td>
+                            <span class="badge {% if log.action == 'create' %}badge-success{% elif log.action == 'update' %}badge-primary{% elif log.action == 'delete' %}badge-danger{% else %}badge-gray{% endif %}">
+                                {{ log.get_action_display }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ log.content_type }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ log.changes|truncatewords:10 }}</td>
+                        <td class="text-sm text-gray-500">{{ log.content_type|title }}</td>
+                        <td class="text-sm text-gray-500">{{ log.object_repr|truncatewords:10 }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center">
+                        <td colspan="5" class="text-center py-12">
                             <span class="material-icons-outlined text-5xl text-gray-300">history</span>
                             <p class="mt-2 text-gray-500">No audit logs found</p>
                         </td>
@@ -107,6 +111,24 @@
                 </tbody>
             </table>
         </div>
+        
+        {% if logs.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    Page {{ logs.number }} of {{ logs.paginator.num_pages }}
+                </div>
+                <div class="flex space-x-2">
+                    {% if logs.has_previous %}
+                    <a href="?page={{ logs.previous_page_number }}&{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Previous</a>
+                    {% endif %}
+                    {% if logs.has_next %}
+                    <a href="?page={{ logs.next_page_number }}&{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

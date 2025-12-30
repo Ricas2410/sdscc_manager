@@ -26,6 +26,12 @@ urlpatterns = [
     path('dismiss-pin-modal/', views.dismiss_pin_change_modal, name='dismiss_pin_modal'),
     path('update-pin/', views.update_pin_ajax, name='update_pin_ajax'),
     
+    # User Change Requests
+    path('change-requests/', views.my_change_requests, name='my_change_requests'),
+    path('change-requests/submit/', views.request_profile_change, name='request_profile_change'),
+    path('change-requests/manage/', views.manage_change_requests, name='manage_change_requests'),
+    path('change-requests/<uuid:request_id>/review/', views.review_change_request, name='review_change_request'),
+    
     # Admin - User Management
     path('users/', views.users_list, name='users'),
     path('users/add/', views.add_user, name='add_user'),

@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Final Financial Report - {{ month_name }} {{ year }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Final Financial Report</h1>
+                <p class="text-slate-600 mt-1">Comprehensive Income vs Expenditure - {{ month_name }} {{ year }}</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="btn btn-secondary">
+                    <span class="material-icons-outlined text-lg mr-2">print</span>
+                    Print Report
+                </button>
+                <a href="{% url 'reports:index' %}" class="btn btn-secondary">
+                    <span class="material-icons-outlined text-lg mr-2">arrow_back</span>
+                    Back to Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="form-group">
+                <label class="form-label">Month</label>
+                <select name="month" class="form-select">
+                    {% for m, name in months %}
+                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Year</label>
+                <select name="year" class="form-select">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <span class="material-icons-outlined text-lg mr-2">search</span>
+                Generate Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Overall Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm mb-1">Total Income</p>
+                    <h3 class="text-3xl font-bold">{{ site_settings.currency_symbol }}{{ overall_income|floatformat:2 }}</h3>
+                </div>
+                <span class="material-icons text-5xl opacity-30">account_balance_wallet</span>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-red-500 to-red-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm mb-1">Total Expenditure</p>
+                    <h3 class="text-3xl font-bold">{{ site_settings.currency_symbol }}{{ overall_expenditure|floatformat:2 }}</h3>
+                </div>
+                <span class="material-icons text-5xl opacity-30">receipt_long</span>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br {% if overall_balance >= 0 %}from-green-500 to-green-600{% else %}from-orange-500 to-orange-600{% endif %} text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="{% if overall_balance >= 0 %}text-green-100{% else %}text-orange-100{% endif %} text-sm mb-1">Net Balance</p>
+                    <h3 class="text-3xl font-bold">{{ site_settings.currency_symbol }}{{ overall_balance|floatformat:2 }}</h3>
+                </div>
+                <span class="material-icons text-5xl opacity-30">{% if overall_balance >= 0 %}trending_up{% else %}trending_down{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mission Level Section -->
+    <div class="card mb-6">
+        <div class="card-header bg-blue-50 border-b border-blue-200">
+            <h2 class="text-xl font-bold text-blue-900 flex items-center">
+                <span class="material-icons-outlined mr-2">account_balance</span>
+                Mission Level Finances
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Mission Income -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Income</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-slate-700">Remittances from Branches</span>
+                            <span class="font-semibold text-green-700">{{ site_settings.currency_symbol }}{{ total_remittances|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-slate-700">Other Mission Income</span>
+                            <span class="font-semibold text-green-700">{{ site_settings.currency_symbol }}{{ mission_other_income|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-100 rounded-lg border border-green-300">
+                            <span class="font-bold text-slate-900">Total Mission Income</span>
+                            <span class="font-bold text-green-800 text-lg">{{ site_settings.currency_symbol }}{{ total_mission_income|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Mission Income Chart -->
+                    <div class="mt-4">
+                        <canvas id="missionIncomeChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Mission Expenditure -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Expenditure</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-slate-700">Staff Payroll</span>
+                            <span class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ total_payroll|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-slate-700">Mission Expenses</span>
+                            <span class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ mission_expenses|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-slate-700">Returns to Branches</span>
+                            <span class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ mission_returns|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-100 rounded-lg border border-red-300">
+                            <span class="font-bold text-slate-900">Total Mission Expenditure</span>
+                            <span class="font-bold text-red-800 text-lg">{{ site_settings.currency_symbol }}{{ total_mission_expenditure|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Mission Expense Chart -->
+                    <div class="mt-4">
+                        <canvas id="missionExpenseChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mission Net Balance -->
+            <div class="mt-6 p-4 bg-gradient-to-r {% if mission_net_balance >= 0 %}from-green-100 to-green-50{% else %}from-orange-100 to-orange-50{% endif %} rounded-lg border {% if mission_net_balance >= 0 %}border-green-300{% else %}border-orange-300{% endif %}">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-slate-900">Mission Net Balance</span>
+                    <span class="text-2xl font-bold {% if mission_net_balance >= 0 %}text-green-700{% else %}text-orange-700{% endif %}">
+                        {{ site_settings.currency_symbol }}{{ mission_net_balance|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch Level Summary -->
+    <div class="card mb-6">
+        <div class="card-header bg-green-50 border-b border-green-200">
+            <h2 class="text-xl font-bold text-green-900 flex items-center">
+                <span class="material-icons-outlined mr-2">store</span>
+                Branch Level Aggregates
+            </h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Branch Income -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Income (All Branches)</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-slate-700">Tithe</span>
+                            <span class="font-semibold text-green-700">{{ site_settings.currency_symbol }}{{ total_branch_tithe|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-slate-700">Offerings</span>
+                            <span class="font-semibold text-green-700">{{ site_settings.currency_symbol }}{{ total_branch_offerings|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span class="text-slate-700">Other Contributions</span>
+                            <span class="font-semibold text-green-700">{{ site_settings.currency_symbol }}{{ total_branch_other|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-100 rounded-lg border border-green-300">
+                            <span class="font-bold text-slate-900">Total Branch Income</span>
+                            <span class="font-bold text-green-800 text-lg">{{ site_settings.currency_symbol }}{{ total_branch_income|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Branch Income Chart -->
+                    <div class="mt-4">
+                        <canvas id="branchIncomeChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Branch Expenditure -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Expenditure (All Branches)</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-slate-700">Branch Expenses</span>
+                            <span class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ total_branch_expenses|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-slate-700">Remittance to Mission</span>
+                            <span class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ total_branch_remitted|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                            <span class="text-slate-700">Pastor Commission</span>
+                            <span class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ total_branch_commission|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-red-100 rounded-lg border border-red-300">
+                            <span class="font-bold text-slate-900">Total Branch Expenditure</span>
+                            <span class="font-bold text-red-800 text-lg">{{ site_settings.currency_symbol }}{{ total_branch_expenditure|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Branch Expense Chart -->
+                    <div class="mt-4">
+                        <canvas id="branchExpenseChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branch Net Balance -->
+            <div class="mt-6 p-4 bg-gradient-to-r {% if total_branch_balance >= 0 %}from-green-100 to-green-50{% else %}from-orange-100 to-orange-50{% endif %} rounded-lg border {% if total_branch_balance >= 0 %}border-green-300{% else %}border-orange-300{% endif %}">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-slate-900">Total Branch Balance (Retained)</span>
+                    <span class="text-2xl font-bold {% if total_branch_balance >= 0 %}text-green-700{% else %}text-orange-700{% endif %}">
+                        {{ site_settings.currency_symbol }}{{ total_branch_balance|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Branches by Income -->
+    <div class="card mb-6">
+        <div class="card-header">
+            <h2 class="text-xl font-bold text-slate-900">Top 10 Branches by Income</h2>
+        </div>
+        <div class="card-body">
+            <canvas id="topBranchesChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Branch-by-Branch Details -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                <span class="material-icons-outlined mr-2">table_chart</span>
+                Branch-by-Branch Breakdown
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Branch</th>
+                        <th>Tithe</th>
+                        <th>Offerings</th>
+                        <th>Other</th>
+                        <th>Total Income</th>
+                        <th>Expenses</th>
+                        <th>Remittance</th>
+                        <th>Commission</th>
+                        <th>Total Expenditure</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in branch_data %}
+                    <tr>
+                        <td class="font-medium">{{ item.branch.name }}</td>
+                        <td>{{ site_settings.currency_symbol }}{{ item.tithe|floatformat:2 }}</td>
+                        <td>{{ site_settings.currency_symbol }}{{ item.offerings|floatformat:2 }}</td>
+                        <td>{{ site_settings.currency_symbol }}{{ item.other_income|floatformat:2 }}</td>
+                        <td class="font-semibold text-green-700">{{ site_settings.currency_symbol }}{{ item.total_income|floatformat:2 }}</td>
+                        <td>{{ site_settings.currency_symbol }}{{ item.expenses|floatformat:2 }}</td>
+                        <td>{{ site_settings.currency_symbol }}{{ item.remittance|floatformat:2 }}</td>
+                        <td>{{ site_settings.currency_symbol }}{{ item.commission|floatformat:2 }}</td>
+                        <td class="font-semibold text-red-700">{{ site_settings.currency_symbol }}{{ item.total_expenditure|floatformat:2 }}</td>
+                        <td class="font-bold {% if item.balance >= 0 %}text-green-700{% else %}text-red-700{% endif %}">
+                            {{ site_settings.currency_symbol }}{{ item.balance|floatformat:2 }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    };
+
+    // Mission Income Chart
+    const missionIncomeData = {{ mission_income_chart|safe }};
+    new Chart(document.getElementById('missionIncomeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: missionIncomeData.labels,
+            datasets: [{
+                data: missionIncomeData.data,
+                backgroundColor: ['#10b981', '#3b82f6']
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Mission Expense Chart
+    const missionExpenseData = {{ mission_expense_chart|safe }};
+    new Chart(document.getElementById('missionExpenseChart'), {
+        type: 'doughnut',
+        data: {
+            labels: missionExpenseData.labels,
+            datasets: [{
+                data: missionExpenseData.data,
+                backgroundColor: ['#ef4444', '#f97316', '#f59e0b']
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Branch Income Chart
+    const branchIncomeData = {{ branch_income_chart|safe }};
+    new Chart(document.getElementById('branchIncomeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: branchIncomeData.labels,
+            datasets: [{
+                data: branchIncomeData.data,
+                backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6']
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Branch Expense Chart
+    const branchExpenseData = {{ branch_expense_chart|safe }};
+    new Chart(document.getElementById('branchExpenseChart'), {
+        type: 'doughnut',
+        data: {
+            labels: branchExpenseData.labels,
+            datasets: [{
+                data: branchExpenseData.data,
+                backgroundColor: ['#ef4444', '#f97316', '#f59e0b']
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Top Branches Chart
+    const topBranchesData = {{ top_branches_chart|safe }};
+    new Chart(document.getElementById('topBranchesChart'), {
+        type: 'bar',
+        data: {
+            labels: topBranchesData.labels,
+            datasets: [{
+                label: 'Total Income',
+                data: topBranchesData.data,
+                backgroundColor: '#3b82f6'
+            }]
+        },
+        options: {
+            ...chartOptions,
+            indexAxis: 'y',
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

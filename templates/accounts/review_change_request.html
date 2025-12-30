@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Change Request{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Review Change Request</h1>
+                <p class="text-slate-600 mt-1">Review and approve/reject this profile change request</p>
+            </div>
+            <a href="{% url 'accounts:manage_change_requests' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined text-lg mr-2">arrow_back</span>
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Request Details Card -->
+    <div class="card mb-6">
+        <div class="card-header bg-blue-50 border-b border-blue-200">
+            <h2 class="text-xl font-bold text-blue-900">Request Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Member Info -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">Member Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-slate-600">Full Name</label>
+                            <p class="font-medium">{{ change_request.user.get_full_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Member ID</label>
+                            <p class="font-medium">{{ change_request.user.member_id }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Branch</label>
+                            <p class="font-medium">{{ change_request.user.branch.name|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Email</label>
+                            <p class="font-medium">{{ change_request.user.email|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Phone</label>
+                            <p class="font-medium">{{ change_request.user.phone|default:"-" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Details -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">Change Details</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-slate-600">Field to Change</label>
+                            <p class="font-bold text-blue-700">{{ change_request.get_field_name_display }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Current Value</label>
+                            <p class="font-medium text-red-700 line-through">{{ change_request.old_value|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">New Value (Requested)</label>
+                            <p class="font-bold text-green-700">{{ change_request.new_value }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Reason for Change</label>
+                            <p class="font-medium">{{ change_request.reason|default:"-" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-600">Requested On</label>
+                            <p class="font-medium">{{ change_request.requested_at|date:"F d, Y \a\\t h:i A" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Badge -->
+            <div class="mt-6 pt-6 border-t">
+                <label class="text-sm text-slate-600">Current Status</label>
+                <p>
+                    <span class="badge badge-lg
+                        {% if change_request.status == 'pending' %}badge-warning
+                        {% elif change_request.status == 'approved' %}badge-success
+                        {% elif change_request.status == 'applied' %}badge-info
+                        {% else %}badge-danger{% endif %}">
+                        {{ change_request.get_status_display }}
+                    </span>
+                </p>
+            </div>
+
+            <!-- Review Info (if already reviewed) -->
+            {% if change_request.reviewed_by %}
+            <div class="mt-6 pt-6 border-t bg-slate-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-slate-900 mb-3">Review Information</h3>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-sm text-slate-600">Reviewed By</label>
+                        <p class="font-medium">{{ change_request.reviewed_by.get_full_name }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-slate-600">Reviewed On</label>
+                        <p class="font-medium">{{ change_request.reviewed_at|date:"F d, Y \a\\t h:i A" }}</p>
+                    </div>
+                    {% if change_request.review_notes %}
+                    <div>
+                        <label class="text-sm text-slate-600">Review Notes</label>
+                        <p class="font-medium">{{ change_request.review_notes }}</p>
+                    </div>
+                    {% endif %}
+                    {% if change_request.applied_at %}
+                    <div>
+                        <label class="text-sm text-slate-600">Applied On</label>
+                        <p class="font-medium">{{ change_request.applied_at|date:"F d, Y \a\\t h:i A" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Review Form (only if pending) -->
+    {% if change_request.status == 'pending' %}
+    <div class="card">
+        <div class="card-header bg-green-50 border-b border-green-200">
+            <h2 class="text-xl font-bold text-green-900">Review Action</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group mb-4">
+                    <label class="form-label">Review Notes (Optional)</label>
+                    <textarea name="notes" rows="3" class="form-control" placeholder="Add notes about your decision..."></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" name="action" value="approve" class="btn btn-success">
+                        <span class="material-icons-outlined text-lg mr-2">check_circle</span>
+                        Approve & Apply Change
+                    </button>
+                    <button type="submit" name="action" value="reject" class="btn btn-danger">
+                        <span class="material-icons-outlined text-lg mr-2">cancel</span>
+                        Reject Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

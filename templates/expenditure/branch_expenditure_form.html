@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
+            <p class="text-sm text-gray-500">Record expenses for branch operations</p>
+        </div>
+        <a href="{% url 'expenditure:branch_list' %}" class="btn btn-secondary inline-flex items-center">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back to List
+        </a>
+    </div>
+
+    <!-- Help Alert -->
+    <div class="card bg-green-50 border-green-200">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-green-600 mt-1">info</span>
+            <div class="flex-1">
+                <h3 class="font-semibold text-green-900 mb-1">Branch Expense</h3>
+                <p class="text-sm text-green-800">
+                    Use this form to record expenses for your local branch, such as:
+                    utilities, maintenance, local programs, and branch supplies.
+                    These expenses will be deducted from your Branch Coffer.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900 inline-flex items-center">
+                    <span class="material-icons-outlined text-primary-600 mr-2">receipt_long</span>
+                    Expense Details
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% if request.user.is_mission_admin %}
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label required">Branch</label>
+                        <select name="branch" required class="form-input form-select">
+                            <option value="">Select Branch</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if request.user.branch_id == branch.id %}selected{% endif %}>
+                                {{ branch.name }} - {{ branch.district.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Branch</label>
+                        <input type="text" value="{{ request.user.branch.name }}" disabled class="form-input bg-gray-50">
+                        <input type="hidden" name="branch" value="{{ request.user.branch_id }}">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Date</label>
+                        <input type="date" name="date" value="{{ today }}" required class="form-input">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Amount (GH₵)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">GH₵</span>
+                            <input type="number" name="amount" step="0.01" min="0.01" required 
+                                   class="form-input pl-16" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Category</label>
+                        <select name="category" required class="form-input form-select">
+                            <option value="">Select Category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <span class="material-icons-outlined text-xs align-middle">help_outline</span>
+                            Only branch-level categories are shown
+                        </p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">Title / Description</label>
+                        <input type="text" name="title" required class="form-input" 
+                               placeholder="Brief description of expense">
+                    </div>
+                    
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label">Full Description</label>
+                        <textarea name="description" rows="3" class="form-input" 
+                                  placeholder="Provide more details about this expense (optional)"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendor & Payment Info -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900 inline-flex items-center">
+                    <span class="material-icons-outlined text-primary-600 mr-2">store</span>
+                    Vendor & Payment Information
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-group">
+                        <label class="form-label">Vendor / Payee</label>
+                        <input type="text" name="vendor" class="form-input" 
+                               placeholder="Who received the payment?">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            Payment ID / Transaction Reference
+                            <span class="material-icons-outlined text-xs text-gray-400 align-middle" 
+                                  title="Optional payment tracking number">help_outline</span>
+                        </label>
+                        <input type="text" name="payment_reference" class="form-input" 
+                               placeholder="e.g., TRX-12345 (optional)">
+                        <p class="text-xs text-gray-500 mt-1">For tracking payments across records</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Invoice / Receipt Number</label>
+                        <input type="text" name="reference" class="form-input" 
+                               placeholder="e.g., INV-001 (optional)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex flex-col sm:flex-row justify-end gap-4">
+            <a href="{% url 'expenditure:branch_list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg inline-flex items-center">
+                <span class="material-icons-outlined mr-2">save</span>
+                Save Branch Expense
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

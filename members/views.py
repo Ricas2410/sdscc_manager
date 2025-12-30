@@ -253,11 +253,9 @@ def member_add(request):
                 ordaining_minister=ordaining_minister if role == 'pastor' else '',
             )
             
-            # Handle profile picture
+            # Handle profile picture - only if provided (new member won't have existing photo)
             if profile_picture:
                 member.profile_picture = profile_picture
-            elif remove_photo and member.profile_picture:
-                member.profile_picture = None
             
             member.set_password(default_pin)
             if branch_id:
@@ -437,6 +435,25 @@ def member_edit(request, member_id):
             member.set_password('12345')
             password_reset = True
             messages.warning(request, f'Password for {member.get_full_name()} has been reset to 12345')
+
+        # Handle profile picture - process BEFORE save()
+        profile_picture = request.FILES.get('profile_picture')
+        remove_photo = request.POST.get('remove_photo') == 'true'
+        
+        if profile_picture:
+            # Delete old picture if exists (for Cloudinary cleanup)
+            if member.profile_picture:
+                try:
+                    member.profile_picture.delete(save=False)
+                except Exception:
+                    pass  # Ignore deletion errors
+            member.profile_picture = profile_picture
+        elif remove_photo and member.profile_picture:
+            try:
+                member.profile_picture.delete(save=False)
+            except Exception:
+                pass
+            member.profile_picture = None
 
         member.save()
         

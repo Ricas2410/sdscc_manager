@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
+            <p class="text-gray-500 mt-1">{{ page_description }}</p>
+            <p class="text-sm text-gray-400 mt-1">
+                <span class="material-icons-outlined text-xs align-middle">info</span>
+                These expenses are deducted from the Mission Coffer (total remittances from all branches)
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if can_add %}
+            <a href="{% url 'expenditure:add_mission' %}" class="btn btn-primary inline-flex items-center">
+                <span class="material-icons-outlined mr-2">add</span>
+                Add Mission Expense
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="btn btn-secondary inline-flex items-center">
+                <span class="material-icons-outlined mr-2">print</span>
+                Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-red-100">
+                    <span class="material-icons-outlined text-red-600">payments</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Expenses</p>
+                    <p class="text-xl font-bold text-gray-900">{{ totals.total_amount|currency|default:"GH₵ 0.00" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Approved/Paid</p>
+                    <p class="text-xl font-bold text-gray-900">{{ totals.approved_amount|currency|default:"GH₵ 0.00" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">pending</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Pending Approval</p>
+                    <p class="text-xl font-bold text-gray-900">{{ totals.pending_amount|currency|default:"GH₵ 0.00" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-input form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-input form-select">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="paid" {% if selected_status == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">From Date</label>
+                <input type="date" name="from_date" value="{{ from_date }}" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">To Date</label>
+                <input type="date" name="to_date" value="{{ to_date }}" class="form-input">
+            </div>
+            
+            <div class="flex items-end gap-2">
+                <button type="submit" class="btn btn-primary flex-1 inline-flex items-center justify-center">
+                    <span class="material-icons-outlined mr-1">filter_list</span>
+                    Filter
+                </button>
+                <a href="{% url 'expenditure:mission_list' %}" class="btn btn-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Expenditures Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th class="text-right">Amount</th>
+                        <th>Vendor/Recipient</th>
+                        <th>Payment ID</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expenditure in expenditures %}
+                    <tr>
+                        <td class="text-sm">{{ expenditure.date|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="font-medium text-gray-900">{{ expenditure.title }}</div>
+                            {% if expenditure.description %}
+                            <div class="text-xs text-gray-500">{{ expenditure.description|truncatewords:10 }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-sm text-gray-600">{{ expenditure.category.name }}</td>
+                        <td class="text-right font-semibold">{{ expenditure.amount|currency }}</td>
+                        <td class="text-sm text-gray-600">{{ expenditure.vendor|default:"-" }}</td>
+                        <td class="text-sm text-gray-600">
+                            {% if expenditure.payment_reference %}
+                            <span class="badge badge-gray">{{ expenditure.payment_reference }}</span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if expenditure.status == 'approved' %}badge-success
+                                {% elif expenditure.status == 'paid' %}badge-primary
+                                {% elif expenditure.status == 'pending' %}badge-warning
+                                {% else %}badge-danger{% endif %}">
+                                {{ expenditure.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <a href="{% url 'expenditure:detail' expenditure.id %}" 
+                               class="text-primary-600 hover:text-primary-800 font-medium"
+                               title="View Details">
+                                <span class="material-icons-outlined text-lg">visibility</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-12">
+                            <span class="material-icons-outlined text-5xl text-gray-300">account_balance</span>
+                            <p class="mt-2 text-gray-500 font-medium">No mission-wide expenses recorded</p>
+                            <p class="text-sm text-gray-400 mt-1">
+                                Mission expenses include salaries, mission operations, and headquarters costs
+                            </p>
+                            {% if can_add %}
+                            <a href="{% url 'expenditure:add_mission' %}" class="btn btn-primary mt-4 inline-flex items-center">
+                                <span class="material-icons-outlined mr-2">add</span>
+                                Add First Mission Expense
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if expenditures.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">
+                    Page {{ expenditures.number }} of {{ expenditures.paginator.num_pages }}
+                </div>
+                <div class="flex space-x-2">
+                    {% if expenditures.has_previous %}
+                    <a href="?page={{ expenditures.previous_page_number }}&{{ request.GET.urlencode }}" 
+                       class="btn btn-secondary btn-sm">Previous</a>
+                    {% endif %}
+                    {% if expenditures.has_next %}
+                    <a href="?page={{ expenditures.next_page_number }}&{{ request.GET.urlencode }}" 
+                       class="btn btn-secondary btn-sm">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Help Text for Non-Technical Users -->
+    <div class="card bg-blue-50 border-blue-200">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-blue-600 mt-1">help_outline</span>
+            <div class="flex-1">
+                <h3 class="font-semibold text-blue-900 mb-2">What are Mission-Wide Expenses?</h3>
+                <p class="text-sm text-blue-800 mb-2">
+                    Mission-wide expenses are costs that benefit the entire church organization, not just one branch. 
+                    These include:
+                </p>
+                <ul class="text-sm text-blue-800 list-disc list-inside space-y-1 ml-4">
+                    <li><strong>Staff Salaries:</strong> Payments to mission employees (pastors, administrators, etc.)</li>
+                    <li><strong>Headquarters Operations:</strong> Rent, utilities, and supplies for the mission office</li>
+                    <li><strong>Mission Programs:</strong> Church-wide events, training, conferences</li>
+                    <li><strong>Mission Equipment:</strong> Vehicles, computers, and other mission assets</li>
+                </ul>
+                <p class="text-sm text-blue-800 mt-2">
+                    <strong>Important:</strong> These expenses are paid from the Mission Coffer, which contains 
+                    remittances sent by all branches. They are separate from individual branch expenses.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

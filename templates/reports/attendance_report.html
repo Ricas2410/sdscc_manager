@@ -3,66 +3,288 @@
 
 {% block content %}
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Attendance Report</h1>
-            <p class="text-gray-500 mt-1">Service attendance analysis</p>
+            <p class="text-gray-500 mt-1">Service attendance analysis by branch hierarchy</p>
         </div>
-        <a href="{% url 'reports:index' %}" class="btn btn-secondary">Back</a>
+        <div class="flex gap-2">
+            <button onclick="exportReport('pdf')" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2 text-lg">picture_as_pdf</span>Export PDF
+            </button>
+            <button onclick="exportReport('excel')" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2 text-lg">table_chart</span>Export Excel
+            </button>
+            <a href="{% url 'reports:index' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2 text-lg">arrow_back</span>Back
+            </a>
+        </div>
     </div>
 
+    <!-- Filters Card -->
     <div class="card">
-        <div class="card-body p-4">
-            <form method="get" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Filter Options</h2>
+            <p class="text-sm text-gray-500 mt-1">Select Area → District → Branch for hierarchical filtering</p>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="form-group mb-0">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" name="start_date" class="form-input">
+                    <label class="form-label">Area</label>
+                    <select name="area" id="areaSelect" class="form-input form-select" onchange="updateDistricts()">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if selected_area==area.id|stringformat:"s" %}selected{% endif
+                            %}>
+                            {{ area.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group mb-0">
-                    <label class="form-label">End Date</label>
-                    <input type="date" name="end_date" class="form-input">
+                    <label class="form-label">District</label>
+                    <select name="district" id="districtSelect" class="form-input form-select"
+                        onchange="updateBranches()">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" data-area="{{ district.area_id }}" {% if
+                            selected_district==district.id|stringformat:"s" %}selected{% endif %}>
+                            {{ district.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group mb-0">
                     <label class="form-label">Branch</label>
-                    <select name="branch" class="form-input form-select">
+                    <select name="branch" id="branchSelect" class="form-input form-select">
                         <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" data-district="{{ branch.district_id }}" {% if
+                            selected_branch==branch.id|stringformat:"s" %}selected{% endif %}>
+                            {{ branch.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
-                <div class="flex items-end">
-                    <button type="submit" class="btn btn-primary w-full">Generate</button>
+                <div class="form-group mb-0">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="form-input">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="form-input">
+                </div>
+                <div class="lg:col-span-5 flex justify-end gap-2 pt-2">
+                    <a href="{% url 'reports:attendance' %}" class="btn btn-secondary">
+                        <span class="material-icons-outlined mr-2 text-lg">refresh</span>Clear Filters
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2 text-lg">filter_list</span>Apply Filters
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Summary Stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="stat-card">
-            <p class="text-sm text-gray-500">Total Sessions</p>
-            <p class="text-2xl font-bold">{{ total_sessions|default:"0" }}</p>
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-blue-100">
+                    <span class="material-icons-outlined text-blue-600">event</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Sessions</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_sessions|default:"0" }}</p>
+                </div>
+            </div>
         </div>
         <div class="stat-card">
-            <p class="text-sm text-gray-500">Avg Attendance</p>
-            <p class="text-2xl font-bold">{{ avg_attendance|default:"0" }}</p>
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-green-100">
+                    <span class="material-icons-outlined text-green-600">groups</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Avg Attendance</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ avg_attendance|floatformat:0|default:"0" }}</p>
+                </div>
+            </div>
         </div>
         <div class="stat-card">
-            <p class="text-sm text-gray-500">Total Visitors</p>
-            <p class="text-2xl font-bold">{{ total_visitors|default:"0" }}</p>
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-purple-100">
+                    <span class="material-icons-outlined text-purple-600">person_add</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Visitors</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_visitors|default:"0" }}</p>
+                </div>
+            </div>
         </div>
         <div class="stat-card">
-            <p class="text-sm text-gray-500">Peak Attendance</p>
-            <p class="text-2xl font-bold">{{ peak_attendance|default:"0" }}</p>
+            <div class="flex items-center gap-3">
+                <div class="stat-icon bg-yellow-100">
+                    <span class="material-icons-outlined text-yellow-600">trending_up</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Peak Attendance</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ peak_attendance|default:"0" }}</p>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Attendance by Branch Table -->
+    {% if by_branch %}
     <div class="card">
-        <div class="card-header"><h2 class="font-semibold">Attendance Trend</h2></div>
-        <div class="card-body"><canvas id="attendanceChart" height="300"></canvas></div>
+        <div class="card-header flex items-center justify-between">
+            <div>
+                <h2 class="font-semibold text-gray-900">Attendance by Branch</h2>
+                <p class="text-sm text-gray-500">Top performing branches</p>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Branch</th>
+                        <th class="text-center">Sessions</th>
+                        <th class="text-center">Total Present</th>
+                        <th class="text-center">Avg per Session</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in by_branch %}
+                    <tr>
+                        <td class="font-medium">{{ item.branch__name }}</td>
+                        <td class="text-center">{{ item.session_count }}</td>
+                        <td class="text-center">{{ item.total_present }}</td>
+                        <td class="text-center">
+                            {% widthratio item.total_present item.session_count 1 %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attendance Trend Chart -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">Attendance Trend</h2>
+            <p class="text-sm text-gray-500">Weekly attendance overview</p>
+        </div>
+        <div class="card-body">
+            <div style="height: 300px;">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
+
 <script>
-new Chart(document.getElementById('attendanceChart'), {
-    type: 'line', data: { labels: ['Week 1','Week 2','Week 3','Week 4'], datasets: [{ label: 'Attendance', data: [120,135,128,145], borderColor: '#3b82f6', fill: false }] },
-    options: { responsive: true, maintainAspectRatio: false }
-});
+    // Hierarchical filter logic
+    function updateDistricts() {
+        const areaSelect = document.getElementById('areaSelect');
+        const districtSelect = document.getElementById('districtSelect');
+        const selectedArea = areaSelect.value;
+
+        // Show/hide district options based on selected area
+        Array.from(districtSelect.options).forEach(option => {
+            if (option.value === '' || !selectedArea) {
+                option.style.display = '';
+            } else {
+                option.style.display = option.dataset.area === selectedArea ? '' : 'none';
+            }
+        });
+
+        // Reset district selection if current selection doesn't match area
+        const currentDistrict = districtSelect.options[districtSelect.selectedIndex];
+        if (currentDistrict && currentDistrict.dataset.area && currentDistrict.dataset.area !== selectedArea) {
+            districtSelect.value = '';
+        }
+
+        updateBranches();
+    }
+
+    function updateBranches() {
+        const districtSelect = document.getElementById('districtSelect');
+        const branchSelect = document.getElementById('branchSelect');
+        const selectedDistrict = districtSelect.value;
+        const areaSelect = document.getElementById('areaSelect');
+        const selectedArea = areaSelect.value;
+
+        // Show/hide branch options based on selected district
+        Array.from(branchSelect.options).forEach(option => {
+            if (option.value === '') {
+                option.style.display = '';
+            } else if (selectedDistrict) {
+                option.style.display = option.dataset.district === selectedDistrict ? '' : 'none';
+            } else if (selectedArea) {
+                // If only area is selected, show all branches in that area's districts
+                const districtOption = Array.from(districtSelect.options).find(d => d.value === option.dataset.district);
+                option.style.display = districtOption && districtOption.dataset.area === selectedArea ? '' : 'none';
+            } else {
+                option.style.display = '';
+            }
+        });
+
+        // Reset branch selection if current selection doesn't match district
+        const currentBranch = branchSelect.options[branchSelect.selectedIndex];
+        if (currentBranch && currentBranch.dataset.district && selectedDistrict && currentBranch.dataset.district !== selectedDistrict) {
+            branchSelect.value = '';
+        }
+    }
+
+    function exportReport(format) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('export', format);
+        window.open(currentUrl.toString(), '_blank');
+    }
+
+    // Initialize filters
+    document.addEventListener('DOMContentLoaded', function () {
+        updateDistricts();
+
+        // Initialize chart
+        const ctx = document.getElementById('attendanceChart');
+        if (ctx) {
+            const chartLabels = {{ chart_labels| safe |default: "['Week 1','Week 2','Week 3','Week 4']"
+        }
+    };
+    const chartData = {{ chart_data| safe |default: "[0,0,0,0]" }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Attendance',
+                data: chartData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+        }
+    });
 </script>
 {% endblock %}

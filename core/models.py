@@ -627,6 +627,142 @@ class SpecialDateReminder(models.Model):
         return f"{self.user.get_full_name()} - {self.get_reminder_type_display()}"
 
 
+# ============ FINANCIAL SUMMARY MODELS ============
+
+class MissionFinancialSummary(TimeStampedModel):
+    """Track monthly financial summary at mission level."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.PROTECT, related_name='mission_summaries')
+    month = models.IntegerField()  # 1-12
+    year = models.IntegerField()
+    
+    # Opening Balance
+    opening_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Opening balance at start of month')
+    
+    # Income
+    total_remittances = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total remittances from branches')
+    total_other_income = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Other mission income')
+    total_income = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total income for month')
+    
+    # Expenditure
+    total_payroll = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total staff payroll')
+    total_mission_expenses = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total mission-level expenses')
+    total_mission_returns = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Money returned to branches')
+    total_expenditure = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total expenditure for month')
+    
+    # Closing Balance
+    closing_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Closing balance at end of month')
+    
+    # Status
+    is_closed = models.BooleanField(default=False)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='closed_mission_summaries'
+    )
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-year', '-month']
+        unique_together = ['month', 'year']
+        verbose_name = 'Mission Financial Summary'
+        verbose_name_plural = 'Mission Financial Summaries'
+    
+    def __str__(self):
+        from calendar import month_name
+        return f"Mission Summary - {month_name[self.month]} {self.year}"
+    
+    def calculate_totals(self):
+        """Calculate total income, expenditure, and closing balance."""
+        self.total_income = self.total_remittances + self.total_other_income
+        self.total_expenditure = self.total_payroll + self.total_mission_expenses + self.total_mission_returns
+        self.closing_balance = self.opening_balance + self.total_income - self.total_expenditure
+        self.save()
+
+
+class BranchFinancialSummary(TimeStampedModel):
+    """Track monthly financial summary at branch level."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    fiscal_year = models.ForeignKey(FiscalYear, on_delete=models.PROTECT, related_name='branch_summaries')
+    branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name='financial_summaries')
+    month = models.IntegerField()  # 1-12
+    year = models.IntegerField()
+    
+    # Opening Balance
+    opening_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Opening balance at start of month')
+    
+    # Income
+    total_tithe = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total tithe collected')
+    total_offerings = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total offerings collected')
+    total_other_contributions = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Other contributions')
+    mission_returns = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Money received from mission')
+    total_income = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total income for month')
+    
+    # Expenditure
+    total_branch_expenses = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Branch-level expenses')
+    remittance_to_mission = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Amount remitted to mission')
+    pastor_commission = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Pastor commission paid')
+    total_expenditure = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Total expenditure for month')
+    
+    # Closing Balance
+    closing_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0, help_text='Closing balance at end of month')
+    
+    # Target & Performance
+    tithe_target = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text='Monthly tithe target')
+    target_achieved = models.BooleanField(default=False)
+    achievement_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Percentage of target achieved')
+    
+    # Status
+    is_closed = models.BooleanField(default=False)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='closed_branch_summaries'
+    )
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-year', '-month', 'branch__name']
+        unique_together = ['branch', 'month', 'year']
+        verbose_name = 'Branch Financial Summary'
+        verbose_name_plural = 'Branch Financial Summaries'
+    
+    def __str__(self):
+        from calendar import month_name
+        return f"{self.branch.name} - {month_name[self.month]} {self.year}"
+    
+    def calculate_totals(self):
+        """Calculate total income, expenditure, closing balance, and target achievement."""
+        self.total_income = (
+            self.total_tithe + 
+            self.total_offerings + 
+            self.total_other_contributions + 
+            self.mission_returns
+        )
+        self.total_expenditure = (
+            self.total_branch_expenses + 
+            self.remittance_to_mission + 
+            self.pastor_commission
+        )
+        self.closing_balance = self.opening_balance + self.total_income - self.total_expenditure
+        
+        # Calculate target achievement
+        if self.tithe_target > 0:
+            self.achievement_percentage = (self.total_tithe / self.tithe_target) * 100
+            self.target_achieved = self.total_tithe >= self.tithe_target
+        else:
+            self.achievement_percentage = 0
+            self.target_achieved = False
+        
+        self.save()
+
+
 # Import calendar models to register them with Django
 from .calendar_models import CalendarEvent, YearlyCalendar
 from .models_assets import ChurchAsset, ChurchAssetMaintenance, ChurchAssetTransfer

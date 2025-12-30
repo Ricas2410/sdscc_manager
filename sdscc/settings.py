@@ -17,7 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'rRBJ7zT5daSvTsNA6WyE5yjf13uyYnH8lB17XTwRSfsRi-oMApo2IRQhKxwf17jXE2c')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
+# Default to True for local development; production should set DJANGO_DEBUG=False
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,sdscc.fly.dev').split(',')
 
@@ -175,6 +176,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media files (uploads) - Cloudinary Configuration
 MEDIA_URL = '/media/'  # Default fallback
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 
 # Parse CLOUDINARY_URL if provided (format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME)
 CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')

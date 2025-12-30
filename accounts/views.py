@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.db import models
 from django.http import JsonResponse
 
-from .models import User, UserProfile, LoginHistory
+from .models import User, UserProfile, LoginHistory, UserChangeRequest
 
 
 def login_view(request):
@@ -866,3 +866,157 @@ def update_pin_ajax(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error'}, status=400)
+
+
+# ============ USER CHANGE REQUEST SYSTEM ============
+
+@login_required
+def request_profile_change(request):
+    """Member submits a profile change request."""
+    from .models import UserChangeRequest
+    
+    if request.method == 'POST':
+        field_name = request.POST.get('field_name')
+        new_value = request.POST.get('new_value', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        
+        if not field_name or not new_value:
+            messages.error(request, 'Field name and new value are required.')
+            return redirect('accounts:profile')
+        
+        # Get current value
+        try:
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            
+            user_fields = ['first_name', 'last_name', 'other_names', 'email', 'phone', 'date_of_birth', 'gender']
+            
+            if field_name in user_fields:
+                old_value = str(getattr(request.user, field_name, ''))
+            else:
+                old_value = str(getattr(profile, field_name, ''))
+            
+            # Check if value is actually changing
+            if old_value == new_value:
+                messages.warning(request, 'New value is the same as current value.')
+                return redirect('accounts:profile')
+            
+            # Create change request
+            change_request = UserChangeRequest.objects.create(
+                user=request.user,
+                field_name=field_name,
+                old_value=old_value,
+                new_value=new_value,
+                reason=reason
+            )
+            
+            messages.success(request, f'Change request submitted for {change_request.get_field_name_display()}. An administrator will review it.')
+            return redirect('accounts:my_change_requests')
+            
+        except Exception as e:
+            messages.error(request, f'Error submitting change request: {str(e)}')
+            return redirect('accounts:profile')
+    
+    return redirect('accounts:profile')
+
+
+@login_required
+def my_change_requests(request):
+    """View user's own change requests."""
+    from .models import UserChangeRequest
+    
+    change_requests = UserChangeRequest.objects.filter(user=request.user).order_by('-requested_at')
+    
+    # Count by status
+    pending_count = change_requests.filter(status='pending').count()
+    approved_count = change_requests.filter(status='approved').count()
+    rejected_count = change_requests.filter(status='rejected').count()
+    
+    context = {
+        'change_requests': change_requests,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+    }
+    
+    return render(request, 'accounts/my_change_requests.html', context)
+
+
+@login_required
+def manage_change_requests(request):
+    """Admin view to manage all change requests."""
+    from .models import UserChangeRequest
+    
+    if not (request.user.is_mission_admin or request.user.is_branch_executive):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    # Filter by status
+    status_filter = request.GET.get('status', 'pending')
+    
+    change_requests = UserChangeRequest.objects.select_related('user', 'reviewed_by').order_by('-requested_at')
+    
+    if status_filter and status_filter != 'all':
+        change_requests = change_requests.filter(status=status_filter)
+    
+    # Filter by branch for branch executives
+    if request.user.is_branch_executive and request.user.branch:
+        change_requests = change_requests.filter(user__branch=request.user.branch)
+    
+    # Count by status
+    all_requests = UserChangeRequest.objects.all()
+    if request.user.is_branch_executive and request.user.branch:
+        all_requests = all_requests.filter(user__branch=request.user.branch)
+    
+    pending_count = all_requests.filter(status='pending').count()
+    approved_count = all_requests.filter(status='approved').count()
+    rejected_count = all_requests.filter(status='rejected').count()
+    applied_count = all_requests.filter(status='applied').count()
+    
+    context = {
+        'change_requests': change_requests,
+        'status_filter': status_filter,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'applied_count': applied_count,
+    }
+    
+    return render(request, 'accounts/manage_change_requests.html', context)
+
+
+@login_required
+def review_change_request(request, request_id):
+    """Admin reviews and approves/rejects a change request."""
+    from .models import UserChangeRequest
+    
+    if not (request.user.is_mission_admin or request.user.is_branch_executive):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    change_request = get_object_or_404(UserChangeRequest, pk=request_id)
+    
+    # Branch executives can only review requests from their branch
+    if request.user.is_branch_executive and request.user.branch:
+        if change_request.user.branch != request.user.branch:
+            messages.error(request, 'Access denied.')
+            return redirect('accounts:manage_change_requests')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        notes = request.POST.get('notes', '').strip()
+        
+        if action == 'approve':
+            change_request.approve(request.user, notes)
+            messages.success(request, f'Change request approved and applied for {change_request.user.get_full_name()}.')
+        elif action == 'reject':
+            change_request.reject(request.user, notes)
+            messages.success(request, f'Change request rejected for {change_request.user.get_full_name()}.')
+        
+        return redirect('accounts:manage_change_requests')
+    
+    context = {
+        'change_request': change_request,
+    }
+    
+    return render(request, 'accounts/review_change_request.html', context)
+

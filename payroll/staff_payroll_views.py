@@ -528,6 +528,222 @@ def payslip_detail(request, payslip_id):
 
 
 @login_required
+def payment_history(request):
+    """Payment history page showing monthly salary breakdown with filtering."""
+    from decimal import Decimal
+    from calendar import month_name
+    
+    # Get filter parameters
+    year = request.GET.get('year', str(timezone.now().year))
+    month = request.GET.get('month', '')
+    staff_id = request.GET.get('staff')
+    
+    # Check permissions
+    is_admin = request.user.is_mission_admin
+    is_auditor = request.user.is_auditor and SiteSettings.get_settings().allow_auditor_payroll_access
+    is_own_record = False
+    
+    if not (is_admin or is_auditor):
+        # Regular staff can only view their own records
+        try:
+            profile = StaffPayrollProfile.objects.get(user=request.user, is_active=True)
+            is_own_record = True
+            staff_id = str(profile.id)
+        except StaffPayrollProfile.DoesNotExist:
+            messages.error(request, 'You do not have a payroll profile.')
+            return redirect('core:dashboard')
+    
+    # Base queryset
+    payslips = PaySlip.objects.select_related(
+        'staff_profile__user',
+        'staff_profile__position',
+        'payroll_run'
+    ).order_by('-payroll_run__year', '-payroll_run__month', 'staff_profile__user__last_name')
+    
+    # Apply filters
+    if year:
+        payslips = payslips.filter(payroll_run__year=year)
+    
+    if month:
+        payslips = payslips.filter(payroll_run__month=month)
+    
+    if staff_id:
+        payslips = payslips.filter(staff_profile_id=staff_id)
+    
+    # Calculate summary statistics
+    total_gross_pay = payslips.aggregate(total=Sum('gross_pay'))['total'] or Decimal('0.00')
+    total_deductions = payslips.aggregate(total=Sum('total_deductions'))['total'] or Decimal('0.00')
+    total_net_pay = payslips.aggregate(total=Sum('net_pay'))['total'] or Decimal('0.00')
+    total_payslips = payslips.count()
+    
+    # Get monthly breakdown
+    monthly_breakdown = payslips.values(
+        'payroll_run__year',
+        'payroll_run__month'
+    ).annotate(
+        total_gross=Sum('gross_pay'),
+        total_deductions=Sum('total_deductions'),
+        total_net=Sum('net_pay'),
+        payslip_count=Count('id')
+    ).order_by('-payroll_run__year', '-payroll_run__month')
+    
+    # Get staff list (for filter)
+    if is_admin or is_auditor:
+        staff_profiles = StaffPayrollProfile.objects.filter(is_active=True).select_related('user')
+    else:
+        staff_profiles = StaffPayrollProfile.objects.filter(user=request.user, is_active=True)
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(payslips, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'payslips': page_obj,
+        'staff_profiles': staff_profiles,
+        'selected_year': year,
+        'selected_month': month,
+        'selected_staff': staff_id,
+        'years': range(timezone.now().year - 3, timezone.now().year + 1),
+        'months': [(i, month_name[i]) for i in range(1, 13)],
+        
+        # Summary
+        'total_gross_pay': total_gross_pay,
+        'total_deductions': total_deductions,
+        'total_net_pay': total_net_pay,
+        'total_payslips': total_payslips,
+        
+        # Monthly breakdown
+        'monthly_breakdown': monthly_breakdown,
+        
+        # Permissions
+        'is_admin': is_admin,
+        'is_auditor': is_auditor,
+        'is_own_record': is_own_record,
+    }
+    
+    return render(request, 'payroll/payment_history.html', context)
+
+
+@login_required
+def export_payment_history(request):
+    """Export payment history to Excel."""
+    from decimal import Decimal
+    from calendar import month_name
+    
+    # Get filter parameters
+    year = request.GET.get('year', str(timezone.now().year))
+    month = request.GET.get('month', '')
+    staff_id = request.GET.get('staff')
+    
+    # Check permissions
+    is_admin = request.user.is_mission_admin
+    is_auditor = request.user.is_auditor and SiteSettings.get_settings().allow_auditor_payroll_access
+    
+    if not (is_admin or is_auditor):
+        # Regular staff can only export their own records
+        try:
+            profile = StaffPayrollProfile.objects.get(user=request.user, is_active=True)
+            staff_id = str(profile.id)
+        except StaffPayrollProfile.DoesNotExist:
+            messages.error(request, 'You do not have a payroll profile.')
+            return redirect('payroll:payment_history')
+    
+    # Base queryset
+    payslips = PaySlip.objects.select_related(
+        'staff_profile__user',
+        'staff_profile__position',
+        'payroll_run'
+    ).order_by('-payroll_run__year', '-payroll_run__month', 'staff_profile__user__last_name')
+    
+    # Apply filters
+    if year:
+        payslips = payslips.filter(payroll_run__year=year)
+    if month:
+        payslips = payslips.filter(payroll_run__month=month)
+    if staff_id:
+        payslips = payslips.filter(staff_profile_id=staff_id)
+    
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, PatternFill
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        messages.error(request, 'Excel export requires openpyxl package.')
+        return redirect('payroll:payment_history')
+    
+    # Create workbook
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    
+    # Payment History Sheet
+    ws = wb.create_sheet("Payment History", 0)
+    
+    # Headers styling
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Headers
+    headers = ["Year", "Month", "Staff ID", "Staff Name", "Position", 
+               "Basic Salary", "Allowances", "Gross Pay", "SSNIT", "Other Deductions", 
+               "Total Deductions", "Net Pay", "Payment Status"]
+    
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+    
+    # Data rows
+    for row, payslip in enumerate(payslips, 2):
+        data = [
+            payslip.payroll_run.year,
+            month_name[payslip.payroll_run.month],
+            payslip.staff_profile.user.username,
+            payslip.staff_profile.user.get_full_name(),
+            payslip.staff_profile.position.name if payslip.staff_profile.position else "N/A",
+            payslip.basic_salary,
+            payslip.total_allowances,
+            payslip.gross_pay,
+            payslip.ssnit_deduction,
+            payslip.total_deductions - payslip.ssnit_deduction,
+            payslip.total_deductions,
+            payslip.net_pay,
+            payslip.get_payment_status_display()
+        ]
+        
+        for col, value in enumerate(data, 1):
+            cell = ws.cell(row=row, column=col, value=value)
+            if col >= 6 and col <= 12:  # Amount columns
+                cell.number_format = '#,##0.00'
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Create response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"payment_history_{year}_{month or 'all'}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
+
+
+@login_required
 def export_payroll(request):
     """Export payroll to Excel."""
     if not request.user.is_mission_admin:

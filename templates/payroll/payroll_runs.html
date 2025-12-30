@@ -9,9 +9,11 @@
             <h1 class="text-2xl font-bold text-gray-900">Payroll Runs</h1>
             <p class="text-gray-500 mt-1">Monthly payroll processing history</p>
         </div>
+        {% if can_run_payroll %}
         <button onclick="openModal('newPayrollModal')" class="btn btn-primary">
             <span class="material-icons-outlined mr-2">add</span>Run Payroll
         </button>
+        {% endif %}
     </div>
 
     <!-- Stats Cards -->
@@ -83,19 +85,19 @@
                         <td>
                             <span class="font-medium text-gray-900">{{ run.get_month_display }} {{ run.year }}</span>
                         </td>
-                        <td class="text-gray-500">{{ run.run_date|date:"M d, Y" }}</td>
-                        <td class="text-right font-semibold">{{ run.total_amount|currency }}</td>
+                        <td class="text-gray-500">{{ run.processed_at|date:"M d, Y"|default:run.created_at|date:"M d, Y" }}</td>
+                        <td class="text-right font-semibold">{{ run.total_net_pay|currency|default:"GH₵ 0.00" }}</td>
                         <td class="text-center">
                             <span class="badge badge-gray">{{ run.payslips.count }}</span>
                         </td>
                         <td>
-                            <span class="badge {% if run.status == 'completed' %}badge-success{% elif run.status == 'processing' %}badge-warning{% else %}badge-gray{% endif %}">
+                            <span class="badge {% if run.status == 'paid' %}badge-success{% elif run.status == 'processing' %}badge-warning{% elif run.status == 'approved' %}badge-primary{% else %}badge-gray{% endif %}">
                                 {{ run.get_status_display }}
                             </span>
                         </td>
                         <td class="text-gray-500">{{ run.processed_by.get_full_name|default:"-" }}</td>
                         <td class="text-right">
-                            <a href="#" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg inline-block" title="View">
+                            <a href="{% url 'payroll:payroll_processing' %}?month={{ run.month }}&year={{ run.year }}" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg inline-block" title="View Details">
                                 <span class="material-icons-outlined text-lg">visibility</span>
                             </a>
                         </td>
@@ -105,7 +107,9 @@
                         <td colspan="7" class="text-center py-12">
                             <span class="material-icons-outlined text-5xl text-gray-300">payments</span>
                             <p class="mt-2 text-gray-500">No payroll runs found</p>
+                            {% if can_run_payroll %}
                             <button onclick="openModal('newPayrollModal')" class="btn btn-primary mt-4">Run First Payroll</button>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -121,7 +125,7 @@
     <div class="modal-content">
         <div class="p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Run New Payroll</h2>
-            <form method="post" action="{% url 'payroll:runs' %}">
+            <form id="payrollForm" method="post" action="{% url 'payroll:runs' %}" onsubmit="return handlePayrollSubmit(event)">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="run">
                 <div class="grid grid-cols-2 gap-4">
@@ -141,12 +145,53 @@
                         </select>
                     </div>
                 </div>
+                
+                <!-- Loading State -->
+                <div id="payrollLoadingState" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-blue-700">Processing Payroll...</p>
+                            <p class="text-sm text-blue-600">Generating payslips for all staff. This may take a moment.</p>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="closeModal('newPayrollModal')" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Process Payroll</button>
+                    <button type="button" onclick="closeModal('newPayrollModal')" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span class="material-icons-outlined mr-2 text-lg">play_arrow</span>
+                        Process Payroll
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+function handlePayrollSubmit(event) {
+    const form = document.getElementById('payrollForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const loadingState = document.getElementById('payrollLoadingState');
+    
+    // Show loading state
+    loadingState.classList.remove('hidden');
+    
+    // Disable buttons
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+    cancelBtn.disabled = true;
+    cancelBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    // Allow form to submit
+    return true;
+}
+</script>
 {% endblock %}
+

@@ -13,16 +13,18 @@
         </div>
         <div class="flex items-center gap-3">
             {% if request.user.is_branch_executive %}
-            <a href="{% url 'reports:monthly_report_generate' %}" class="btn-primary">
+            <a href="{% url 'reports:monthly_report_generate' %}" class="btn btn-primary inline-flex items-center">
                 <span class="material-icons-outlined text-lg mr-2">add</span>
                 Generate Report
             </a>
             {% endif %}
+            {% if reports %}
             <a href="{% url 'reports:monthly_report_export_pdf' %}?month={{ selected_month }}&year={{ selected_year }}" 
-               class="btn-secondary" target="_blank">
+               class="btn btn-secondary inline-flex items-center" target="_blank">
                 <span class="material-icons-outlined text-lg mr-2">picture_as_pdf</span>
                 Export PDF
             </a>
+            {% endif %}
         </div>
     </div>
     
@@ -60,11 +62,11 @@
     </div>
     
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="card">
         <form method="GET" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                <select name="month" class="form-input">
+            <div class="form-group">
+                <label class="form-label">Month</label>
+                <select name="month" class="form-input form-select">
                     <option value="">All Months</option>
                     {% for month_num, month_name in months %}
                     <option value="{{ month_num }}" {% if selected_month == month_num %}selected{% endif %}>
@@ -74,9 +76,9 @@
                 </select>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                <select name="year" class="form-input">
+            <div class="form-group">
+                <label class="form-label">Year</label>
+                <select name="year" class="form-input form-select">
                     <option value="">All Years</option>
                     {% for year in years %}
                     <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>
@@ -86,9 +88,9 @@
                 </select>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
-                <select name="branch" class="form-input">
+            <div class="form-group">
+                <label class="form-label">Branch</label>
+                <select name="branch" class="form-input form-select">
                     <option value="">All Branches</option>
                     {% for branch in branches %}
                     <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
@@ -98,9 +100,9 @@
                 </select>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select name="status" class="form-input">
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-input form-select">
                     <option value="">All Status</option>
                     {% for value, label in status_choices %}
                     <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
@@ -111,98 +113,92 @@
             </div>
             
             <div class="flex items-end gap-2">
-                <button type="submit" class="btn-primary flex-1">Filter</button>
-                <a href="{% url 'reports:monthly_reports' %}" class="btn-secondary">Clear</a>
+                <button type="submit" class="btn btn-primary flex-1 inline-flex items-center justify-center">
+                    <span class="material-icons-outlined mr-1 text-lg">filter_list</span>
+                    Filter
+                </button>
+                <a href="{% url 'reports:monthly_reports' %}" class="btn btn-secondary">Clear</a>
             </div>
         </form>
     </div>
     
     <!-- Reports Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+    <div class="card">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Branch
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Period
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total Contributions
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Mission Due
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Balance
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
+                        <th>Branch</th>
+                        <th>Period</th>
+                        <th class="text-right">Total Contributions</th>
+                        <th class="text-right">Mission Due</th>
+                        <th class="text-right">Balance</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     {% for report in reports %}
-                    <tr class="{% if report.is_overdue %}bg-red-50{% endif %} hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ report.branch.name }}</div>
+                    <tr class="{% if report.is_overdue %}bg-red-50{% endif %}">
+                        <td>
+                            <div class="font-medium text-gray-900">{{ report.branch.name }}</div>
                             <div class="text-xs text-gray-500">{{ report.branch.district.name }}</div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ report.month_name }} {{ report.year }}</div>
+                        <td>
+                            <div>{{ report.month_name }} {{ report.year }}</div>
                             {% if report.is_overdue %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                <span class="material-icons text-xs mr-0.5">warning</span>
+                            <span class="badge badge-danger inline-flex items-center mt-1">
+                                <span class="material-icons-outlined text-xs mr-0.5">warning</span>
                                 Overdue
                             </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ report.total_contributions|currency }}</div>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ report.total_contributions|currency }}</div>
                             <div class="text-xs text-gray-500">
                                 Tithe: {{ report.tithe_amount|currency }}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium {% if report.mission_remittance_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                        <td class="text-right">
+                            <div class="font-semibold {% if report.mission_remittance_balance > 0 %}text-red-600{% else %}text-green-600{% endif %}">
                                 {{ report.mission_remittance_balance|currency }}
                             </div>
                             {% if report.mission_remittance_paid > 0 %}
                             <div class="text-xs text-gray-500">Paid: {{ report.mission_remittance_paid|currency }}</div>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ report.branch_balance|currency }}</div>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ report.branch_balance|currency }}</div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {% if report.status == 'draft' %}bg-gray-100 text-gray-800
-                                {% elif report.status == 'submitted' %}bg-yellow-100 text-yellow-800
-                                {% elif report.status == 'approved' %}bg-blue-100 text-blue-800
-                                {% elif report.status == 'paid' %}bg-green-100 text-green-800
-                                {% else %}bg-purple-100 text-purple-800{% endif %}">
+                        <td class="text-center">
+                            <span class="badge {% if report.status == 'draft' %}badge-gray
+                                {% elif report.status == 'submitted' %}badge-warning
+                                {% elif report.status == 'approved' %}badge-primary
+                                {% elif report.status == 'paid' %}badge-success
+                                {% else %}badge-info{% endif %}">
                                 {{ report.get_status_display }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            <a href="{% url 'reports:monthly_report_detail' report.id %}" 
-                               class="text-blue-600 hover:text-blue-900">View</a>
-                            <a href="{% url 'reports:monthly_report_export_single_pdf' report.id %}" 
-                               class="text-gray-600 hover:text-gray-900" target="_blank">PDF</a>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'reports:monthly_report_detail' report.id %}" 
+                                   class="text-primary-600 hover:text-primary-800 font-medium">View</a>
+                                <a href="{% url 'reports:monthly_report_export_single_pdf' report.id %}" 
+                                   class="text-gray-600 hover:text-gray-800" target="_blank" title="Export PDF">
+                                    <span class="material-icons-outlined text-lg">picture_as_pdf</span>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="7" class="text-center py-12">
                             <span class="material-icons-outlined text-5xl text-gray-300">assessment</span>
-                            <p class="mt-2 text-gray-500">No monthly reports found</p>
+                            <p class="mt-2 text-gray-500 font-medium">No monthly reports found for this period</p>
+                            <p class="text-sm text-gray-400 mt-1">Branch executives can generate monthly reports to track contributions and expenses</p>
                             {% if request.user.is_branch_executive %}
-                            <a href="{% url 'reports:monthly_report_generate' %}" class="btn-primary mt-4 inline-flex">
+                            <a href="{% url 'reports:monthly_report_generate' %}" class="btn btn-primary mt-4 inline-flex items-center">
+                                <span class="material-icons-outlined mr-2">add</span>
                                 Generate First Report
                             </a>
                             {% endif %}

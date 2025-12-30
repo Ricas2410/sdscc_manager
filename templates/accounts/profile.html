@@ -3,78 +3,304 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">My Profile</h1>
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 class="text-2xl font-bold text-gray-900">My Profile</h1>
+        <div class="flex gap-2">
+            {% if user.is_any_admin %}
+            <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary">
+                <span class="material-icons-outlined mr-2 text-lg">edit</span>
+                Edit Profile
+            </a>
+            {% else %}
+            <button onclick="openModal('changeRequestModal')" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2 text-lg">edit_note</span>
+                Request Changes
+            </button>
+            {% endif %}
+            <a href="{% url 'accounts:my_change_requests' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2 text-lg">history</span>
+                My Requests
+            </a>
+        </div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Profile Card -->
-        <div class="bg-white shadow rounded-lg p-6 text-center">
-            <div class="h-24 w-24 mx-auto rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-                {% if user.profile_picture %}
-                <img src="{{ user.profile_picture.url }}" class="h-24 w-24 object-cover">
-                {% else %}
-                <span class="text-4xl text-primary-600 font-bold">{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
+        <div class="card">
+            <div class="card-body text-center">
+                <div
+                    class="h-28 w-28 mx-auto rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center overflow-hidden shadow-lg">
+                    {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" class="h-28 w-28 object-cover" alt="Profile Picture">
+                    {% else %}
+                    <span class="text-4xl text-white font-bold">{{ user.first_name|slice:":1" }}{{
+                        user.last_name|slice:":1" }}</span>
+                    {% endif %}
+                </div>
+                <h2 class="mt-4 text-xl font-bold text-gray-900">{{ user.get_full_name }}</h2>
+                <p class="text-gray-500">{{ user.member_id }}</p>
+                <span
+                    class="mt-2 inline-flex px-3 py-1 text-sm font-medium rounded-full bg-primary-100 text-primary-800">
+                    {{ user.get_role_display }}
+                </span>
+                {% if user.branch %}
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <p class="text-sm text-gray-500">
+                        <span class="material-icons-outlined text-sm mr-1 align-middle">church</span>
+                        {{ user.branch.name }}
+                    </p>
+                    {% if user.branch.district %}
+                    <p class="text-xs text-gray-400 mt-1">{{ user.branch.district.name }}</p>
+                    {% endif %}
+                </div>
                 {% endif %}
             </div>
-            <h2 class="mt-4 text-xl font-bold text-gray-900">{{ user.get_full_name }}</h2>
-            <p class="text-gray-500">{{ user.member_id }}</p>
-            <span class="mt-2 inline-flex px-3 py-1 text-sm font-medium rounded-full bg-primary-100 text-primary-800">
-                {{ user.get_role_display }}
-            </span>
-            {% if user.branch %}
-            <p class="mt-4 text-sm text-gray-500">{{ user.branch.name }}</p>
-            {% endif %}
         </div>
 
         <!-- Profile Details -->
         <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
-                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <dt class="text-sm text-gray-500">Email</dt>
-                        <dd class="font-medium">{{ user.email|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-gray-500">Phone</dt>
-                        <dd class="font-medium">{{ user.phone|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-gray-500">Gender</dt>
-                        <dd class="font-medium">{{ user.get_gender_display|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-gray-500">Date of Birth</dt>
-                        <dd class="font-medium">{{ user.date_of_birth|date:"F d, Y"|default:"-" }}</dd>
-                    </div>
-                    <div class="md:col-span-2">
-                        <dt class="text-sm text-gray-500">Address</dt>
-                        <dd class="font-medium">{{ user.address|default:"-" }}</dd>
-                    </div>
-                </dl>
+            <!-- Personal Information -->
+            <div class="card">
+                <div class="card-header flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900">Personal Information</h3>
+                    {% if not user.is_any_admin %}
+                    <button onclick="openChangeRequest('personal')"
+                        class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">edit</span>Request Edit
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <dt class="text-sm text-gray-500">Email</dt>
+                            <dd class="font-medium text-gray-900">{{ user.email|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Phone</dt>
+                            <dd class="font-medium text-gray-900">{{ user.phone|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Gender</dt>
+                            <dd class="font-medium text-gray-900">{{ user.get_gender_display|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Date of Birth</dt>
+                            <dd class="font-medium text-gray-900">{{ user.date_of_birth|date:"F d, Y"|default:"-" }}
+                            </dd>
+                        </div>
+                        {% if user.profile %}
+                        <div class="md:col-span-2">
+                            <dt class="text-sm text-gray-500">Address</dt>
+                            <dd class="font-medium text-gray-900">{{ user.profile.address|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">City</dt>
+                            <dd class="font-medium text-gray-900">{{ user.profile.city|default:"-" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-gray-500">Region</dt>
+                            <dd class="font-medium text-gray-900">{{ user.profile.region|default:"-" }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
             </div>
 
-            <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Account Actions</h3>
-                <div class="space-y-3">
+            <!-- Account Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-lg font-medium text-gray-900">Account Actions</h3>
+                </div>
+                <div class="card-body space-y-3">
                     {% if user.is_any_admin %}
-                    <a href="{% url 'accounts:profile_edit' %}" class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
-                        <span class="material-icons-outlined text-gray-400 mr-3">edit</span>
-                        <div>
+                    <a href="{% url 'accounts:profile_edit' %}"
+                        class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <span class="material-icons-outlined text-blue-600">edit</span>
+                        </div>
+                        <div class="ml-4">
                             <p class="font-medium text-gray-900">Edit Profile</p>
                             <p class="text-sm text-gray-500">Update your personal information</p>
                         </div>
+                        <span class="material-icons-outlined ml-auto text-gray-400">chevron_right</span>
                     </a>
                     {% endif %}
-                    <a href="{% url 'accounts:change_password' %}" class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
-                        <span class="material-icons-outlined text-gray-400 mr-3">lock</span>
-                        <div>
-                            <p class="font-medium text-gray-900">Change Password</p>
-                            <p class="text-sm text-gray-500">Update your password</p>
+                    <a href="{% url 'accounts:change_password' %}"
+                        class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                            <span class="material-icons-outlined text-green-600">lock</span>
                         </div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-900">Change Password</p>
+                            <p class="text-sm text-gray-500">Update your password for security</p>
+                        </div>
+                        <span class="material-icons-outlined ml-auto text-gray-400">chevron_right</span>
                     </a>
+                    <a href="{% url 'accounts:change_pin' %}"
+                        class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                            <span class="material-icons-outlined text-purple-600">pin</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-900">Change PIN</p>
+                            <p class="text-sm text-gray-500">Update your 5-digit login PIN</p>
+                        </div>
+                        <span class="material-icons-outlined ml-auto text-gray-400">chevron_right</span>
+                    </a>
+                    {% if user.profile %}
+                    <button onclick="openModal('emergencyContactModal')"
+                        class="w-full flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-left">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                            <span class="material-icons-outlined text-red-600">emergency</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-900">Emergency Contact</p>
+                            <p class="text-sm text-gray-500">{{ user.profile.emergency_contact_name|default:"Not set" }}
+                            </p>
+                        </div>
+                        <span class="material-icons-outlined ml-auto text-gray-400">chevron_right</span>
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Change Request Modal -->
+<div id="changeRequestModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('changeRequestModal')"></div>
+    <div class="modal-content modal-lg">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-900">Request Profile Change</h2>
+                <button onclick="closeModal('changeRequestModal')" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-gray-600 mb-6">Submit a request to update your profile information. Changes will be reviewed
+                by your branch administrator.</p>
+
+            <form method="post" action="{% url 'accounts:request_profile_change' %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label required">Field to Change</label>
+                        <select name="field_name" class="form-input form-select" required
+                            onchange="updateCurrentValue(this.value)">
+                            <option value="">Select a field...</option>
+                            <optgroup label="Personal Information">
+                                <option value="first_name" data-current="{{ user.first_name }}">First Name</option>
+                                <option value="last_name" data-current="{{ user.last_name }}">Last Name</option>
+                                <option value="other_names" data-current="{{ user.other_names }}">Other Names</option>
+                                <option value="email" data-current="{{ user.email }}">Email</option>
+                                <option value="phone" data-current="{{ user.phone }}">Phone Number</option>
+                                <option value="date_of_birth" data-current="{{ user.date_of_birth|date:'Y-m-d' }}">Date
+                                    of Birth</option>
+                            </optgroup>
+                            <optgroup label="Address">
+                                <option value="address"
+                                    data-current="{% if user.profile %}{{ user.profile.address }}{% endif %}">Address
+                                </option>
+                                <option value="city"
+                                    data-current="{% if user.profile %}{{ user.profile.city }}{% endif %}">City</option>
+                                <option value="region"
+                                    data-current="{% if user.profile %}{{ user.profile.region }}{% endif %}">Region
+                                </option>
+                            </optgroup>
+                            <optgroup label="Emergency Contact">
+                                <option value="emergency_contact_name"
+                                    data-current="{% if user.profile %}{{ user.profile.emergency_contact_name }}{% endif %}">
+                                    Emergency Contact Name</option>
+                                <option value="emergency_contact_phone"
+                                    data-current="{% if user.profile %}{{ user.profile.emergency_contact_phone }}{% endif %}">
+                                    Emergency Contact Phone</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Current Value</label>
+                        <input type="text" id="currentValue" class="form-input bg-gray-50" readonly>
+                        <input type="hidden" name="old_value" id="oldValueInput">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">New Value</label>
+                        <input type="text" name="new_value" class="form-input" required
+                            placeholder="Enter the new value">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Reason for Change</label>
+                        <textarea name="reason" class="form-input" rows="3"
+                            placeholder="Please explain why this change is needed (optional)"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <button type="button" onclick="closeModal('changeRequestModal')"
+                        class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2 text-lg">send</span>
+                        Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Contact Modal -->
+{% if user.profile %}
+<div id="emergencyContactModal" class="modal">
+    <div class="modal-backdrop" onclick="closeModal('emergencyContactModal')"></div>
+    <div class="modal-content">
+        <div class="p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Emergency Contact</h2>
+            <dl class="space-y-4">
+                <div>
+                    <dt class="text-sm text-gray-500">Contact Name</dt>
+                    <dd class="font-medium text-gray-900">{{ user.profile.emergency_contact_name|default:"Not set" }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Contact Phone</dt>
+                    <dd class="font-medium text-gray-900">{{ user.profile.emergency_contact_phone|default:"Not set" }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500">Relationship</dt>
+                    <dd class="font-medium text-gray-900">{{ user.profile.emergency_contact_relationship|default:"Not
+                        set" }}</dd>
+                </div>
+            </dl>
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <button onclick="closeModal('emergencyContactModal'); openModal('changeRequestModal');"
+                    class="btn btn-primary w-full">
+                    <span class="material-icons-outlined mr-2">edit_note</span>
+                    Request Update
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function updateCurrentValue(fieldName) {
+        const select = document.querySelector('select[name="field_name"]');
+        const selectedOption = select.options[select.selectedIndex];
+        const currentValue = selectedOption.dataset.current || '';
+
+        document.getElementById('currentValue').value = currentValue;
+        document.getElementById('oldValueInput').value = currentValue;
+    }
+
+    function openChangeRequest(section) {
+        openModal('changeRequestModal');
+    }
+</script>
 {% endblock %}

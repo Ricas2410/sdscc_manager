@@ -54,6 +54,82 @@ def payroll_runs(request):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     
+    if request.method == 'POST':
+        if not request.user.is_mission_admin:
+            messages.error(request, 'You do not have permission to run payroll.')
+            return redirect('payroll:runs')
+        
+        action = request.POST.get('action')
+        
+        if action == 'run':
+            from core.models import FiscalYear
+            from decimal import Decimal
+            
+            month = int(request.POST.get('month'))
+            year = int(request.POST.get('year'))
+            
+            try:
+                if PayrollRun.objects.filter(month=month, year=year).exists():
+                    messages.warning(request, f'Payroll for {month_name[month]} {year} already exists.')
+                    return redirect('payroll:runs')
+                
+                fiscal_year = FiscalYear.get_current()
+                
+                payroll_run = PayrollRun.objects.create(
+                    month=month,
+                    year=year,
+                    fiscal_year=fiscal_year,
+                    status=PayrollRun.Status.DRAFT,
+                    processed_by=request.user,
+                    processed_at=timezone.now()
+                )
+                
+                staff_profiles = StaffPayrollProfile.objects.filter(is_active=True).prefetch_related('allowances', 'deductions')
+                payslip_count = 0
+                
+                for profile in staff_profiles:
+                    from datetime import date
+                    allowances = profile.allowances.filter(is_recurring=True, end_date__isnull=True) | \
+                                profile.allowances.filter(is_recurring=True, end_date__gte=date.today())
+                    total_allowances = sum(a.amount for a in allowances)
+                    
+                    deductions = profile.deductions.filter(is_recurring=True, end_date__isnull=True) | \
+                                profile.deductions.filter(is_recurring=True, end_date__gte=date.today())
+                    total_deductions = sum(d.amount for d in deductions)
+                    
+                    allowances_breakdown = {a.allowance_type.name: float(a.amount) for a in allowances}
+                    deductions_breakdown = {d.deduction_type.name: float(d.amount) for d in deductions}
+                    
+                    ssnit = profile.base_salary * Decimal('0.055')
+                    deductions_breakdown['SSNIT (5.5%)'] = float(ssnit)
+                    total_deductions += ssnit
+                    
+                    gross_pay = profile.base_salary + total_allowances
+                    net_pay = gross_pay - total_deductions
+                    
+                    PaySlip.objects.create(
+                        payroll_run=payroll_run,
+                        staff=profile,
+                        base_salary=profile.base_salary,
+                        total_allowances=total_allowances,
+                        total_deductions=total_deductions,
+                        gross_pay=gross_pay,
+                        net_pay=net_pay,
+                        allowances_breakdown=allowances_breakdown,
+                        deductions_breakdown=deductions_breakdown,
+                        status=PaySlip.Status.PENDING
+                    )
+                    payslip_count += 1
+                
+                payroll_run.calculate_totals()
+                payroll_run.save()
+                
+                messages.success(request, f'Successfully generated {payslip_count} payslips for {month_name[month]} {year}. Total: GH₵ {payroll_run.total_net_pay:,.2f}')
+            except Exception as e:
+                messages.error(request, f'Error generating payroll: {str(e)}')
+        
+        return redirect('payroll:runs')
+    
     runs = PayrollRun.objects.all().order_by('-year', '-month')
     staff_profiles = StaffPayrollProfile.objects.filter(is_active=True)
     total_staff = staff_profiles.count()

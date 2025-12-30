@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Change Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Manage Change Requests</h1>
+                <p class="text-slate-600 mt-1">Review and approve member profile change requests</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Filter Tabs -->
+    <div class="card mb-6">
+        <div class="flex gap-2 p-4 border-b">
+            <a href="?status=pending" class="px-4 py-2 rounded-lg {% if status_filter == 'pending' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                Pending ({{ pending_count }})
+            </a>
+            <a href="?status=approved" class="px-4 py-2 rounded-lg {% if status_filter == 'approved' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                Approved ({{ approved_count }})
+            </a>
+            <a href="?status=rejected" class="px-4 py-2 rounded-lg {% if status_filter == 'rejected' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                Rejected ({{ rejected_count }})
+            </a>
+            <a href="?status=applied" class="px-4 py-2 rounded-lg {% if status_filter == 'applied' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                Applied ({{ applied_count }})
+            </a>
+            <a href="?status=all" class="px-4 py-2 rounded-lg {% if status_filter == 'all' %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-700 hover:bg-slate-200{% endif %}">
+                All
+            </a>
+        </div>
+    </div>
+
+    <!-- Change Requests Table -->
+    <div class="card">
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Member ID</th>
+                        <th>Branch</th>
+                        <th>Field</th>
+                        <th>Old Value</th>
+                        <th>New Value</th>
+                        <th>Reason</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in change_requests %}
+                    <tr>
+                        <td class="font-medium">{{ request.user.get_full_name }}</td>
+                        <td>{{ request.user.member_id }}</td>
+                        <td>{{ request.user.branch.name|default:"-" }}</td>
+                        <td class="font-semibold">{{ request.get_field_name_display }}</td>
+                        <td class="text-slate-600">{{ request.old_value|truncatewords:5 }}</td>
+                        <td class="text-blue-700 font-semibold">{{ request.new_value|truncatewords:5 }}</td>
+                        <td>{{ request.reason|truncatewords:8 }}</td>
+                        <td>{{ request.requested_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge
+                                {% if request.status == 'pending' %}badge-warning
+                                {% elif request.status == 'approved' %}badge-success
+                                {% elif request.status == 'applied' %}badge-info
+                                {% else %}badge-danger{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if request.status == 'pending' %}
+                            <a href="{% url 'accounts:review_change_request' request.id %}" class="btn btn-sm btn-primary">
+                                <span class="material-icons-outlined text-sm">rate_review</span>
+                                Review
+                            </a>
+                            {% else %}
+                            <a href="{% url 'accounts:review_change_request' request.id %}" class="text-blue-600 hover:text-blue-800">
+                                <span class="material-icons-outlined text-sm">visibility</span>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-slate-500 py-8">
+                            <span class="material-icons-outlined text-5xl mb-2 opacity-30">assignment</span>
+                            <p>No change requests found with status: {{ status_filter|title }}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

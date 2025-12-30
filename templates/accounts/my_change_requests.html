@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Change Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">My Change Requests</h1>
+                <p class="text-slate-600 mt-1">Track your profile change requests and their status</p>
+            </div>
+            <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined text-lg mr-2">arrow_back</span>
+                Back to Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="card bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-100 text-sm mb-1">Pending Review</p>
+                    <h3 class="text-3xl font-bold">{{ pending_count }}</h3>
+                </div>
+                <span class="material-icons text-5xl opacity-30">pending</span>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm mb-1">Approved</p>
+                    <h3 class="text-3xl font-bold">{{ approved_count }}</h3>
+                </div>
+                <span class="material-icons text-5xl opacity-30">check_circle</span>
+            </div>
+        </div>
+        
+        <div class="card bg-gradient-to-br from-red-500 to-red-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm mb-1">Rejected</p>
+                    <h3 class="text-3xl font-bold">{{ rejected_count }}</h3>
+                </div>
+                <span class="material-icons text-5xl opacity-30">cancel</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Requests Table -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-xl font-bold text-slate-900">Change Request History</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Old Value</th>
+                        <th>New Value</th>
+                        <th>Reason</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Reviewed By</th>
+                        <th>Review Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in change_requests %}
+                    <tr>
+                        <td class="font-medium">{{ request.get_field_name_display }}</td>
+                        <td class="text-slate-600">{{ request.old_value|truncatewords:5 }}</td>
+                        <td class="text-blue-700 font-semibold">{{ request.new_value|truncatewords:5 }}</td>
+                        <td>{{ request.reason|truncatewords:10 }}</td>
+                        <td>{{ request.requested_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <span class="badge
+                                {% if request.status == 'pending' %}badge-warning
+                                {% elif request.status == 'approved' %}badge-success
+                                {% elif request.status == 'applied' %}badge-info
+                                {% else %}badge-danger{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if request.reviewed_by %}
+                                {{ request.reviewed_by.get_full_name }}<br>
+                                <small class="text-slate-500">{{ request.reviewed_at|date:"M d, Y" }}</small>
+                            {% else %}
+                                <span class="text-slate-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ request.review_notes|default:"-"|truncatewords:8 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-slate-500 py-8">
+                            <span class="material-icons-outlined text-5xl mb-2 opacity-30">fact_check</span>
+                            <p>You haven't submitted any change requests yet.</p>
+                            <p class="text-sm mt-1">Go to your profile to request changes.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

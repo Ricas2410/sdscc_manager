@@ -438,3 +438,293 @@ def assets_list(request):
     }
     
     return render(request, 'expenditure/assets_list.html', context)
+
+
+@login_required
+def mission_expenditure_list(request):
+    """
+    Mission-level expenditures only (salaries, mission operations, etc.)
+    Only Mission Admins and Auditors can access.
+    """
+    from core.models import FiscalYear
+    from django.db.models import Sum, Q
+    
+    if not (request.user.is_mission_admin or request.user.is_auditor):
+        messages.error(request, 'Access denied. Only Mission Admins and Auditors can view mission-wide expenses.')
+        return redirect('core:dashboard')
+    
+    fiscal_year = FiscalYear.get_current()
+    
+    # Only mission-level expenditures
+    expenditures = Expenditure.objects.filter(
+        level='mission',
+        fiscal_year=fiscal_year
+    ).select_related('category', 'created_by', 'approved_by')
+    
+    # Filters
+    category_id = request.GET.get('category')
+    status = request.GET.get('status')
+    from_date = request.GET.get('from_date')
+    to_date = request.GET.get('to_date')
+    
+    if category_id:
+        expenditures = expenditures.filter(category_id=category_id)
+    if status:
+        expenditures = expenditures.filter(status=status)
+    if from_date:
+        expenditures = expenditures.filter(date__gte=from_date)
+    if to_date:
+        expenditures = expenditures.filter(date__lte=to_date)
+    
+    # Calculate totals
+    totals = expenditures.aggregate(
+        total_amount=Sum('amount'),
+        approved_amount=Sum('amount', filter=Q(status='approved') | Q(status='paid')),
+        pending_amount=Sum('amount', filter=Q(status='pending'))
+    )
+    
+    # Pagination
+    paginator = Paginator(expenditures.order_by('-date'), 25)
+    page = request.GET.get('page')
+    expenditures = paginator.get_page(page)
+    
+    categories = ExpenditureCategory.objects.filter(is_active=True, scope='mission').order_by('name')
+    
+    context = {
+        'expenditures': expenditures,
+        'categories': categories,
+        'totals': totals,
+        'selected_category': category_id,
+        'selected_status': status,
+        'from_date': from_date,
+        'to_date': to_date,
+        'fiscal_year': fiscal_year,
+        'page_title': 'Mission-Wide Expenses',
+        'page_description': 'Expenses for the entire mission (headquarters operations, salaries, etc.)',
+        'can_add': request.user.is_mission_admin,
+    }
+    
+    return render(request, 'expenditure/mission_expenditure_list.html', context)
+
+
+@login_required
+def branch_expenditure_list(request):
+    """
+    Branch-level expenditures only (local operations)
+    Branch admins see their branch, Mission admins see all.
+    """
+    from core.models import Branch, District, Area, FiscalYear
+    from django.db.models import Sum, Q
+    
+    if not request.user.can_manage_finances:
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    fiscal_year = FiscalYear.get_current()
+    
+    # Only branch-level expenditures
+    expenditures = Expenditure.objects.filter(
+        level='branch',
+        fiscal_year=fiscal_year
+    ).select_related('branch', 'branch__district', 'branch__district__area', 'category', 'created_by', 'approved_by')
+    
+    # Role-based filtering
+    if request.user.is_branch_executive and request.user.branch:
+        expenditures = expenditures.filter(branch=request.user.branch)
+    elif request.user.is_district_executive and request.user.managed_district:
+        expenditures = expenditures.filter(branch__district=request.user.managed_district)
+    elif request.user.is_area_executive and request.user.managed_area:
+        expenditures = expenditures.filter(branch__district__area=request.user.managed_area)
+    
+    # Hierarchical filters
+    area_id = request.GET.get('area')
+    district_id = request.GET.get('district')
+    branch_id = request.GET.get('branch')
+    category_id = request.GET.get('category')
+    status = request.GET.get('status')
+    from_date = request.GET.get('from_date')
+    to_date = request.GET.get('to_date')
+    
+    if area_id:
+        expenditures = expenditures.filter(branch__district__area_id=area_id)
+    if district_id:
+        expenditures = expenditures.filter(branch__district_id=district_id)
+    if branch_id:
+        expenditures = expenditures.filter(branch_id=branch_id)
+    if category_id:
+        expenditures = expenditures.filter(category_id=category_id)
+    if status:
+        expenditures = expenditures.filter(status=status)
+    if from_date:
+        expenditures = expenditures.filter(date__gte=from_date)
+    if to_date:
+        expenditures = expenditures.filter(date__lte=to_date)
+    
+    # Calculate totals
+    totals = expenditures.aggregate(
+        total_amount=Sum('amount'),
+        approved_amount=Sum('amount', filter=Q(status='approved') | Q(status='paid')),
+        pending_amount=Sum('amount', filter=Q(status='pending'))
+    )
+    
+    # Pagination
+    paginator = Paginator(expenditures.order_by('-date'), 25)
+    page = request.GET.get('page')
+    expenditures = paginator.get_page(page)
+    
+    # Get filter options
+    areas = Area.objects.filter(is_active=True).order_by('name')
+    districts = District.objects.filter(is_active=True).select_related('area').order_by('name')
+    branches = Branch.objects.filter(is_active=True).select_related('district').order_by('name')
+    categories = ExpenditureCategory.objects.filter(is_active=True, scope='branch').order_by('name')
+    
+    # Filter options based on user role
+    if request.user.is_area_executive and request.user.managed_area:
+        areas = areas.filter(id=request.user.managed_area_id)
+        districts = districts.filter(area=request.user.managed_area)
+        branches = branches.filter(district__area=request.user.managed_area)
+    elif request.user.is_district_executive and request.user.managed_district:
+        districts = districts.filter(id=request.user.managed_district_id)
+        branches = branches.filter(district=request.user.managed_district)
+        areas = Area.objects.none()
+    elif request.user.is_branch_executive and request.user.branch:
+        branches = branches.filter(id=request.user.branch_id)
+        districts = District.objects.none()
+        areas = Area.objects.none()
+    
+    context = {
+        'expenditures': expenditures,
+        'areas': areas,
+        'districts': districts,
+        'branches': branches,
+        'categories': categories,
+        'totals': totals,
+        'selected_area': area_id,
+        'selected_district': district_id,
+        'selected_branch': branch_id,
+        'selected_category': category_id,
+        'selected_status': status,
+        'from_date': from_date,
+        'to_date': to_date,
+        'fiscal_year': fiscal_year,
+        'page_title': 'Branch-Only Expenses',
+        'page_description': 'Expenses for local branch operations (utilities, maintenance, etc.)',
+        'can_add': request.user.can_manage_finances,
+    }
+    
+    return render(request, 'expenditure/branch_expenditure_list.html', context)
+
+
+@login_required
+def add_mission_expenditure(request):
+    """Add mission-level expenditure (Mission Admin only)."""
+    from datetime import date
+    from core.models import FiscalYear
+    
+    if not request.user.is_mission_admin:
+        messages.error(request, 'Access denied. Only Mission Admins can add mission-wide expenses.')
+        return redirect('expenditure:mission_list')
+    
+    if request.method == 'POST':
+        category_id = request.POST.get('category')
+        amount = request.POST.get('amount')
+        exp_date = request.POST.get('date')
+        title = request.POST.get('title', '')
+        description = request.POST.get('description', '')
+        reference = request.POST.get('reference', '')
+        vendor = request.POST.get('vendor', '')
+        payment_reference = request.POST.get('payment_reference', '')
+        
+        try:
+            fiscal_year = FiscalYear.get_current()
+            
+            expenditure = Expenditure.objects.create(
+                category_id=category_id,
+                amount=amount,
+                date=exp_date,
+                title=title or 'Mission Expenditure',
+                description=description,
+                reference_number=reference,
+                vendor=vendor,
+                payment_reference=payment_reference,
+                level='mission',
+                branch=None,
+                fiscal_year=fiscal_year,
+                created_by=request.user,
+                status='pending'
+            )
+            messages.success(request, f'Mission expenditure of {amount|currency} recorded successfully.')
+            return redirect('expenditure:mission_list')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+    
+    categories = ExpenditureCategory.objects.filter(is_active=True, scope='mission').order_by('name')
+    
+    context = {
+        'categories': categories,
+        'today': date.today().isoformat(),
+        'page_title': 'Add Mission-Wide Expense',
+        'form_action': 'expenditure:add_mission',
+    }
+    return render(request, 'expenditure/mission_expenditure_form.html', context)
+
+
+@login_required
+def add_branch_expenditure(request):
+    """Add branch-level expenditure."""
+    from datetime import date
+    from core.models import Branch, FiscalYear
+    
+    if not request.user.can_manage_finances:
+        messages.error(request, 'Access denied.')
+        return redirect('expenditure:branch_list')
+    
+    if request.method == 'POST':
+        category_id = request.POST.get('category')
+        amount = request.POST.get('amount')
+        exp_date = request.POST.get('date')
+        title = request.POST.get('title', '')
+        description = request.POST.get('description', '')
+        reference = request.POST.get('reference', '')
+        vendor = request.POST.get('vendor', '')
+        payment_reference = request.POST.get('payment_reference', '')
+        branch_id = request.POST.get('branch', request.user.branch_id)
+        
+        try:
+            branch = Branch.objects.get(pk=branch_id)
+            fiscal_year = FiscalYear.get_current()
+            
+            expenditure = Expenditure.objects.create(
+                category_id=category_id,
+                amount=amount,
+                date=exp_date,
+                title=title or 'Branch Expenditure',
+                description=description,
+                reference_number=reference,
+                vendor=vendor,
+                payment_reference=payment_reference,
+                level='branch',
+                branch=branch,
+                fiscal_year=fiscal_year,
+                created_by=request.user,
+                status='pending'
+            )
+            messages.success(request, f'Branch expenditure of {amount|currency} recorded successfully.')
+            return redirect('expenditure:branch_list')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+    
+    categories = ExpenditureCategory.objects.filter(is_active=True, scope='branch').order_by('name')
+    branches = Branch.objects.filter(is_active=True).order_by('name')
+    
+    if request.user.branch and not request.user.is_mission_admin:
+        branches = branches.filter(pk=request.user.branch_id)
+    
+    context = {
+        'categories': categories,
+        'branches': branches,
+        'today': date.today().isoformat(),
+        'page_title': 'Add Branch Expense',
+        'form_action': 'expenditure:add_branch',
+    }
+    return render(request, 'expenditure/branch_expenditure_form.html', context)

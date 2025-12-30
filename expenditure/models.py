@@ -82,6 +82,7 @@ class Expenditure(TimeStampedModel):
     # Vendor / Recipient info
     vendor = models.CharField(max_length=200, blank=True)
     reference_number = models.CharField(max_length=100, blank=True)
+    payment_reference = models.CharField(max_length=100, blank=True, help_text='Payment ID or transaction reference')
     
     # Receipt / Documentation
     receipt = models.FileField(upload_to='expenditure_receipts/', blank=True, null=True)

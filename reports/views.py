@@ -233,6 +233,8 @@ def attendance_report(request):
     from core.models import Area, District, Branch
     from attendance.models import AttendanceSession, AttendanceRecord
     from accounts.models import User
+    from django.db.models.functions import Extract
+    import json
     
     if not (request.user.is_any_admin or request.user.is_auditor):
         messages.error(request, 'Access denied.')
@@ -242,24 +244,29 @@ def attendance_report(request):
     area_id = request.GET.get('area')
     district_id = request.GET.get('district')
     branch_id = request.GET.get('branch')
-    from_date = request.GET.get('from_date')
-    to_date = request.GET.get('to_date')
+    from_date = request.GET.get('start_date')
+    to_date = request.GET.get('end_date')
     
     # Base queryset
-    sessions = AttendanceSession.objects.all()
+    sessions = AttendanceSession.objects.all().select_related('branch', 'branch__district', 'branch__district__area')
     
-    # Apply filters
-    districts = District.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True)
+    # Get all options for dropdowns (with relationships for JS filtering)
+    all_areas = Area.objects.filter(is_active=True)
+    all_districts = District.objects.filter(is_active=True).select_related('area')
+    all_branches = Branch.objects.filter(is_active=True).select_related('district')
+    
+    # Apply filters to sessions
+    filtered_districts = all_districts
+    filtered_branches = all_branches
     
     if area_id:
         sessions = sessions.filter(branch__district__area_id=area_id)
-        districts = districts.filter(area_id=area_id)
-        branches = branches.filter(district__area_id=area_id)
+        filtered_districts = all_districts.filter(area_id=area_id)
+        filtered_branches = all_branches.filter(district__area_id=area_id)
     
     if district_id:
         sessions = sessions.filter(branch__district_id=district_id)
-        branches = branches.filter(district_id=district_id)
+        filtered_branches = filtered_branches.filter(district_id=district_id)
     
     if branch_id:
         sessions = sessions.filter(branch_id=branch_id)
@@ -276,6 +283,16 @@ def attendance_report(request):
         status='present'
     ).count()
     
+    # Visitors count
+    total_visitors = AttendanceRecord.objects.filter(
+        session__in=sessions,
+        is_visitor=True
+    ).count() if total_sessions > 0 else 0
+    
+    # Peak attendance
+    peak_session = sessions.order_by('-total_attendance').first()
+    peak_attendance = peak_session.total_attendance if peak_session else 0
+    
     # By branch
     by_branch = sessions.values('branch__name').annotate(
         session_count=Count('id'),
@@ -288,15 +305,32 @@ def attendance_report(request):
     # Total members
     total_members = User.objects.filter(role='member', is_active=True).count()
     
+    # Chart data - weekly attendance (last 4 weeks or by date range)
+    weekly_data = sessions.annotate(
+        week=Extract('date', 'week')
+    ).values('week').annotate(
+        total=Count('attendance_records', filter=Q(attendance_records__status='present'))
+    ).order_by('week')[:8]
+    
+    chart_labels = [f"Week {d['week']}" for d in weekly_data] if weekly_data else ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+    chart_data = [d['total'] for d in weekly_data] if weekly_data else [0, 0, 0, 0]
+    
     context = {
-        'areas': Area.objects.filter(is_active=True),
-        'districts': districts,
-        'branches': branches,
+        'areas': all_areas,
+        'districts': all_districts,
+        'branches': all_branches,
+        'selected_area': area_id,
+        'selected_district': district_id,
+        'selected_branch': branch_id,
         'total_sessions': total_sessions,
         'total_attendance': total_attendance,
         'avg_attendance': avg_attendance,
         'total_members': total_members,
+        'total_visitors': total_visitors,
+        'peak_attendance': peak_attendance,
         'by_branch': by_branch,
+        'chart_labels': json.dumps(chart_labels),
+        'chart_data': json.dumps(chart_data),
     }
     
     return render(request, 'reports/attendance_report.html', context)
@@ -1057,6 +1091,248 @@ def export_statistics_excel(request):
     
     wb.save(response)
     return response
+
+
+@login_required
+def final_financial_report(request):
+    """Comprehensive Income vs Expenditure Final Financial Report."""
+    from core.models import Area, District, Branch, FiscalYear, SiteSettings, MissionFinancialSummary, BranchFinancialSummary
+    from contributions.models import Contribution, ContributionType, Remittance
+    from expenditure.models import Expenditure, ExpenditureCategory
+    from payroll.models import PayrollRun, PaySlip
+    from decimal import Decimal
+    
+    if not (request.user.is_mission_admin or request.user.is_auditor):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    # Get filters
+    month = request.GET.get('month', str(timezone.now().month))
+    year = request.GET.get('year', str(timezone.now().year))
+    fiscal_year = FiscalYear.get_current()
+    site_settings = SiteSettings.get_settings()
+    
+    # Calculate date range
+    month_int = int(month)
+    year_int = int(year)
+    month_start = timezone.now().replace(year=year_int, month=month_int, day=1)
+    if month_int == 12:
+        month_end = timezone.now().replace(year=year_int+1, month=1, day=1) - timedelta(days=1)
+    else:
+        month_end = timezone.now().replace(year=year_int, month=month_int+1, day=1) - timedelta(days=1)
+    
+    # ============ MISSION-LEVEL INCOME ============
+    # Remittances from branches
+    total_remittances = Remittance.objects.filter(
+        date__gte=month_start,
+        date__lte=month_end,
+        status='approved'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    
+    # Other mission income (if any)
+    mission_other_income = Contribution.objects.filter(
+        date__gte=month_start,
+        date__lte=month_end,
+        branch__isnull=True,  # Mission-level contributions
+        fiscal_year=fiscal_year
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    
+    total_mission_income = total_remittances + mission_other_income
+    
+    # ============ MISSION-LEVEL EXPENDITURE ============
+    # Payroll
+    payroll_runs = PayrollRun.objects.filter(
+        month=month_int,
+        year=year_int
+    )
+    total_payroll = Decimal('0.00')
+    for run in payroll_runs:
+        total_payroll += run.total_net_pay or Decimal('0.00')
+    
+    # Mission expenses
+    mission_expenses = Expenditure.objects.filter(
+        level='mission',
+        date__gte=month_start,
+        date__lte=month_end,
+        status__in=['approved', 'paid']
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    
+    # Mission returns to branches (if any)
+    mission_returns = Decimal('0.00')  # Track separately in future
+    
+    total_mission_expenditure = total_payroll + mission_expenses + mission_returns
+    
+    # Mission net balance
+    mission_net_balance = total_mission_income - total_mission_expenditure
+    
+    # ============ BRANCH-LEVEL AGGREGATES ============
+    branches = Branch.objects.filter(is_active=True)
+    
+    branch_data = []
+    total_branch_income = Decimal('0.00')
+    total_branch_expenditure = Decimal('0.00')
+    total_branch_tithe = Decimal('0.00')
+    total_branch_offerings = Decimal('0.00')
+    total_branch_other = Decimal('0.00')
+    total_branch_expenses = Decimal('0.00')
+    total_branch_remitted = Decimal('0.00')
+    total_branch_commission = Decimal('0.00')
+    
+    for branch in branches:
+        # Income
+        branch_contributions = Contribution.objects.filter(
+            branch=branch,
+            date__gte=month_start,
+            date__lte=month_end,
+            fiscal_year=fiscal_year
+        )
+        
+        branch_tithe = branch_contributions.filter(
+            contribution_type__category='tithe'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        branch_offerings = branch_contributions.filter(
+            contribution_type__category='offering'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        branch_other_contrib = branch_contributions.exclude(
+            contribution_type__category__in=['tithe', 'offering']
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        branch_total_income = branch_tithe + branch_offerings + branch_other_contrib
+        
+        # Expenditure
+        branch_expenditures = Expenditure.objects.filter(
+            branch=branch,
+            level='branch',
+            date__gte=month_start,
+            date__lte=month_end,
+            status__in=['approved', 'paid']
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        # Remittance
+        branch_remittance = Remittance.objects.filter(
+            branch=branch,
+            date__gte=month_start,
+            date__lte=month_end,
+            status='approved'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        # Commission (if tracked)
+        branch_commission = Decimal('0.00')  # Future: get from commission model
+        
+        branch_total_exp = branch_expenditures + branch_remittance + branch_commission
+        branch_balance = branch_total_income - branch_total_exp
+        
+        branch_data.append({
+            'branch': branch,
+            'tithe': branch_tithe,
+            'offerings': branch_offerings,
+            'other_income': branch_other_contrib,
+            'total_income': branch_total_income,
+            'expenses': branch_expenditures,
+            'remittance': branch_remittance,
+            'commission': branch_commission,
+            'total_expenditure': branch_total_exp,
+            'balance': branch_balance
+        })
+        
+        # Aggregate totals
+        total_branch_income += branch_total_income
+        total_branch_tithe += branch_tithe
+        total_branch_offerings += branch_offerings
+        total_branch_other += branch_other_contrib
+        total_branch_expenses += branch_expenditures
+        total_branch_remitted += branch_remittance
+        total_branch_commission += branch_commission
+        total_branch_expenditure += branch_total_exp
+    
+    total_branch_balance = total_branch_income - total_branch_expenditure
+    
+    # ============ OVERALL TOTALS ============
+    overall_income = total_mission_income + total_branch_income
+    overall_expenditure = total_mission_expenditure + total_branch_expenditure
+    overall_balance = overall_income - overall_expenditure
+    
+    # ============ CHARTS DATA ============
+    # Mission Income Breakdown
+    mission_income_chart = {
+        'labels': ['Remittances', 'Other Income'],
+        'data': [float(total_remittances), float(mission_other_income)]
+    }
+    
+    # Mission Expenditure Breakdown
+    mission_expense_chart = {
+        'labels': ['Payroll', 'Mission Expenses', 'Returns to Branches'],
+        'data': [float(total_payroll), float(mission_expenses), float(mission_returns)]
+    }
+    
+    # Branch Income Breakdown
+    branch_income_chart = {
+        'labels': ['Tithe', 'Offerings', 'Other'],
+        'data': [float(total_branch_tithe), float(total_branch_offerings), float(total_branch_other)]
+    }
+    
+    # Branch Expenditure Breakdown
+    branch_expense_chart = {
+        'labels': ['Expenses', 'Remittance', 'Commission'],
+        'data': [float(total_branch_expenses), float(total_branch_remitted), float(total_branch_commission)]
+    }
+    
+    # Top 10 branches by income
+    top_branches = sorted(branch_data, key=lambda x: x['total_income'], reverse=True)[:10]
+    top_branches_chart = {
+        'labels': [b['branch'].name for b in top_branches],
+        'data': [float(b['total_income']) for b in top_branches]
+    }
+    
+    context = {
+        'month': month_int,
+        'year': year_int,
+        'month_name': month_start.strftime('%B'),
+        'fiscal_year': fiscal_year,
+        'site_settings': site_settings,
+        'months': [(i, timezone.now().replace(day=1, month=i).strftime('%B')) for i in range(1, 13)],
+        'years': range(timezone.now().year - 2, timezone.now().year + 1),
+        
+        # Mission Level
+        'total_remittances': total_remittances,
+        'mission_other_income': mission_other_income,
+        'total_mission_income': total_mission_income,
+        'total_payroll': total_payroll,
+        'mission_expenses': mission_expenses,
+        'mission_returns': mission_returns,
+        'total_mission_expenditure': total_mission_expenditure,
+        'mission_net_balance': mission_net_balance,
+        
+        # Branch Aggregates
+        'total_branch_income': total_branch_income,
+        'total_branch_tithe': total_branch_tithe,
+        'total_branch_offerings': total_branch_offerings,
+        'total_branch_other': total_branch_other,
+        'total_branch_expenses': total_branch_expenses,
+        'total_branch_remitted': total_branch_remitted,
+        'total_branch_commission': total_branch_commission,
+        'total_branch_expenditure': total_branch_expenditure,
+        'total_branch_balance': total_branch_balance,
+        
+        # Overall
+        'overall_income': overall_income,
+        'overall_expenditure': overall_expenditure,
+        'overall_balance': overall_balance,
+        
+        # Branch Details
+        'branch_data': branch_data,
+        
+        # Charts
+        'mission_income_chart': json.dumps(mission_income_chart),
+        'mission_expense_chart': json.dumps(mission_expense_chart),
+        'branch_income_chart': json.dumps(branch_income_chart),
+        'branch_expense_chart': json.dumps(branch_expense_chart),
+        'top_branches_chart': json.dumps(top_branches_chart),
+    }
+    
+    return render(request, 'reports/final_financial_report.html', context)
 
 
 @login_required

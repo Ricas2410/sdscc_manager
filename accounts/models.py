@@ -303,3 +303,120 @@ class LoginHistory(models.Model):
     def __str__(self):
         status = 'Success' if self.success else 'Failed'
         return f"{self.user.member_id} - {status} - {self.timestamp}"
+
+
+class UserChangeRequest(models.Model):
+    """Track user profile change requests for admin approval."""
+    
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending Review'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+        APPLIED = 'applied', 'Applied'
+    
+    class FieldType(models.TextChoices):
+        # Personal Info
+        FIRST_NAME = 'first_name', 'First Name'
+        LAST_NAME = 'last_name', 'Last Name'
+        OTHER_NAMES = 'other_names', 'Other Names'
+        EMAIL = 'email', 'Email'
+        PHONE = 'phone', 'Phone Number'
+        DATE_OF_BIRTH = 'date_of_birth', 'Date of Birth'
+        GENDER = 'gender', 'Gender'
+        # Address
+        ADDRESS = 'address', 'Address'
+        CITY = 'city', 'City'
+        REGION = 'region', 'Region'
+        # Personal Details
+        MARITAL_STATUS = 'marital_status', 'Marital Status'
+        PROFESSION = 'profession', 'Profession'
+        EMPLOYER = 'employer', 'Employer'
+        # Emergency Contact
+        EMERGENCY_CONTACT_NAME = 'emergency_contact_name', 'Emergency Contact Name'
+        EMERGENCY_CONTACT_PHONE = 'emergency_contact_phone', 'Emergency Contact Phone'
+        EMERGENCY_CONTACT_RELATIONSHIP = 'emergency_contact_relationship', 'Emergency Contact Relationship'
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='change_requests')
+    
+    # Change Details
+    field_name = models.CharField(max_length=50, choices=FieldType.choices)
+    old_value = models.TextField(blank=True, help_text='Current value')
+    new_value = models.TextField(help_text='Requested new value')
+    reason = models.TextField(blank=True, help_text='Reason for change')
+    
+    # Status
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    
+    # Workflow
+    requested_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_change_requests'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True, help_text='Admin notes on approval/rejection')
+    applied_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-requested_at']
+        verbose_name = 'User Change Request'
+        verbose_name_plural = 'User Change Requests'
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.get_field_name_display()} - {self.status}"
+    
+    def approve(self, admin_user, notes=''):
+        """Approve the change request and apply it."""
+        from django.utils import timezone
+        
+        self.status = self.Status.APPROVED
+        self.reviewed_by = admin_user
+        self.reviewed_at = timezone.now()
+        self.review_notes = notes
+        self.save()
+        
+        # Apply the change
+        self.apply_change()
+    
+    def reject(self, admin_user, notes=''):
+        """Reject the change request."""
+        from django.utils import timezone
+        
+        self.status = self.Status.REJECTED
+        self.reviewed_by = admin_user
+        self.reviewed_at = timezone.now()
+        self.review_notes = notes
+        self.save()
+    
+    def apply_change(self):
+        """Apply the approved change to the user profile."""
+        from django.utils import timezone
+        
+        if self.status != self.Status.APPROVED:
+            return False
+        
+        # Determine if field is on User or UserProfile
+        user_fields = ['first_name', 'last_name', 'other_names', 'email', 'phone', 'date_of_birth', 'gender']
+        
+        try:
+            if self.field_name in user_fields:
+                # Update User model
+                setattr(self.user, self.field_name, self.new_value)
+                self.user.save()
+            else:
+                # Update UserProfile model
+                profile, created = UserProfile.objects.get_or_create(user=self.user)
+                setattr(profile, self.field_name, self.new_value)
+                profile.save()
+            
+            self.status = self.Status.APPLIED
+            self.applied_at = timezone.now()
+            self.save()
+            return True
+        except Exception as e:
+            return False
+

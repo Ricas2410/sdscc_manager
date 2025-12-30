@@ -11,7 +11,8 @@
             </a>
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">{{ member.get_full_name }}</h1>
-                <p class="text-sm text-gray-500">Member ID: <span class="font-mono text-primary-600">{{ member.member_id }}</span></p>
+                <p class="text-sm text-gray-500">Member ID: <span class="font-mono text-primary-600">{{ member.member_id
+                        }}</span></p>
             </div>
         </div>
         <div class="flex gap-2">
@@ -25,18 +26,33 @@
     <div class="card">
         <div class="card-body">
             <div class="flex flex-col md:flex-row md:items-center gap-6">
-                <!-- Avatar -->
-                <div class="flex-shrink-0">
-                    <div class="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden {% if member.profile_picture %}cursor-pointer hover:ring-4 hover:ring-primary-200 transition-all{% endif %}"
-                         {% if member.profile_picture %}onclick="openPhotoModal()"{% endif %}>
+                <!-- Avatar with View Button -->
+                <div class="flex-shrink-0 text-center">
+                    <div class="relative inline-block">
+                        <div class="h-32 w-32 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-4 border-primary-200 shadow-lg {% if member.profile_picture %}cursor-pointer hover:ring-4 hover:ring-primary-300 transition-all{% endif %}"
+                            {% if member.profile_picture %}onclick="openPhotoModal()" {% endif %}>
+                            {% if member.profile_picture %}
+                            <img src="{{ member.profile_picture.url }}" class="h-32 w-32 object-cover"
+                                alt="{{ member.get_full_name }}">
+                            {% else %}
+                            <span class="text-5xl text-primary-600 font-bold">{{ member.first_name|slice:":1" }}{{
+                                member.last_name|slice:":1" }}</span>
+                            {% endif %}
+                        </div>
                         {% if member.profile_picture %}
-                        <img src="{{ member.profile_picture.url }}" class="h-24 w-24 object-cover" alt="{{ member.get_full_name }}">
-                        {% else %}
-                        <span class="text-4xl text-primary-600 font-bold">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                        <div class="absolute bottom-0 right-0 transform translate-x-1 translate-y-1">
+                            <span
+                                class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white shadow-md">
+                                <span class="material-icons-outlined text-sm">zoom_in</span>
+                            </span>
+                        </div>
                         {% endif %}
                     </div>
                     {% if member.profile_picture %}
-                    <p class="text-xs text-center text-gray-500 mt-2">Click to enlarge</p>
+                    <button onclick="openPhotoModal()" class="btn btn-sm btn-outline-primary mt-3">
+                        <span class="material-icons-outlined text-base mr-1">visibility</span>
+                        View Picture
+                    </button>
                     {% endif %}
                 </div>
                 <!-- Info -->
@@ -47,7 +63,8 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Pastor</p>
-                        <p class="font-semibold text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</p>
+                        <p class="font-semibold text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not
+                            Assigned" }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Status</p>
@@ -73,13 +90,16 @@
     <!-- Tabs -->
     <div class="border-b border-gray-200">
         <nav class="flex gap-4">
-            <a href="?tab=profile" class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'profile' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
+            <a href="?tab=profile"
+                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'profile' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
                 <span class="material-icons-outlined align-middle mr-1 text-base">person</span>Profile
             </a>
-            <a href="?tab=contributions" class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'contributions' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
+            <a href="?tab=contributions"
+                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'contributions' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
                 <span class="material-icons-outlined align-middle mr-1 text-base">payments</span>Contributions
             </a>
-            <a href="?tab=attendance" class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'attendance' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
+            <a href="?tab=attendance"
+                class="px-4 py-3 text-sm font-medium border-b-2 transition-colors {% if tab == 'attendance' %}text-primary-600 border-primary-600{% else %}text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300{% endif %}">
                 <span class="material-icons-outlined align-middle mr-1 text-base">event_available</span>Attendance
             </a>
         </nav>
@@ -160,7 +180,8 @@
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">Relationship</dt>
-                        <dd class="font-medium text-gray-900">{{ profile.emergency_contact_relationship|default:"-" }}</dd>
+                        <dd class="font-medium text-gray-900">{{ profile.emergency_contact_relationship|default:"-" }}
+                        </dd>
                     </div>
                 </dl>
                 {% else %}
@@ -182,12 +203,14 @@
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">Pastor</dt>
-                        <dd class="font-medium text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</dd>
+                        <dd class="font-medium text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not
+                            Assigned" }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">District / Area</dt>
                         <dd class="font-medium text-gray-900">
-                            {% if member.branch %}{{ member.branch.district.name }} / {{ member.branch.district.area.name }}{% else %}-{% endif %}
+                            {% if member.branch %}{{ member.branch.district.name }} / {{
+                            member.branch.district.area.name }}{% else %}-{% endif %}
                         </dd>
                     </div>
                     <div>
@@ -226,7 +249,8 @@
                         <td class="text-gray-500">{{ c.date|date:"M d, Y" }}</td>
                         <td class="font-medium">{{ c.contribution_type.name }}</td>
                         <td>
-                            <span class="badge {% if c.contribution_type.category == 'tithe' %}badge-primary{% else %}badge-secondary{% endif %}">
+                            <span
+                                class="badge {% if c.contribution_type.category == 'tithe' %}badge-primary{% else %}badge-secondary{% endif %}">
                                 {{ c.contribution_type.get_category_display }}
                             </span>
                         </td>
@@ -346,22 +370,22 @@
 </div>
 
 <script>
-function openPhotoModal() {
-    document.getElementById('photoModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function closePhotoModal() {
-    document.getElementById('photoModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-// Close modal on Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closePhotoModal();
+    function openPhotoModal() {
+        document.getElementById('photoModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     }
-});
+
+    function closePhotoModal() {
+        document.getElementById('photoModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closePhotoModal();
+        }
+    });
 </script>
 {% endif %}
 {% endblock %}
