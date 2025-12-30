@@ -558,6 +558,20 @@ def remittance_add(request):
 
 
 @login_required
+def remittance_detail(request, remittance_id):
+    """View remittance details."""
+    remittance = get_object_or_404(Remittance, id=remittance_id)
+    
+    # Check permissions - mission admin or branch executive of the branch
+    if not (request.user.is_mission_admin or 
+            (request.user.is_branch_executive and request.user.branch == remittance.branch)):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    return render(request, 'contributions/remittance_detail.html', {'remittance': remittance})
+
+
+@login_required
 def my_commission(request):
     """View my commissions (for pastors)."""
     if not request.user.is_pastor:

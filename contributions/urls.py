@@ -22,6 +22,7 @@ urlpatterns = [
     path('types/<uuid:type_id>/', views.contribution_type_detail, name='type_detail'),
     path('remittances/', views.remittance_list, name='remittances'),
     path('remittances/add/', views.remittance_add, name='remittance_add'),
+    path('remittances/<uuid:remittance_id>/', views.remittance_detail, name='remittance_detail'),
     path('my-commission/', views.my_commission, name='my_commission'),
     path('mission-returns/', views.mission_returns, name='mission_returns'),
     path('mission-returns/mark-paid/<uuid:branch_id>/', views.mark_return_paid, name='mark_return_paid'),
