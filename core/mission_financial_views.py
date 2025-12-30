@@ -355,7 +355,31 @@ def branch_financial_details(request, branch_id):
     # Calculate totals
     total_contributions = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
     total_expenditures = branch_expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    local_balance = total_contributions - total_expenditures
+    
+    # Calculate mission remittance (10% of tithes)
+    tithe_contributions = branch_contributions.filter(contribution_type__category='tithe')
+    total_tithes = tithe_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    mission_remittance = total_tithes * Decimal('0.10')
+    
+    # Calculate what stays at branch (coffer)
+    money_for_mission = mission_remittance
+    money_stays_at_branch = total_contributions - mission_remittance
+    money_spent_by_branch = total_expenditures
+    branch_coffer_balance = money_stays_at_branch - money_spent_by_branch
+    
+    # Branch data for template
+    branch_data = {
+        'total_contributions': total_contributions,
+        'total_expenditures': total_expenditures,
+        'local_balance': branch_coffer_balance,  # This is what's left in their coffers
+        'contribution_count': branch_contributions.count(),
+        'expenditure_count': branch_expenditures.count(),
+        'mission_remittance': mission_remittance,
+        'money_for_mission': money_for_mission,
+        'money_stays_at_branch': money_stays_at_branch,
+        'money_spent_by_branch': money_spent_by_branch,
+        'branch_coffer_balance': branch_coffer_balance,
+    }
     
     # Contributions by type
     contributions_by_type = branch_contributions.values('contribution_type__name').annotate(
@@ -407,15 +431,6 @@ def branch_financial_details(request, branch_id):
     # Sort by date
     recent_transactions.sort(key=lambda x: x['date'], reverse=True)
     recent_transactions = recent_transactions[:10]  # Keep only top 10
-    
-    # Branch data
-    branch_data = {
-        'total_contributions': total_contributions,
-        'total_expenditures': total_expenditures,
-        'local_balance': local_balance,
-        'contribution_count': branch_contributions.count(),
-        'expenditure_count': branch_expenditures.count(),
-    }
     
     # Get site settings
     site_settings = SiteSettings.get_settings()
