@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load currency_filters %}
+
+{% block title %}Branch Financial Overview - {{ site_settings.church_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Professional Header -->
+    <div class="mb-8">
+        <div class="bg-gradient-to-r from-green-600 to-teal-700 rounded-2xl p-8 text-white shadow-xl">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <div class="flex items-center mb-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                            <span class="material-icons text-2xl">account_balance_wallet</span>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-white">Branch Financial Overview</h1>
+                            <p class="text-green-100 mt-1">Local branch finances and expenditures</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-6 text-sm">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 bg-green-300 rounded-full mr-2"></span>
+                            <span class="text-green-100">{{ overall_totals.total_contributions|currency }} Total Contributions</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 bg-yellow-300 rounded-full mr-2"></span>
+                            <span class="text-green-100">{{ overall_totals.total_local_balance|currency }} Local Balance</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="{% url 'core:mission_financial_dashboard' %}" class="btn bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm">
+                        <span class="material-icons-outlined mr-2">arrow_back</span>
+                        Mission Dashboard
+                    </a>
+                    <a href="{% url 'core:mission_remittance_tracking' %}" class="btn bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm">
+                        <span class="material-icons-outlined mr-2">account_balance</span>
+                        Mission Remittances
+                    </a>
+                    <button onclick="window.print()" class="btn bg-white text-green-600 hover:bg-green-50">
+                        <span class="material-icons-outlined mr-2">print</span>
+                        Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 -mt-6 px-4">
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Total Contributions</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ overall_totals.total_contributions|currency }}</p>
+                        <p class="text-xs text-gray-500 mt-2">Local branch income</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-green-600">savings</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-orange-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Total Expenditures</p>
+                        <p class="text-2xl font-bold text-orange-600 mt-1">{{ overall_totals.total_expenditures|currency }}</p>
+                        <p class="text-xs text-gray-500 mt-2">Local branch expenses</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-orange-600">payments</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-teal-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Local Balance</p>
+                        <p class="text-2xl font-bold text-teal-600 mt-1">{{ overall_totals.total_local_balance|currency }}</p>
+                        <p class="text-xs text-gray-500 mt-2">Net local funds</p>
+                    </div>
+                    <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-teal-600">account_balance_wallet</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 border border-blue-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm uppercase tracking-wide font-medium">Branches</p>
+                        <p class="text-2xl font-bold text-blue-600 mt-1">{{ branch_summary|length }}</p>
+                        <p class="text-xs text-gray-500 mt-2">Active branches</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons text-blue-600">church</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Filters Section -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 mb-6">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <span class="material-icons-outlined mr-2 text-green-600">filter_list</span>
+                    Filter Branch Finances
+                </h2>
+                <button onclick="toggleFilters()" class="text-gray-500 hover:text-gray-700">
+                    <span class="material-icons-outlined">expand_more</span>
+                </button>
+            </div>
+        </div>
+        <div id="filtersSection" class="p-6">
+            <form method="get" class="space-y-4">
+                <!-- Date Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">calendar_today</span>
+                            Year
+                        </label>
+                        <select name="year" class="form-input form-select" onchange="this.form.submit()">
+                            {% for y in available_years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">date_range</span>
+                            Month (Optional)
+                        </label>
+                        <select name="month" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Months</option>
+                            {% for m_num, m_name in months %}
+                            <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}">{{ m_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Hierarchy Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">location_city</span>
+                            Area (Optional)
+                        </label>
+                        <select name="area" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Areas</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}" {% if area_id == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">map</span>
+                            District (Optional)
+                        </label>
+                        <select name="district" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Districts</option>
+                            {% for district in districts %}
+                            <option value="{{ district.id }}" {% if district_id == district.id|stringformat:"s" %}selected{% endif %}">{{ district.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <span class="material-icons-outlined text-sm mr-1">church</span>
+                            Branch (Optional)
+                        </label>
+                        <select name="branch" class="form-input form-select" onchange="this.form.submit()">
+                            <option value="">All Branches</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if branch_id == branch.id|stringformat:"s" %}selected{% endif %}">{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-icons-outlined mr-2">search</span>
+                            Apply Filters
+                        </button>
+                        <a href="{% url 'core:branch_financial_overview' %}" class="btn btn-secondary">
+                            <span class="material-icons-outlined mr-2">refresh</span>
+                            Reset
+                        </a>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        <span class="material-icons-outlined text-sm mr-1">info</span>
+                        Showing {% if month %}{% for m_num, m_name in months %}{% if m_num == month %}{{ m_name }}{% endif %}{% endfor %} {{ year }}{% else %}All of {{ year }}{% endif %}
+                        {% if area_id or district_id or branch_id %}
+                        - Filtered by hierarchy
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Branch-wise Financial Summary -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <span class="material-icons-outlined mr-2 text-green-600">account_tree</span>
+                    Branch Financial Summary
+                </h2>
+                <div class="text-sm text-gray-500">
+                    {{ branch_summary|length }} branches
+                </div>
+            </div>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% if branch_summary %}
+                {% for item in branch_summary %}
+                <div class="branch-item">
+                    <div class="p-6 hover:bg-gray-50 transition-colors">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <span class="material-icons text-green-600">church</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900">{{ item.branch.name }}</h3>
+                                    {% if item.branch.district %}
+                                    <p class="text-sm text-gray-500">{{ item.branch.district.name }} District</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Financial Summary - Better Spacing -->
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 lg:gap-8">
+                                <div class="text-center sm:text-right">
+                                    <p class="text-sm text-gray-500 mb-1">Contributions</p>
+                                    <p class="font-semibold text-green-600">{{ item.total_contributions|currency }}</p>
+                                </div>
+                                <div class="text-center sm:text-right">
+                                    <p class="text-sm text-gray-500 mb-1">Expenditures</p>
+                                    <p class="font-semibold text-orange-600">{{ item.total_expenditures|currency }}</p>
+                                </div>
+                                <div class="text-center sm:text-right">
+                                    <p class="text-sm text-gray-500 mb-1">Local Balance</p>
+                                    <p class="font-semibold text-teal-600">{{ item.local_balance|currency }}</p>
+                                </div>
+                                <div class="flex items-center justify-center sm:justify-end space-x-1">
+                                    {% if item.local_balance >= 0 %}
+                                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                    {% else %}
+                                    <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                    {% endif %}
+                                    <span class="text-sm text-gray-500">
+                                        {% if item.local_balance >= 0 %}Positive{% else %}Negative{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                {% if item.total_contributions > 0 %}
+                                {% with expenditure_ratio=item.total_expenditures|div:item.total_contributions|mul:100 %}
+                                <div class="bg-orange-500 h-2 rounded-full" style="width: {{ expenditure_ratio|default:0 }}%"></div>
+                                {% endwith %}
+                                {% else %}
+                                <div class="bg-orange-500 h-2 rounded-full" style="width: 0%"></div>
+                                {% endif %}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                {% if item.total_contributions > 0 %}
+                                {% with expenditure_ratio=item.total_expenditures|div:item.total_contributions|mul:100 %}
+                                {{ expenditure_ratio|default:0|floatformat:1 }}% of contributions spent locally
+                                {% endwith %}
+                                {% else %}
+                                No contributions recorded for this period
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="text-center py-12">
+                <span class="material-icons-outlined text-6xl text-gray-300 mb-4">account_balance_wallet</span>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Branch Financial Data Found</h3>
+                <p class="text-gray-500">No financial data recorded for the selected period</p>
+                <div class="mt-6">
+                    <a href="{% url 'core:mission_financial_dashboard' %}" class="btn btn-primary">
+                        <span class="material-icons-outlined mr-2">dashboard</span>
+                        Go to Dashboard
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFilters() {
+    const filters = document.getElementById('filtersSection');
+    filters.classList.toggle('hidden');
+}
+</script>
+
+<style>
+.branch-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.branch-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-input {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: white;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+</style>
+{% endblock %}

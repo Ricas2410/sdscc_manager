@@ -84,6 +84,7 @@ urlpatterns = [
     path('mission/financial-dashboard/', mission_financial_views.mission_financial_dashboard, name='mission_financial_dashboard'),
     path('mission/expenditures/', mission_financial_views.mission_expenditure_list, name='mission_expenditure_list'),
     path('mission/remittances/', mission_financial_views.mission_remittance_tracking, name='mission_remittance_tracking'),
+    path('branch-financial-overview/', mission_financial_views.branch_financial_overview, name='branch_financial_overview'),
     
     # Monthly Closing
     path('monthly-closing/', monthly_closing_views.monthly_closing_dashboard, name='monthly_closing'),

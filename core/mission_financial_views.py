@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 import calendar
 
-from core.models import Branch, FiscalYear, SiteSettings
+from core.models import Branch, Area, District, FiscalYear, SiteSettings
 from contributions.models import Remittance, Contribution
 from expenditure.models import Expenditure, ExpenditureCategory
 from payroll.models import PayrollRun, PaySlip
@@ -216,7 +216,7 @@ def mission_expenditure_list(request):
 
 @login_required
 def mission_remittance_tracking(request):
-    """Track remittances from all branches."""
+    """Track remittances from all branches with hierarchical filtering."""
     # Only mission admin can access
     if not request.user.is_mission_admin:
         messages.error(request, 'Access denied. Mission Admin role required.')
@@ -227,11 +227,29 @@ def mission_remittance_tracking(request):
     year = int(request.GET.get('year', today.year))
     month = request.GET.get('month')
 
-    # Get all branches
+    # Get hierarchical filter parameters
+    area_id = request.GET.get('area')
+    district_id = request.GET.get('district')
+    branch_id = request.GET.get('branch')
+
+    # Get all hierarchy data for filters
+    areas = Area.objects.filter(is_active=True).order_by('name')
+    districts = District.objects.filter(is_active=True).order_by('name')
     branches = Branch.objects.filter(is_active=True).order_by('name')
 
-    # Get remittances
-    remittances = Remittance.objects.filter(year=year)
+    # Apply hierarchical filtering
+    if area_id:
+        districts = districts.filter(area_id=area_id)
+        branches = branches.filter(district__area_id=area_id)
+    
+    if district_id:
+        branches = branches.filter(district_id=district_id)
+    
+    if branch_id:
+        branches = branches.filter(id=branch_id)
+
+    # Get remittances for filtered branches
+    remittances = Remittance.objects.filter(year=year, branch__in=branches)
 
     if month:
         month = int(month)
@@ -280,7 +298,135 @@ def mission_remittance_tracking(request):
         'available_years': available_years,
         'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
         'site_settings': site_settings,
+        
+        # Hierarchy data for filters
+        'areas': areas,
+        'districts': districts,
+        'branches': branches,
+        'area_id': area_id,
+        'district_id': district_id,
+        'branch_id': branch_id,
     }
 
     return render(request, 'core/mission_remittance_tracking.html', context)
+
+
+@login_required
+def branch_financial_overview(request):
+    """Overview of all branch-level finances (local finances)."""
+    # Only mission admin can access
+    if not request.user.is_mission_admin:
+        messages.error(request, 'Access denied. Mission Admin role required.')
+        return redirect('core:dashboard')
+
+    # Get date parameters
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = request.GET.get('month')
+
+    # Get hierarchical filter parameters
+    area_id = request.GET.get('area')
+    district_id = request.GET.get('district')
+    branch_id = request.GET.get('branch')
+
+    # Get all hierarchy data for filters
+    areas = Area.objects.filter(is_active=True).order_by('name')
+    districts = District.objects.filter(is_active=True).order_by('name')
+    branches = Branch.objects.filter(is_active=True).order_by('name')
+
+    # Apply hierarchical filtering
+    if area_id:
+        districts = districts.filter(area_id=area_id)
+        branches = branches.filter(district__area_id=area_id)
+    
+    if district_id:
+        branches = branches.filter(district_id=district_id)
+    
+    if branch_id:
+        branches = branches.filter(id=branch_id)
+
+    # Get fiscal year
+    fiscal_year = FiscalYear.get_current()
+
+    # BRANCH-LEVEL CONTRIBUTIONS (what stays at branch level)
+    # These are contributions that are NOT sent to mission
+    branch_contributions = Contribution.objects.filter(
+        branch__in=branches,
+        date__year=year,
+        fiscal_year=fiscal_year
+    )
+
+    if month:
+        month = int(month)
+        branch_contributions = branch_contributions.filter(date__month=month)
+
+    # Calculate total contributions that stayed at branch level
+    total_branch_contributions = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    # BRANCH-LEVEL EXPENDITURES (local branch expenses)
+    branch_expenditures = Expenditure.objects.filter(
+        level='branch',
+        branch__in=branches,
+        date__year=year,
+        fiscal_year=fiscal_year
+    )
+
+    if month:
+        branch_expenditures = branch_expenditures.filter(date__month=month)
+
+    total_branch_expenditures = branch_expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    # Branch-wise summary
+    branch_summary = []
+    for branch in branches:
+        # Branch contributions for this period
+        branch_contrib = branch_contributions.filter(branch=branch).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Branch expenditures for this period
+        branch_exp = branch_expenditures.filter(branch=branch).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Local balance calculation
+        local_balance = branch_contrib - branch_exp
+
+        branch_summary.append({
+            'branch': branch,
+            'total_contributions': branch_contrib,
+            'total_expenditures': branch_exp,
+            'local_balance': local_balance,
+            'contribution_count': branch_contributions.filter(branch=branch).count(),
+            'expenditure_count': branch_expenditures.filter(branch=branch).count(),
+        })
+
+    # Overall totals
+    overall_totals = {
+        'total_contributions': sum(b['total_contributions'] for b in branch_summary),
+        'total_expenditures': sum(b['total_expenditures'] for b in branch_summary),
+        'total_local_balance': sum(b['local_balance'] for b in branch_summary),
+    }
+
+    # Get site settings
+    site_settings = SiteSettings.get_settings()
+
+    # Available years
+    available_years = list(range(today.year - 3, today.year + 2))
+
+    context = {
+        'branch_summary': branch_summary,
+        'overall_totals': overall_totals,
+        'year': year,
+        'month': month,
+        'available_years': available_years,
+        'months': [(i, calendar.month_name[i]) for i in range(1, 13)],
+        'site_settings': site_settings,
+        
+        # Hierarchy data for filters
+        'areas': areas,
+        'districts': districts,
+        'branches': branches,
+        'area_id': area_id,
+        'district_id': district_id,
+        'branch_id': branch_id,
+    }
+
+    return render(request, 'core/branch_financial_overview.html', context)
 
