@@ -49,20 +49,19 @@
                             <div class="flex flex-wrap gap-2">
                                 <button type="button" onclick="openCamera()" 
                                         class="btn btn-primary btn-sm flex items-center">
-                                    <span class="material-icons-outlined mr-1 text-base">camera_alt</span>
-                                    <span class="hidden sm:inline">Take Photo</span>
+                                    <span class="material-icons-outlined mr-2">camera_alt</span>
+                                    Take Photo
                                 </button>
                                 <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
                                         class="btn btn-secondary btn-sm flex items-center">
-                                    <span class="material-icons-outlined mr-1 text-base">upload_file</span>
-                                    <span class="hidden sm:inline">Choose File</span>
+                                    <span class="material-icons-outlined mr-2">upload_file</span>
+                                    Choose File
                                 </button>
                                 {% if member.profile_picture %}
                                 <button type="button" onclick="removeProfilePicture()" 
-                                        class="btn btn-danger btn-sm flex items-center"
-                                        title="Remove Photo">
-                                    <span class="material-icons-outlined text-base">delete</span>
-                                    <span class="hidden sm:inline ml-1">Remove</span>
+                                        class="btn btn-danger btn-sm flex items-center">
+                                    <span class="material-icons-outlined mr-2">delete</span>
+                                    <span class="hidden sm:inline">Remove</span>
                                 </button>
                                 {% endif %}
                             </div>
@@ -765,19 +764,18 @@
     }
     
     function updateRemoveButton(show) {
-        const container = document.querySelector('.flex-1 .flex.flex-wrap');
+        const container = document.querySelector('.flex-1 .flex.gap-2');
         if (!container) return;
         
         const existingRemoveBtn = container.querySelector('button[onclick*="removeProfilePicture"]');
         
         if (show && !existingRemoveBtn) {
-            // Add remove button with mobile-optimized styling
+            // Add remove button with mobile-friendly text
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.onclick = removeProfilePicture;
             removeBtn.className = 'btn btn-danger btn-sm flex items-center';
-            removeBtn.title = 'Remove Photo';
-            removeBtn.innerHTML = '<span class="material-icons-outlined text-base">delete</span><span class="hidden sm:inline ml-1">Remove</span>';
+            removeBtn.innerHTML = '<span class="material-icons-outlined mr-2">delete</span><span class="hidden sm:inline">Remove</span>';
             container.appendChild(removeBtn);
         } else if (!show && existingRemoveBtn) {
             // Remove remove button
