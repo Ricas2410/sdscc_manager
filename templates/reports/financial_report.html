@@ -362,7 +362,7 @@
                         <div class="mt-2 p-2 bg-blue-100 rounded">
                             <p class="text-xs text-blue-800">
                                 {% if total_income > 0 %}
-                                    {% with efficiency = total_expense|div:total_income|mul:100 %}
+                                    {% with efficiency=total_expense|div:total_income|mul:100 %}
                                         {% if efficiency < 70 %}
                                             ✅ Excellent efficiency - low expense ratio
                                         {% elif efficiency < 85 %}
@@ -397,7 +397,7 @@
                         {% endif %}
                         
                         {% if total_income > 0 %}
-                            {% with efficiency = total_expense|div:total_income|mul:100 %}
+                            {% with efficiency=total_expense|div:total_income|mul:100 %}
                                 {% if efficiency > 85 %}
                                 <div class="p-2 bg-yellow-100 rounded">
                                     <p class="text-xs text-yellow-800">

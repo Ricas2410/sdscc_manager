@@ -9,7 +9,7 @@
 <div class="max-w-7xl mx-auto px-4 py-6">
     <!-- Professional Header -->
     <div class="mb-8">
-        <div class="bg-gradient-to-r from-green-600 to-teal-700 rounded-2xl p-8 text-white shadow-xl">
+        <div class="bg-gradient-to-r from-green-700 to-teal-800 rounded-2xl p-8 text-white shadow-xl">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div class="mb-6 lg:mb-0">
                     <div class="flex items-center mb-3">
@@ -33,16 +33,16 @@
                     </div>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3">
-                    <a href="{% url 'core:mission_financial_dashboard' %}" class="btn bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm">
-                        <span class="material-icons-outlined mr-2">arrow_back</span>
+                    <a href="{% url 'core:mission_financial_dashboard' %}" class="px-4 py-2 bg-white text-green-700 hover:bg-green-50 border border-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">arrow_back</span>
                         Mission Dashboard
                     </a>
-                    <a href="{% url 'core:mission_remittance_tracking' %}" class="btn bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm">
-                        <span class="material-icons-outlined mr-2">account_balance</span>
-                        Mission Remittances
+                    <a href="{% url 'core:mission_remittance_tracking' %}" class="px-4 py-2 bg-white text-green-700 hover:bg-green-50 border border-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">account_balance</span>
+                        Mission Money
                     </a>
-                    <button onclick="window.print()" class="btn bg-white text-green-600 hover:bg-green-50">
-                        <span class="material-icons-outlined mr-2">print</span>
+                    <button onclick="window.print()" class="px-4 py-2 bg-white text-green-700 hover:bg-green-50 border border-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">print</span>
                         Print Report
                     </button>
                 </div>
@@ -221,84 +221,120 @@
                 </div>
             </div>
         </div>
-        <div class="divide-y divide-gray-200">
+        <div class="p-6">
             {% if branch_summary %}
-                {% for item in branch_summary %}
-                <div class="branch-item">
-                    <div class="p-6 hover:bg-gray-50 transition-colors">
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div class="flex items-center space-x-4">
-                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <span class="material-icons text-green-600">church</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for item in branch_summary %}
+                    <!-- Branch Card -->
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+                         onclick="window.location.href='{% url 'core:branch_financial_details' item.branch.id %}'">
+                        
+                        <!-- Card Header -->
+                        <div class="bg-gradient-to-r from-green-600 to-teal-600 p-4 text-white">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                        <span class="material-icons text-white">church</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">{{ item.branch.name }}</h3>
+                                        {% if item.branch.district %}
+                                        <p class="text-green-100 text-sm">{{ item.branch.district.name }} District</p>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-gray-900">{{ item.branch.name }}</h3>
-                                    {% if item.branch.district %}
-                                    <p class="text-sm text-gray-500">{{ item.branch.district.name }} District</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <!-- Financial Summary - Better Spacing -->
-                            <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 lg:gap-8">
-                                <div class="text-center sm:text-right">
-                                    <p class="text-sm text-gray-500 mb-1">Money Received</p>
-                                    <p class="font-semibold text-green-600">{{ item.total_contributions|currency }}</p>
-                                </div>
-                                <div class="text-center sm:text-right">
-                                    <p class="text-sm text-gray-500 mb-1">Money Spent</p>
-                                    <p class="font-semibold text-orange-600">{{ item.total_expenditures|currency }}</p>
-                                </div>
-                                <div class="text-center sm:text-right">
-                                    <p class="text-sm text-gray-500 mb-1">Money Available</p>
-                                    <p class="font-semibold text-teal-600">{{ item.local_balance|currency }}</p>
-                                </div>
-                                <div class="flex items-center justify-center sm:justify-end space-x-1">
-                                    {% if item.local_balance >= 0 %}
-                                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                                    {% else %}
-                                    <span class="w-2 h-2 bg-red-500 rounded-full"></span>
-                                    {% endif %}
-                                    <span class="text-sm text-gray-500">
-                                        {% if item.local_balance >= 0 %}Positive{% else %}Negative{% endif %}
-                                    </span>
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span class="material-icons text-white">arrow_forward</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Progress Bar -->
-                        <div class="mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2">
+                        <!-- Card Body -->
+                        <div class="p-4 space-y-4">
+                            <!-- Financial Summary -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center p-3 bg-green-50 rounded-lg">
+                                    <p class="text-xs text-gray-600 mb-1">Money Received</p>
+                                    <p class="font-bold text-green-600">{{ item.total_contributions|currency }}</p>
+                                </div>
+                                <div class="text-center p-3 bg-orange-50 rounded-lg">
+                                    <p class="text-xs text-gray-600 mb-1">Money Spent</p>
+                                    <p class="font-bold text-orange-600">{{ item.total_expenditures|currency }}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Balance and Status -->
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-sm text-gray-600">Money Available</p>
+                                    <p class="font-bold text-teal-600">{{ item.local_balance|currency }}</p>
+                                </div>
+                                
+                                <!-- Status Indicator -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        {% if item.local_balance >= 0 %}
+                                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        <span class="text-sm font-medium text-green-600">Good</span>
+                                        {% else %}
+                                        <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                        <span class="text-sm font-medium text-red-600">Low Funds</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-xs text-gray-500">
+                                        {% if item.total_contributions > 0 %}
+                                        {% with expenditure_ratio=item.total_expenditures|div:item.total_contributions|mul:100 %}
+                                        {{ expenditure_ratio|default:0|floatformat:1 }}% spent
+                                        {% endwith %}
+                                        {% else %}
+                                        No data
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <!-- Progress Bar -->
                                 {% if item.total_contributions > 0 %}
                                 {% with expenditure_ratio=item.total_expenditures|div:item.total_contributions|mul:100 %}
-                                <div class="bg-orange-500 h-2 rounded-full" style="width: {{ expenditure_ratio|default:0 }}%"></div>
+                                <div class="mt-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-orange-500 h-2 rounded-full transition-all duration-300" 
+                                             style="width: {{ expenditure_ratio|default:0 }}%"></div>
+                                    </div>
+                                </div>
                                 {% endwith %}
-                                {% else %}
-                                <div class="bg-orange-500 h-2 rounded-full" style="width: 0%"></div>
                                 {% endif %}
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">
-                                {% if item.total_contributions > 0 %}
-                                {% with expenditure_ratio=item.total_expenditures|div:item.total_contributions|mul:100 %}
-                                {{ expenditure_ratio|default:0|floatformat:1 }}% of money received was spent
-                                {% endwith %}
-                                {% else %}
-                                No money received for this period
-                                {% endif %}
-                            </p>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex gap-2 pt-2">
+                                <a href="{% url 'core:branch_financial_details' item.branch.id %}" 
+                                   class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm transition-colors text-center">
+                                    <span class="material-icons-outlined text-sm mr-1">visibility</span>
+                                    View Details
+                                </a>
+                                <a href="{% url 'expenditure:list' %}?branch={{ item.branch.id }}" 
+                                   class="flex-1 px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg font-medium text-sm transition-colors text-center">
+                                    <span class="material-icons-outlined text-sm mr-1">receipt_long</span>
+                                    Expenses
+                                </a>
+                            </div>
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             {% else %}
             <div class="text-center py-12">
                 <span class="material-icons-outlined text-6xl text-gray-300 mb-4">account_balance_wallet</span>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No Branch Financial Data Found</h3>
-                <p class="text-gray-500">No financial data recorded for the selected period</p>
-                <div class="mt-6">
-                    <a href="{% url 'core:mission_financial_dashboard' %}" class="btn btn-primary">
-                        <span class="material-icons-outlined mr-2">dashboard</span>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Financial Data Found</h3>
+                <p class="text-gray-500 mb-6">No financial information available for the selected period</p>
+                <div class="flex gap-3 justify-center">
+                    <a href="{% url 'core:mission_financial_dashboard' %}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">dashboard</span>
                         Go to Dashboard
+                    </a>
+                    <a href="{% url 'core:branch_financial_overview' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">refresh</span>
+                        Reset Filters
                     </a>
                 </div>
             </div>

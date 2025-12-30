@@ -312,6 +312,129 @@ def mission_remittance_tracking(request):
 
 
 @login_required
+def branch_financial_details(request, branch_id):
+    """Detailed view for a single branch's finances."""
+    # Only mission admin can access
+    if not request.user.is_mission_admin:
+        messages.error(request, 'Access denied. Mission Admin role required.')
+        return redirect('core:dashboard')
+    
+    # Get the branch
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    
+    # Get date parameters
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = request.GET.get('month')
+    
+    # Get fiscal year
+    fiscal_year = FiscalYear.get_current()
+    
+    # Branch contributions
+    branch_contributions = Contribution.objects.filter(
+        branch=branch,
+        date__year=year,
+        fiscal_year=fiscal_year
+    )
+    
+    if month:
+        month = int(month)
+        branch_contributions = branch_contributions.filter(date__month=month)
+    
+    # Branch expenditures
+    branch_expenditures = Expenditure.objects.filter(
+        level='branch',
+        branch=branch,
+        date__year=year,
+        fiscal_year=fiscal_year
+    )
+    
+    if month:
+        branch_expenditures = branch_expenditures.filter(date__month=month)
+    
+    # Calculate totals
+    total_contributions = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    total_expenditures = branch_expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    local_balance = total_contributions - total_expenditures
+    
+    # Contributions by type
+    contributions_by_type = branch_contributions.values('contribution_type__name').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    
+    contributions_by_type_dict = {
+        item['contribution_type__name']: item['total'] 
+        for item in contributions_by_type
+    }
+    
+    # Expenditures by category
+    expenditures_by_category = branch_expenditures.values('category__name').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    
+    expenditures_by_category_dict = {
+        item['category__name']: item['total'] 
+        for item in expenditures_by_category
+    }
+    
+    # Recent transactions (last 30 days)
+    thirty_days_ago = today - timedelta(days=30)
+    
+    recent_contributions = branch_contributions.filter(date__gte=thirty_days_ago).order_by('-date')[:5]
+    recent_expenditures = branch_expenditures.filter(date__gte=thirty_days_ago).order_by('-date')[:5]
+    
+    # Combine and format recent transactions
+    recent_transactions = []
+    
+    for contrib in recent_contributions:
+        recent_transactions.append({
+            'type': 'contribution',
+            'description': contrib.contribution_type.name,
+            'amount': contrib.amount,
+            'date': contrib.date,
+            'category': contrib.contribution_type.category,
+        })
+    
+    for exp in recent_expenditures:
+        recent_transactions.append({
+            'type': 'expenditure',
+            'description': exp.description,
+            'amount': exp.amount,
+            'date': exp.date,
+            'category': exp.category.name,
+        })
+    
+    # Sort by date
+    recent_transactions.sort(key=lambda x: x['date'], reverse=True)
+    recent_transactions = recent_transactions[:10]  # Keep only top 10
+    
+    # Branch data
+    branch_data = {
+        'total_contributions': total_contributions,
+        'total_expenditures': total_expenditures,
+        'local_balance': local_balance,
+        'contribution_count': branch_contributions.count(),
+        'expenditure_count': branch_expenditures.count(),
+    }
+    
+    # Get site settings
+    site_settings = SiteSettings.get_settings()
+    
+    context = {
+        'branch': branch,
+        'branch_data': branch_data,
+        'contributions_by_type': contributions_by_type_dict,
+        'expenditures_by_category': expenditures_by_category_dict,
+        'recent_transactions': recent_transactions,
+        'year': year,
+        'month': month,
+        'site_settings': site_settings,
+    }
+    
+    return render(request, 'core/branch_financial_details.html', context)
+
+
+@login_required
 def branch_financial_overview(request):
     """Overview of all branch-level finances (local finances)."""
     # Only mission admin can access
