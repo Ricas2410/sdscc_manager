@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Financial Report - Print View{% endblock %}
+
+{% block content %}
+<style>
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Georgia', serif;
+        color: #000;
+        background: white;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 120px;
+        background: white;
+        border-bottom: 3px solid #1a1a1a;
+        z-index: 1000;
+        page-break-after: always;
+    }
+    
+    .print-content {
+        margin-top: 140px;
+        padding: 0 20px;
+    }
+    
+    .print-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: white;
+        border-top: 1px solid #ccc;
+        text-align: center;
+        font-size: 10pt;
+        color: #666;
+        z-index: 1000;
+    }
+    
+    .page-break {
+        page-break-before: always;
+    }
+    
+    .financial-card {
+        border: 2px solid #333;
+        margin-bottom: 20px;
+        padding: 15px;
+        page-break-inside: avoid;
+    }
+    
+    .financial-header {
+        background: #1a1a1a;
+        color: white;
+        padding: 10px 15px;
+        margin: -15px -15px 15px -15px;
+        font-weight: bold;
+        font-size: 14pt;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .summary-item {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .summary-value {
+        font-size: 18pt;
+        font-weight: bold;
+        color: #1a1a1a;
+    }
+    
+    .summary-label {
+        font-size: 10pt;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    
+    .data-table th {
+        background: #f5f5f5;
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+        font-weight: bold;
+        font-size: 11pt;
+    }
+    
+    .data-table td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        font-size: 10pt;
+    }
+    
+    .chart-placeholder {
+        border: 2px dashed #ccc;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-style: italic;
+        margin-bottom: 20px;
+    }
+    
+    @page {
+        margin: 0.5in;
+        size: letter;
+    }
+}
+
+@media screen {
+    .print-header {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 20px;
+    }
+    
+    .print-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    
+    .print-footer {
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        padding: 10px;
+        text-align: center;
+        margin-top: 20px;
+    }
+}
+</style>
+
+<!-- Print Header -->
+<div class="print-header">
+    <table style="width: 100%; height: 100%;">
+        <tr>
+            <td style="width: 80px; vertical-align: top; padding: 15px;">
+                {% if site_settings.logo %}
+                    <img src="{{ site_settings.logo.url }}" alt="Logo" style="max-width: 60px; max-height: 60px;">
+                {% else %}
+                    <div style="width: 60px; height: 60px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border-radius: 8px;">
+                        {{ site_settings.church_name|slice:":3"|upper }}
+                    </div>
+                {% endif %}
+            </td>
+            <td style="vertical-align: middle; padding: 15px;">
+                <h1 style="margin: 0; font-size: 24pt; color: #1a1a1a; font-weight: bold;">{{ site_settings.church_name|default:"Church Name" }}</h1>
+                <p style="margin: 5px 0 0 0; font-size: 12pt; color: #666;">{{ site_settings.address|default:"Church Address" }}</p>
+                <p style="margin: 3px 0 0 0; font-size: 10pt; color: #888;">{{ site_settings.phone|default:"Phone" }} | {{ site_settings.email|default:"Email" }}</p>
+            </td>
+            <td style="width: 150px; vertical-align: middle; padding: 15px; text-align: right;">
+                <div style="font-size: 10pt; color: #666;">
+                    <div style="font-weight: bold;">FINANCIAL REPORT</div>
+                    <div>{{ current_date|date:"F d, Y" }}</div>
+                    {% if fiscal_year %}
+                    <div>Fiscal Year: {{ fiscal_year.name }}</div>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- Print Content -->
+<div class="print-content">
+    <!-- Executive Summary -->
+    <div class="financial-card">
+        <div class="financial-header">EXECUTIVE SUMMARY</div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-value">{{ site_settings.currency_symbol|default:"$" }}{{ total_income|floatformat:2|intcomma }}</div>
+                <div class="summary-label">Total Income</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">{{ site_settings.currency_symbol|default:"$" }}{{ total_expenditure|floatformat:2|intcomma }}</div>
+                <div class="summary-label">Total Expenditure</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">{{ site_settings.currency_symbol|default:"$" }}{{ net_amount|floatformat:2|intcomma }}</div>
+                <div class="summary-label">Net Amount</div>
+            </div>
+        </div>
+        
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-value">{{ total_members }}</div>
+                <div class="summary-label">Total Members</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">{{ total_branches }}</div>
+                <div class="summary-label">Total Branches</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">{{ attendance_rate|floatformat:1 }}%</div>
+                <div class="summary-label">Attendance Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Income Analysis -->
+    <div class="financial-card">
+        <div class="financial-header">INCOME ANALYSIS</div>
+        
+        <!-- Chart Placeholder -->
+        <div class="chart-placeholder">
+            [Income Distribution Chart - {{ income_by_type|length }} Categories]
+        </div>
+        
+        <!-- Income Details Table -->
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Income Source</th>
+                    <th>Amount</th>
+                    <th>% of Total</th>
+                    <th>Frequency</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in income_by_type %}
+                <tr>
+                    <td>{{ item.contribution_type__name }}</td>
+                    <td style="text-align: right; font-weight: bold;">{{ site_settings.currency_symbol|default:"$" }}{{ item.total|floatformat:2|intcomma }}</td>
+                    <td style="text-align: right;">{% if total_income > 0 %}{{ item.total|div:total_income|mul:100|floatformat:1 }}%{% else %}0.0%{% endif %}</td>
+                    <td style="text-align: center;">{% if item.total >= 1000 %}High{% elif item.total >= 500 %}Medium{% else %}Low{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #666;">No income data available for selected period</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Expenditure Analysis -->
+    <div class="page-break"></div>
+    
+    <div class="financial-card">
+        <div class="financial-header">EXPENDITURE ANALYSIS</div>
+        
+        <!-- Chart Placeholder -->
+        <div class="chart-placeholder">
+            [Expenditure Distribution Chart - {{ expense_by_category|length }} Categories]
+        </div>
+        
+        <!-- Expenditure Details Table -->
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Expense Category</th>
+                    <th>Amount</th>
+                    <th>% of Total</th>
+                    <th>Budget Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in expense_by_category %}
+                <tr>
+                    <td>{{ item.category__name }}</td>
+                    <td style="text-align: right; font-weight: bold;">{{ site_settings.currency_symbol|default:"$" }}{{ item.total|floatformat:2|intcomma }}</td>
+                    <td style="text-align: right;">{% if total_expenditure > 0 %}{{ item.total|div:total_expenditure|mul:100|floatformat:1 }}%{% else %}0.0%{% endif %}</td>
+                    <td style="text-align: center;">{% if item.total >= 1000 %}High{% elif item.total >= 500 %}Medium{% else %}Low{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #666;">No expenditure data available for selected period</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Branch Performance -->
+    <div class="financial-card">
+        <div class="financial-header">BRANCH PERFORMANCE SUMMARY</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Branch Name</th>
+                    <th>District</th>
+                    <th>Income</th>
+                    <th>Expenditure</th>
+                    <th>Net</th>
+                    <th>Members</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for branch in branch_performance %}
+                <tr>
+                    <td>{{ branch.name }}</td>
+                    <td>{{ branch.district.name }}</td>
+                    <td style="text-align: right;">{{ site_settings.currency_symbol|default:"$" }}{{ branch.total_income|floatformat:0|intcomma }}</td>
+                    <td style="text-align: right;">{{ site_settings.currency_symbol|default:"$" }}{{ branch.total_expenditure|floatformat:0|intcomma }}</td>
+                    <td style="text-align: right; font-weight: bold;">{{ site_settings.currency_symbol|default:"$" }}{{ branch.net_amount|floatformat:0|intcomma }}</td>
+                    <td style="text-align: center;">{{ branch.member_count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #666;">No branch data available for selected period</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Page Break for Additional Sections -->
+    <div class="page-break"></div>
+    
+    <!-- Additional Notes -->
+    <div class="financial-card">
+        <div class="financial-header">REPORT NOTES & OBSERVATIONS</div>
+        <div style="padding: 15px;">
+            <p><strong>Report Period:</strong> {{ start_date|date:"F d, Y" }} - {{ end_date|date:"F d, Y" }}</p>
+            <p><strong>Generated On:</strong> {{ current_date|date:"F d, Y H:i" }}</p>
+            <p><strong>Generated By:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+            
+            <div style="margin-top: 20px;">
+                <h4 style="margin-bottom: 10px;">Key Observations:</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    {% if total_income > 0 %}
+                    <li>Total income of {{ site_settings.currency_symbol|default:"$" }}{{ total_income|floatformat:2|intcomma }} across {{ income_by_type|length }} income categories</li>
+                    {% endif %}
+                    {% if total_expenditure > 0 %}
+                    <li>Total expenditure of {{ site_settings.currency_symbol|default:"$" }}{{ total_expenditure|floatformat:2|intcomma }} across {{ expense_by_category|length }} expense categories</li>
+                    {% endif %}
+                    {% if net_amount > 0 %}
+                    <li>Positive net cash flow of {{ site_settings.currency_symbol|default:"$" }}{{ net_amount|floatformat:2|intcomma }}</li>
+                    {% elif net_amount < 0 %}
+                    <li>Negative cash flow of {{ site_settings.currency_symbol|default:"$" }}{{ net_amount|floatformat:2|intcomma }} - requires attention</li>
+                    {% endif %}
+                    <li>Organization serves {{ total_members }} members across {{ total_branches }} branches</li>
+                    <li>Overall attendance rate of {{ attendance_rate|floatformat:1 }}%</li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccc;">
+                <p style="font-size: 9pt; color: #666; font-style: italic;">
+                    This report was automatically generated by the SDSCC Management System. 
+                    For questions or clarifications, please contact the finance department.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Footer -->
+<div class="print-footer">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
+        <div>Page <span class="page-number"></span> of <span class="total-pages"></span></div>
+        <div>{{ site_settings.church_name|default:"Church Name" }} - Financial Report</div>
+        <div>Generated: {{ current_date|date:"Y-m-d H:i" }}</div>
+    </div>
+</div>
+
+<script>
+// Auto-print when page loads
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        window.print();
+    }, 500);
+});
+
+// Page numbering for print
+window.addEventListener('beforeprint', function() {
+    const totalPages = Math.ceil(document.body.scrollHeight / window.innerHeight);
+    document.querySelectorAll('.page-number').forEach(el => {
+        el.textContent = '1';
+    });
+    document.querySelectorAll('.total-pages').forEach(el => {
+        el.textContent = totalPages;
+    });
+});
+</script>
+{% endblock %}

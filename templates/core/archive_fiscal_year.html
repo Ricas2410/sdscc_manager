@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Archive {{ fiscal_year }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a href="{% url 'core:archive_dashboard' %}" class="text-gray-500 hover:text-gray-700">
+            <span class="material-icons-outlined">arrow_back</span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Archive Fiscal Year</h1>
+            <p class="text-gray-500">Archive all data for {{ fiscal_year }}</p>
+        </div>
+    </div>
+
+    <!-- Warning -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                <span class="material-icons-outlined text-amber-600 text-xl">warning</span>
+            </div>
+            <div>
+                <h2 class="font-semibold text-amber-900">Archive Confirmation Required</h2>
+                <p class="text-sm text-amber-700">You are about to archive the fiscal year {{ fiscal_year }}. This action has important implications.</p>
+            </div>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="bg-white rounded-lg p-4 border border-amber-300">
+                <h3 class="font-medium text-gray-900 mb-3">What happens when you archive:</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-green-600 text-sm">check_circle</span>
+                        <p class="text-sm text-gray-700">All financial data will be preserved and accessible</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-green-600 text-sm">check_circle</span>
+                        <p class="text-sm text-gray-700">Member statistics will be archived</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-green-600 text-sm">check_circle</span>
+                        <p class="text-sm text-gray-700">Branch performance data will be saved</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-blue-600 text-sm">visibility</span>
+                        <p class="text-sm text-gray-700">Data remains viewable in archive reports</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-red-50 rounded-lg p-4 border border-red-300">
+                <h3 class="font-medium text-red-900 mb-3">Important Notes:</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-red-600 text-sm">error</span>
+                        <p class="text-sm text-gray-700">Fiscal year will be marked as closed</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-red-600 text-sm">error</span>
+                        <p class="text-sm text-gray-700">No new data can be added for this year</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="material-icons-outlined text-red-600 text-sm">error</span>
+                        <p class="text-sm text-gray-700">This action is irreversible</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fiscal Year Info -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Fiscal Year Information</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Fiscal Year</p>
+                <p class="text-lg font-bold text-gray-900">{{ fiscal_year }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Period</p>
+                <p class="text-lg font-bold text-gray-900">{{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Current Status</p>
+                <span class="inline-flex px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    <span class="material-icons-outlined text-sm align-middle mr-1">schedule</span>
+                    Active
+                </span>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Data After Archiving</p>
+                <span class="inline-flex px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+                    <span class="material-icons-outlined text-sm align-middle mr-1">archive</span>
+                    Archived
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archive Form -->
+    <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+        {% csrf_token %}
+        <div class="p-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" name="confirm_archive" required class="w-5 h-5 rounded text-amber-600 focus:ring-amber-500">
+                    <label for="confirm_archive" class="text-sm font-medium text-gray-700">
+                        I understand that archiving this fiscal year is irreversible
+                    </label>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{% url 'core:archive_dashboard' %}" class="btn-secondary">
+                        <span class="material-icons-outlined text-sm mr-2 align-middle">cancel</span>
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-primary bg-amber-600 hover:bg-amber-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined text-sm mr-2 align-middle">archive</span>
+                        Archive Fiscal Year
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

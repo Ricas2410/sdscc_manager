@@ -350,7 +350,7 @@ def member_detail(request, member_id):
         total=Sum('amount')
     )['total'] or 0
     
-    # Get attendance stats
+    # Get attendance stats - Fixed calculation
     attendance_records = AttendanceRecord.objects.filter(member=member).select_related('session')[:10]
     total_attendance = AttendanceRecord.objects.filter(member=member, status='present').count()
     total_services = AttendanceRecord.objects.filter(member=member).count()

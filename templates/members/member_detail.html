@@ -21,58 +21,57 @@
         </div>
     </div>
 
-    <!-- Member Summary Card -->
-    <div class="card shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
+    <!-- Enhanced Member Summary Card -->
+    <div class="card bg-gradient-to-r from-blue-50 to-indigo-50 border-0 shadow-xl">
         <div class="card-body">
-            <div class="flex flex-col md:flex-row md:items-center gap-8">
-                <!-- Profile Image Section -->
-                <div class="flex-shrink-0 text-center">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-8">
+                <!-- Enhanced Avatar Section -->
+                <div class="flex-shrink-0 text-center lg:text-left">
                     <div class="relative inline-block group">
-                        <div class="h-40 w-40 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl {% if member.profile_picture %}cursor-pointer hover:ring-8 hover:ring-primary-300 transition-all duration-300{% endif %}"
+                        <div class="h-48 w-48 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-2xl transform transition-all duration-300 hover:scale-105 {% if member.profile_picture %}cursor-pointer hover:ring-8 hover:ring-primary-200{% endif %}"
                             {% if member.profile_picture %}onclick="openPhotoModal()" {% endif %}>
                             {% if member.profile_picture %}
-                            <img src="{{ member.profile_picture.url }}" class="h-40 w-40 object-cover"
+                            <img src="{{ member.profile_picture.url }}" class="h-48 w-48 object-cover transform transition-transform duration-300 group-hover:scale-110"
                                 alt="{{ member.get_full_name }}">
                             {% else %}
-                            <span class="text-6xl text-primary-700 font-bold">{{ member.first_name|slice:"1" }}{{
-                                member.last_name|slice:"1" }}</span>
+                            <div class="text-center">
+                                <span class="text-7xl text-primary-600 font-bold">{{ member.first_name|slice:":1" }}{{ member.last_name|slice:":1" }}</span>
+                                <p class="text-primary-500 text-sm mt-2 font-medium">No Photo</p>
+                            </div>
                             {% endif %}
                         </div>
                         {% if member.profile_picture %}
-                        <div class="absolute bottom-2 right-2 transform translate-x-1 translate-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span
-                                class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg">
-                                <span class="material-icons-outlined text-sm">zoom_in</span>
+                        <div class="absolute bottom-2 right-2 transform translate-x-0 translate-y-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg backdrop-blur-sm">
+                                <span class="material-icons-outlined text-lg">zoom_in</span>
                             </span>
                         </div>
                         {% endif %}
                     </div>
-                    {% if member.profile_picture %}
-                    <button onclick="openPhotoModal()" class="btn btn-sm btn-outline-primary mt-4 hover:bg-primary-50 transition-colors">
-                        <span class="material-icons-outlined text-base mr-1">visibility</span>
-                        View Full Picture
-                    </button>
-                    {% else %}
                     <div class="mt-4">
-                        <a href="{% url 'members:edit' member.id %}#profile_picture" class="btn btn-sm btn-primary hover:bg-primary-700 transition-colors">
-                            <span class="material-icons-outlined text-base mr-1">add_a_photo</span>
-                            Add Photo
-                        </a>
+                        {% if member.profile_picture %}
+                        <button onclick="openPhotoModal()" class="btn btn-sm btn-primary w-full shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                            <span class="material-icons-outlined text-base mr-2">visibility</span>
+                            View Full Size
+                        </button>
+                        {% else %}
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500 italic">No profile picture available</p>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
-                <!-- Member Info Section -->
+                <!-- Enhanced Info Section -->
                 <div class="flex-1">
                     <div class="mb-6">
                         <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ member.get_full_name }}</h2>
-                        <p class="text-lg text-gray-600 font-mono">Member ID: {{ member.member_id }}</p>
+                        <p class="text-lg text-gray-600 font-medium">Member ID: <span class="font-mono text-primary-600 bg-primary-50 px-2 py-1 rounded">{{ member.member_id }}</span></p>
                     </div>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                                    <span class="material-icons-outlined text-blue-600">home_work</span>
+                                <div class="p-2 rounded-lg bg-blue-100">
+                                    <span class="material-icons-outlined text-blue-600">business</span>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase tracking-wide">Branch</p>
@@ -82,7 +81,7 @@
                         </div>
                         <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <div class="p-2 rounded-lg bg-purple-100">
                                     <span class="material-icons-outlined text-purple-600">person</span>
                                 </div>
                                 <div>
@@ -93,18 +92,7 @@
                         </div>
                         <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg {% if member.is_active %}bg-green-100{% else %}bg-red-100{% endif %} flex items-center justify-center">
-                                    <span class="material-icons-outlined {% if member.is_active %}text-green-600{% else %}text-red-600{% endif %}">{% if member.is_active %}check_circle{% else %}cancel{% endif %}</span>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Status</p>
-                                    <p class="font-semibold {% if member.is_active %}text-green-600{% else %}text-red-600{% endif %}">{% if member.is_active %}Active{% else %}Inactive{% endif %}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                                <div class="p-2 rounded-lg bg-green-100">
                                     <span class="material-icons-outlined text-green-600">payments</span>
                                 </div>
                                 <div>
@@ -113,28 +101,29 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+                        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center">
-                                    <span class="material-icons-outlined text-white">event_available</span>
+                                <div class="p-2 rounded-lg bg-orange-100">
+                                    <span class="material-icons-outlined text-orange-600">event_available</span>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600">Attendance Rate</p>
-                                    <p class="text-2xl font-bold text-blue-600">{{ attendance_rate|floatformat:0 }}%</p>
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Attendance Rate</p>
+                                    <p class="font-semibold text-blue-600">{{ attendance_rate|floatformat:0 }}%</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-100">
+                        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
-                                    <span class="material-icons-outlined text-white">calendar_today</span>
+                                <div class="p-2 rounded-lg {% if member.is_active %}bg-green-100{% else %}bg-red-100{% endif %}">
+                                    <span class="material-icons-outlined {% if member.is_active %}text-green-600{% else %}text-red-600{% endif %}">circle</span>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-600">Member Since</p>
-                                    <p class="text-lg font-bold text-purple-600">{{ member.date_joined|date:"M Y" }}</p>
+                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                                    {% if member.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

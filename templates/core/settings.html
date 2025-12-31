@@ -77,41 +77,98 @@
                                 <span class="material-icons-outlined text-purple-600">palette</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Branding</h2>
-                                <p class="text-sm text-gray-500">Customize appearance</p>
+                                <h2 class="font-semibold text-gray-900">Church Branding</h2>
+                                <p class="text-sm text-gray-500">Customize your church's identity and appearance</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
-                                <input type="text" name="site_name" value="{{ site_settings.site_name }}" class="input-field">
+                        <!-- Basic Information -->
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-purple-600">church</span>
+                                <h3 class="font-medium text-purple-900">Church Information</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tagline</label>
-                                <input type="text" name="tagline" value="{{ site_settings.tagline }}" class="input-field">
+                            <p class="text-sm text-purple-700 mb-4">Set your church's basic identity information that appears throughout the system.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">title</span>
+                                        Church Name
+                                    </label>
+                                    <input type="text" name="site_name" value="{{ site_settings.site_name }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" 
+                                           placeholder="Seventh Day Sabbath Church of Christ">
+                                    <p class="text-xs text-gray-500 mt-1">Main church name displayed in headers</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">description</span>
+                                        Church Tagline
+                                    </label>
+                                    <input type="text" name="tagline" value="{{ site_settings.tagline }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" 
+                                           placeholder="Serving the community with love">
+                                    <p class="text-xs text-gray-500 mt-1">Brief description or mission statement</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
-                                <div class="flex items-center gap-3">
-                                    <input type="color" name="primary_color" value="{{ site_settings.primary_color }}" class="w-12 h-10 rounded border cursor-pointer">
-                                    <span class="text-sm text-gray-500">{{ site_settings.primary_color }}</span>
+
+                        <!-- Color Scheme -->
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-purple-600">color_lens</span>
+                                <h3 class="font-medium text-purple-900">Color Scheme</h3>
+                            </div>
+                            <p class="text-sm text-purple-700 mb-4">Choose colors that reflect your church's brand and personality.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">format_color_fill</span>
+                                        Primary Color
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color" name="primary_color" value="{{ site_settings.primary_color }}" 
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 cursor-pointer hover:border-purple-500 transition-colors">
+                                        <div class="flex-1">
+                                            <input type="text" value="{{ site_settings.primary_color }}" readonly 
+                                                   class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono">
+                                            <p class="text-xs text-gray-500 mt-1">Main brand color (buttons, links)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">format_color_reset</span>
+                                        Secondary Color
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color" name="secondary_color" value="{{ site_settings.secondary_color }}" 
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 cursor-pointer hover:border-purple-500 transition-colors">
+                                        <div class="flex-1">
+                                            <input type="text" value="{{ site_settings.secondary_color }}" readonly 
+                                                   class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono">
+                                            <p class="text-xs text-gray-500 mt-1">Accent color (highlights)</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
-                                <div class="flex items-center gap-3">
-                                    <input type="color" name="secondary_color" value="{{ site_settings.secondary_color }}" class="w-12 h-10 rounded border cursor-pointer">
-                                    <span class="text-sm text-gray-500">{{ site_settings.secondary_color }}</span>
-                                </div>
+                            <div class="mt-4 p-3 bg-white rounded-lg border border-purple-200">
+                                <p class="text-xs text-purple-700">
+                                    <strong>Tip:</strong> Choose colors that provide good contrast and are accessible to all users.
+                                </p>
                             </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Branding</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">brush</span>
+                            Colors apply system-wide after saving
+                        </div>
+                        <button type="submit" class="btn-primary bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Branding
+                        </button>
                     </div>
                 </form>
             </section>
@@ -127,83 +184,151 @@
                                 <span class="material-icons-outlined text-pink-600">image</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Images & Branding</h2>
-                                <p class="text-sm text-gray-500">Logo, favicon, and background images</p>
+                                <h2 class="font-semibold text-gray-900">Images & Media</h2>
+                                <p class="text-sm text-gray-500">Upload and manage church images and logos</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <!-- Logo -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Site Logo (Upload)</label>
-                                {% if site_settings.site_logo %}
-                                <div class="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
-                                    <img src="{{ site_settings.site_logo.url }}" alt="Current Logo" class="h-16 object-contain">
-                                </div>
-                                {% endif %}
-                                <input type="file" name="site_logo" accept="image/*" class="input-field">
-                                <p class="text-xs text-gray-500 mt-1">Recommended: PNG with transparent background, 200x60px</p>
+                        <!-- Logo Settings -->
+                        <div class="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-pink-600">church</span>
+                                <h3 class="font-medium text-pink-900">Church Logo</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Logo URL (Fallback)</label>
-                                <input type="url" name="site_logo_url" value="{{ site_settings.site_logo_url }}" class="input-field" placeholder="https://example.com/logo.png">
-                                <p class="text-xs text-gray-500 mt-1">Used if no logo is uploaded</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Favicon -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Favicon (Upload)</label>
-                                {% if site_settings.site_favicon %}
-                                <div class="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
-                                    <img src="{{ site_settings.site_favicon.url }}" alt="Current Favicon" class="h-8">
-                                </div>
-                                {% endif %}
-                                <input type="file" name="site_favicon" accept="image/*,.ico" class="input-field">
-                                <p class="text-xs text-gray-500 mt-1">Recommended: ICO or PNG, 32x32px</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Favicon URL (Fallback)</label>
-                                <input type="url" name="site_favicon_url" value="{{ site_settings.site_favicon_url }}" class="input-field" placeholder="https://example.com/favicon.ico">
-                            </div>
-                        </div>
-                        
-                        <!-- Login Background -->
-                        <div class="pt-4 border-t border-gray-200">
-                            <h3 class="font-medium text-gray-900 mb-4">Login Page Background</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <p class="text-sm text-pink-700 mb-4">Your church logo appears in headers, emails, and official documents.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Background Image (Upload)</label>
-                                    {% if site_settings.login_background %}
-                                    <div class="mb-3 rounded-lg overflow-hidden inline-block border">
-                                        <img src="{{ site_settings.login_background.url }}" alt="Login Background" class="h-24 object-cover">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">upload_file</span>
+                                        Upload Logo
+                                    </label>
+                                    {% if site_settings.site_logo %}
+                                    <div class="mb-3 p-3 bg-white rounded-lg border border-pink-300 inline-block">
+                                        <img src="{{ site_settings.site_logo.url }}" alt="Current Logo" class="h-16 object-contain">
+                                        <p class="text-xs text-gray-500 mt-1 text-center">Current logo</p>
                                     </div>
                                     {% endif %}
-                                    <input type="file" name="login_background" accept="image/*" class="input-field">
+                                    <input type="file" name="site_logo" accept="image/*" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors">
+                                    <p class="text-xs text-gray-500 mt-1">PNG with transparent background, 200x60px</p>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Background URL (Fallback)</label>
-                                    <input type="url" name="login_background_url" value="{{ site_settings.login_background_url }}" class="input-field" placeholder="https://example.com/bg.jpg">
-                                    <p class="text-xs text-gray-500 mt-1">Default: Unsplash church image</p>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">link</span>
+                                        Logo URL (Backup)
+                                    </label>
+                                    <input type="url" name="site_logo_url" value="{{ site_settings.site_logo_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors" 
+                                           placeholder="https://example.com/logo.png">
+                                    <p class="text-xs text-gray-500 mt-1">Used if upload fails</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Favicon Settings -->
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-purple-600">web</span>
+                                <h3 class="font-medium text-purple-900">Browser Icon (Favicon)</h3>
+                            </div>
+                            <p class="text-sm text-purple-700 mb-4">Small icon that appears in browser tabs and bookmarks.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">upload_file</span>
+                                        Upload Favicon
+                                    </label>
+                                    {% if site_settings.site_favicon %}
+                                    <div class="mb-3 p-3 bg-white rounded-lg border border-purple-300 inline-block">
+                                        <img src="{{ site_settings.site_favicon.url }}" alt="Current Favicon" class="h-8">
+                                        <p class="text-xs text-gray-500 mt-1 text-center">Current favicon</p>
+                                    </div>
+                                    {% endif %}
+                                    <input type="file" name="site_favicon" accept="image/*,.ico" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors">
+                                    <p class="text-xs text-gray-500 mt-1">ICO or PNG format, 32x32px</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">link</span>
+                                        Favicon URL (Backup)
+                                    </label>
+                                    <input type="url" name="site_favicon_url" value="{{ site_settings.site_favicon_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" 
+                                           placeholder="https://example.com/favicon.ico">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Login Background -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-blue-600">login</span>
+                                <h3 class="font-medium text-blue-900">Login Page Background</h3>
+                            </div>
+                            <p class="text-sm text-blue-700 mb-4">Background image displayed on the login page for branding.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">upload_file</span>
+                                        Upload Background
+                                    </label>
+                                    {% if site_settings.login_background %}
+                                    <div class="mb-3 rounded-lg overflow-hidden inline-block border border-blue-300">
+                                        <img src="{{ site_settings.login_background.url }}" alt="Login Background" class="h-24 object-cover">
+                                        <p class="text-xs text-gray-500 mt-1 text-center bg-blue-50 p-1">Current background</p>
+                                    </div>
+                                    {% endif %}
+                                    <input type="file" name="login_background" accept="image/*" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">link</span>
+                                        Background URL (Backup)
+                                    </label>
+                                    <input type="url" name="login_background_url" value="{{ site_settings.login_background_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           placeholder="https://example.com/bg.jpg">
+                                    <p class="text-xs text-gray-500 mt-1">Default: Beautiful church image</p>
                                     {% if site_settings.get_login_background_url %}
-                                    <div class="mt-2 rounded-lg overflow-hidden inline-block border">
+                                    <div class="mt-2 rounded-lg overflow-hidden inline-block border border-blue-300">
                                         <img src="{{ site_settings.get_login_background_url }}" alt="Preview" class="h-16 object-cover">
                                     </div>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Footer Text -->
-                        <div class="pt-4 border-t border-gray-200">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Footer Text</label>
-                            <input type="text" name="footer_text" value="{{ site_settings.footer_text }}" class="input-field" placeholder=" 2024 Your Church. All rights reserved.">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-gray-600">copyright</span>
+                                <h3 class="font-medium text-gray-900">Footer Information</h3>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-4">Text displayed at the bottom of every page.</p>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle mr-1">text_fields</span>
+                                    Footer Text
+                                </label>
+                                <input type="text" name="footer_text" value="{{ site_settings.footer_text }}" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors" 
+                                       placeholder=" 2024 Your Church. All rights reserved.">
+                                <p class="text-xs text-gray-500 mt-1">Copyright notice or legal information</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Images</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Images may take time to appear across all pages
+                        </div>
+                        <button type="submit" class="btn-primary bg-pink-600 hover:bg-pink-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Images
+                        </button>
                     </div>
                 </form>
             </section>
@@ -219,43 +344,114 @@
                                 <span class="material-icons-outlined text-blue-600">contact_mail</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Contact Info</h2>
-                                <p class="text-sm text-gray-500">Church contact details</p>
+                                <h2 class="font-semibold text-gray-900">Church Contact Information</h2>
+                                <p class="text-sm text-gray-500">How members and visitors can reach your church</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                <input type="email" name="email" value="{{ site_settings.email }}" class="input-field">
+                        <!-- Primary Contact -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-blue-600">phone</span>
+                                <h3 class="font-medium text-blue-900">Primary Contact Methods</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                                <input type="tel" name="phone" value="{{ site_settings.phone }}" class="input-field">
+                            <p class="text-sm text-blue-700 mb-4">Main ways people can contact your church office.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">email</span>
+                                        Church Email
+                                    </label>
+                                    <input type="email" name="email" value="{{ site_settings.email }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           placeholder="office@yourchurch.com">
+                                    <p class="text-xs text-gray-500 mt-1">Official church email address</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">phone</span>
+                                        Main Phone Number
+                                    </label>
+                                    <input type="tel" name="phone" value="{{ site_settings.phone }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           placeholder="+233123456789">
+                                    <p class="text-xs text-gray-500 mt-1">Primary church phone line</p>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                            <textarea name="address" rows="2" class="input-field">{{ site_settings.address }}</textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
-                            <input type="url" name="website" value="{{ site_settings.website }}" class="input-field">
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Alternate Phone</label>
-                                <input type="tel" name="alternate_phone" value="{{ site_settings.alternate_phone }}" class="input-field">
+
+                        <!-- Physical Location -->
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-green-600">location_on</span>
+                                <h3 class="font-medium text-green-900">Church Location</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Postal Address</label>
-                                <input type="text" name="postal_address" value="{{ site_settings.postal_address }}" class="input-field">
+                            <p class="text-sm text-green-700 mb-4">Where your church is physically located.</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">home</span>
+                                        Street Address
+                                    </label>
+                                    <textarea name="address" rows="2" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+                                              placeholder="123 Church Street, Accra, Ghana">{{ site_settings.address }}</textarea>
+                                    <p class="text-xs text-gray-500 mt-1">Full physical address for GPS/maps</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">local_post_office</span>
+                                        Postal Address
+                                    </label>
+                                    <input type="text" name="postal_address" value="{{ site_settings.postal_address }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+                                           placeholder="P.O. Box 1234, Accra">
+                                    <p class="text-xs text-gray-500 mt-1">Mailing address for letters</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Online Presence -->
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-purple-600">language</span>
+                                <h3 class="font-medium text-purple-900">Online Presence</h3>
+                            </div>
+                            <p class="text-sm text-purple-700 mb-4">Your church's digital footprint.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">public</span>
+                                        Church Website
+                                    </label>
+                                    <input type="url" name="website" value="{{ site_settings.website }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" 
+                                           placeholder="https://yourchurch.com">
+                                    <p class="text-xs text-gray-500 mt-1">Official church website</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">phone_in_talk</span>
+                                        Alternate Phone
+                                    </label>
+                                    <input type="tel" name="alternate_phone" value="{{ site_settings.alternate_phone }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" 
+                                           placeholder="+233987654321">
+                                    <p class="text-xs text-gray-500 mt-1">Backup contact number</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Contact</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Contact info appears on reports and public pages
+                        </div>
+                        <button type="submit" class="btn-primary bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Contact Info
+                        </button>
                     </div>
                 </form>
             </section>
@@ -271,64 +467,114 @@
                                 <span class="material-icons-outlined text-cyan-600">share</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Social Media</h2>
-                                <p class="text-sm text-gray-500">Social media links & accounts</p>
+                                <h2 class="font-semibold text-gray-900">Social Media Connections</h2>
+                                <p class="text-sm text-gray-500">Connect your church's social media platforms</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <span class="material-icons-outlined text-sm align-middle text-blue-600">facebook</span>
-                                    Facebook
-                                </label>
-                                <input type="url" name="facebook_url" value="{{ site_settings.facebook_url }}" class="input-field" placeholder="https://facebook.com/...">
+                        <!-- Primary Platforms -->
+                        <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-cyan-600">thumb_up</span>
+                                <h3 class="font-medium text-cyan-900">Primary Social Platforms</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <span class="material-icons-outlined text-sm align-middle text-red-600">smart_display</span>
-                                    YouTube
-                                </label>
-                                <input type="url" name="youtube_url" value="{{ site_settings.youtube_url }}" class="input-field" placeholder="https://youtube.com/...">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <span class="material-icons-outlined text-sm align-middle text-pink-600">camera_alt</span>
-                                    Instagram
-                                </label>
-                                <input type="url" name="instagram_url" value="{{ site_settings.instagram_url }}" class="input-field" placeholder="https://instagram.com/...">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <span class="material-icons-outlined text-sm align-middle text-blue-400">tag</span>
-                                    Twitter / X
-                                </label>
-                                <input type="url" name="twitter_url" value="{{ site_settings.twitter_url }}" class="input-field" placeholder="https://twitter.com/...">
+                            <p class="text-sm text-cyan-700 mb-4">Main social media platforms where your church is active.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle text-blue-600 mr-1">facebook</span>
+                                        Facebook Page
+                                    </label>
+                                    <input type="url" name="facebook_url" value="{{ site_settings.facebook_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors" 
+                                           placeholder="https://facebook.com/yourchurch">
+                                    <p class="text-xs text-gray-500 mt-1">Main church Facebook page</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle text-red-600 mr-1">smart_display</span>
+                                        YouTube Channel
+                                    </label>
+                                    <input type="url" name="youtube_url" value="{{ site_settings.youtube_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors" 
+                                           placeholder="https://youtube.com/yourchurch">
+                                    <p class="text-xs text-gray-500 mt-1">Sermon videos and live streams</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <span class="material-icons-outlined text-sm align-middle text-green-600">chat</span>
-                                    WhatsApp Number
-                                </label>
-                                <input type="text" name="whatsapp_number" value="{{ site_settings.whatsapp_number }}" class="input-field" placeholder="+233201234567">
-                                <p class="text-xs text-gray-500 mt-1">Include country code</p>
+
+                        <!-- Visual Platforms -->
+                        <div class="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-pink-600">photo_camera</span>
+                                <h3 class="font-medium text-pink-900">Visual Content Platforms</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <span class="material-icons-outlined text-sm align-middle text-gray-800">music_note</span>
-                                    TikTok
-                                </label>
-                                <input type="url" name="tiktok_url" value="{{ site_settings.tiktok_url }}" class="input-field" placeholder="https://tiktok.com/@...">
+                            <p class="text-sm text-pink-700 mb-4">Platforms for sharing photos and visual content.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle text-pink-600 mr-1">camera_alt</span>
+                                        Instagram Profile
+                                    </label>
+                                    <input type="url" name="instagram_url" value="{{ site_settings.instagram_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors" 
+                                           placeholder="https://instagram.com/yourchurch">
+                                    <p class="text-xs text-gray-500 mt-1">Photos and short videos</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle text-blue-400 mr-1">tag</span>
+                                        Twitter / X Profile
+                                    </label>
+                                    <input type="url" name="twitter_url" value="{{ site_settings.twitter_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors" 
+                                           placeholder="https://twitter.com/yourchurch">
+                                    <p class="text-xs text-gray-500 mt-1">Updates and announcements</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Communication Platforms -->
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-green-600">chat</span>
+                                <h3 class="font-medium text-green-900">Direct Communication</h3>
+                            </div>
+                            <p class="text-sm text-green-700 mb-4">Direct messaging and communication platforms.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle text-green-600 mr-1">chat</span>
+                                        WhatsApp Number
+                                    </label>
+                                    <input type="text" name="whatsapp_number" value="{{ site_settings.whatsapp_number }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+                                           placeholder="+233201234567">
+                                    <p class="text-xs text-gray-500 mt-1">Include country code for WhatsApp</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle text-gray-800 mr-1">music_note</span>
+                                        TikTok Profile
+                                    </label>
+                                    <input type="url" name="tiktok_url" value="{{ site_settings.tiktok_url }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+                                           placeholder="https://tiktok.com/@yourchurch">
+                                    <p class="text-xs text-gray-500 mt-1">Short video content</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Social Media</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Social links appear on website and contact pages
+                        </div>
+                        <button type="submit" class="btn-primary bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Social Media
+                        </button>
                     </div>
                 </form>
             </section>
@@ -344,35 +590,99 @@
                                 <span class="material-icons-outlined text-green-600">account_balance</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Financial</h2>
-                                <p class="text-sm text-gray-500">Currency and fiscal settings</p>
+                                <h2 class="font-semibold text-gray-900">Financial Settings</h2>
+                                <p class="text-sm text-gray-500">Currency, commissions, and fiscal configuration</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Currency Symbol</label>
-                                <input type="text" name="currency_symbol" value="{{ site_settings.currency_symbol }}" class="input-field">
+                        <!-- Currency Settings -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-blue-600">payments</span>
+                                <h3 class="font-medium text-blue-900">Currency Configuration</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Currency Code</label>
-                                <input type="text" name="currency_code" value="{{ site_settings.currency_code }}" class="input-field" maxlength="3">
+                            <p class="text-sm text-blue-700 mb-4">Set the default currency for all financial transactions and reports.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">currency_symbol</span>
+                                        Currency Symbol
+                                    </label>
+                                    <input type="text" name="currency_symbol" value="{{ site_settings.currency_symbol }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           placeholder="GH₵">
+                                    <p class="text-xs text-gray-500 mt-1">Symbol displayed on reports and forms</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">code</span>
+                                        Currency Code
+                                    </label>
+                                    <input type="text" name="currency_code" value="{{ site_settings.currency_code }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           placeholder="GHS" maxlength="3">
+                                    <p class="text-xs text-gray-500 mt-1">3-letter ISO currency code</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Commission %</label>
-                                <input type="number" name="commission_percentage" value="{{ site_settings.commission_percentage }}" step="0.01" class="input-field">
+
+                        <!-- Commission Settings -->
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-green-600">percent</span>
+                                <h3 class="font-medium text-green-900">Pastor Commission Settings</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Fiscal Year</label>
-                                <input type="number" name="current_fiscal_year" value="{{ site_settings.current_fiscal_year }}" class="input-field">
+                            <p class="text-sm text-green-700 mb-4">
+                                <strong>Important:</strong> This percentage is used to calculate pastor commissions based on tithe collections. 
+                                When a branch meets or exceeds its monthly tithe target, the pastor receives a commission equal to this percentage of the total tithes collected.
+                            </p>
+                            <div class="bg-white rounded-lg p-3 border border-green-300">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            <span class="material-icons-outlined text-sm align-middle mr-1">calculate</span>
+                                            Commission Percentage
+                                        </label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" name="commission_percentage" 
+                                                   value="{{ site_settings.commission_percentage }}" 
+                                                   step="0.01" min="0" max="100"
+                                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+                                            <span class="text-lg font-bold text-green-600">%</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">Typically 10-15% of tithe collections</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            <span class="material-icons-outlined text-sm align-middle mr-1">calendar_today</span>
+                                            Current Fiscal Year
+                                        </label>
+                                        <input type="number" name="current_fiscal_year" 
+                                               value="{{ site_settings.current_fiscal_year }}" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" 
+                                               placeholder="2024">
+                                        <p class="text-xs text-gray-500 mt-1">Used for annual financial reporting</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 p-3 bg-green-100 rounded-lg">
+                                <p class="text-xs text-green-800">
+                                    <strong>Example:</strong> If commission is 10% and branch collects GH₵5,000 in tithes, 
+                                    pastor receives GH₵500 commission (when target is met).
+                                </p>
                             </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Financial</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Changes affect future calculations only
+                        </div>
+                        <button type="submit" class="btn-primary bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Financial Settings
+                        </button>
                     </div>
                 </form>
             </section>
@@ -447,39 +757,89 @@
                                 <span class="material-icons-outlined text-red-600">security</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Security</h2>
-                                <p class="text-sm text-gray-500">Authentication settings</p>
+                                <h2 class="font-semibold text-gray-900">Security Settings</h2>
+                                <p class="text-sm text-gray-500">Authentication and access control</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Session Timeout (min)</label>
-                                <input type="number" name="session_timeout_minutes" value="{{ site_settings.session_timeout_minutes }}" class="input-field">
+                        <!-- Session Management -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-red-600">timer</span>
+                                <h3 class="font-medium text-red-900">Session Management</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Login Attempts</label>
-                                <input type="number" name="max_login_attempts" value="{{ site_settings.max_login_attempts }}" class="input-field">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Lockout Duration (min)</label>
-                                <input type="number" name="lockout_duration_minutes" value="{{ site_settings.lockout_duration_minutes }}" class="input-field">
+                            <p class="text-sm text-red-700 mb-4">Control how long users stay logged in and login attempt limits.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">schedule</span>
+                                        Session Timeout (minutes)
+                                    </label>
+                                    <input type="number" name="session_timeout_minutes" value="{{ site_settings.session_timeout_minutes }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" 
+                                           min="5" max="1440">
+                                    <p class="text-xs text-gray-500 mt-1">Auto-logout after inactivity</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">login</span>
+                                        Max Login Attempts
+                                    </label>
+                                    <input type="number" name="max_login_attempts" value="{{ site_settings.max_login_attempts }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" 
+                                           min="3" max="10">
+                                    <p class="text-xs text-gray-500 mt-1">Before account lockout</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">lock</span>
+                                        Lockout Duration (minutes)
+                                    </label>
+                                    <input type="number" name="lockout_duration_minutes" value="{{ site_settings.lockout_duration_minutes }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" 
+                                           min="5" max="1440">
+                                    <p class="text-xs text-gray-500 mt-1">Account locked for this long</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="require_strong_password" {% if site_settings.require_strong_password %}checked{% endif %} class="w-4 h-4 rounded">
-                                <span class="text-sm">Require Strong Password</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="enable_two_factor_auth" {% if site_settings.enable_two_factor_auth %}checked{% endif %} class="w-4 h-4 rounded">
-                                <span class="text-sm">Two-Factor Auth</span>
-                            </label>
+
+                        <!-- Password Policies -->
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-orange-600">password</span>
+                                <h3 class="font-medium text-orange-900">Password Policies</h3>
+                            </div>
+                            <p class="text-sm text-orange-700 mb-4">Enhance password security requirements for all users.</p>
+                            <div class="space-y-3">
+                                <label class="flex items-center gap-3 p-3 rounded-lg border hover:bg-orange-100 cursor-pointer">
+                                    <input type="checkbox" name="require_strong_password" {% if site_settings.require_strong_password %}checked{% endif %} 
+                                           class="w-5 h-5 rounded text-orange-600 focus:ring-orange-500">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-900">Require Strong Passwords</span>
+                                        <p class="text-xs text-gray-500">Enforce complex password requirements (8+ chars, mixed case, numbers, symbols)</p>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 rounded-lg border hover:bg-orange-100 cursor-pointer">
+                                    <input type="checkbox" name="enable_two_factor_auth" {% if site_settings.enable_two_factor_auth %}checked{% endif %} 
+                                           class="w-5 h-5 rounded text-orange-600 focus:ring-orange-500">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-900">Two-Factor Authentication</span>
+                                        <p class="text-xs text-gray-500">Require additional verification code for sensitive operations</p>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Security</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">warning</span>
+                            Security changes affect all users immediately
+                        </div>
+                        <button type="submit" class="btn-primary bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Security Settings
+                        </button>
                     </div>
                 </form>
             </section>
@@ -495,23 +855,67 @@
                                 <span class="material-icons-outlined text-yellow-600">build</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Maintenance</h2>
-                                <p class="text-sm text-gray-500">System availability</p>
+                                <h2 class="font-semibold text-gray-900">System Maintenance</h2>
+                                <p class="text-sm text-gray-500">Control system availability and maintenance mode</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <label class="flex items-center gap-3 p-4 rounded-lg border-2 {% if site_settings.maintenance_mode %}border-yellow-400 bg-yellow-50{% else %}border-gray-200{% endif %} cursor-pointer">
-                            <input type="checkbox" name="maintenance_mode" {% if site_settings.maintenance_mode %}checked{% endif %} class="w-5 h-5 rounded">
-                            <span class="font-medium">Enable Maintenance Mode</span>
-                        </label>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                            <textarea name="maintenance_message" rows="2" class="input-field">{{ site_settings.maintenance_message }}</textarea>
+                        <!-- Maintenance Mode -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-yellow-600">engineering</span>
+                                <h3 class="font-medium text-yellow-900">Maintenance Mode</h3>
+                            </div>
+                            <p class="text-sm text-yellow-700 mb-4">Temporarily disable access to the system for maintenance.</p>
+                            
+                            <label class="flex items-center gap-3 p-4 rounded-lg border-2 {% if site_settings.maintenance_mode %}border-yellow-400 bg-yellow-100{% else %}border-gray-200{% endif %} cursor-pointer hover:bg-yellow-50 transition-colors">
+                                <input type="checkbox" name="maintenance_mode" {% if site_settings.maintenance_mode %}checked{% endif %} 
+                                       class="w-5 h-5 rounded text-yellow-600 focus:ring-yellow-500">
+                                <div class="flex-1">
+                                    <span class="font-medium text-gray-900">Enable Maintenance Mode</span>
+                                    <p class="text-sm text-gray-500">When enabled, only administrators can access the system</p>
+                                </div>
+                            </label>
+                            
+                            {% if site_settings.maintenance_mode %}
+                            <div class="mt-4 p-3 bg-yellow-100 rounded-lg border border-yellow-300">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-icons-outlined text-yellow-600 text-sm">warning</span>
+                                    <p class="text-sm text-yellow-800 font-medium">Maintenance mode is currently ACTIVE</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Maintenance Message -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-gray-600">message</span>
+                                <h3 class="font-medium text-gray-900">Maintenance Message</h3>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-4">Custom message shown to users during maintenance.</p>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <span class="material-icons-outlined text-sm align-middle mr-1">text_fields</span>
+                                    Maintenance Message
+                                </label>
+                                <textarea name="maintenance_message" rows="3" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors" 
+                                          placeholder="System is under maintenance. Please check back later.">{{ site_settings.maintenance_message }}</textarea>
+                                <p class="text-xs text-gray-500 mt-1">This message will be displayed to non-admin users</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Maintenance</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Use maintenance mode for system updates and fixes
+                        </div>
+                        <button type="submit" class="btn-primary bg-yellow-600 hover:bg-yellow-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Maintenance Settings
+                        </button>
                     </div>
                 </form>
             </section>
@@ -527,33 +931,89 @@
                                 <span class="material-icons-outlined text-cyan-600">backup</span>
                             </div>
                             <div>
-                                <h2 class="font-semibold text-gray-900">Backup</h2>
-                                <p class="text-sm text-gray-500">Data retention</p>
+                                <h2 class="font-semibold text-gray-900">Backup & Recovery</h2>
+                                <p class="text-sm text-gray-500">Automated data backup and retention policies</p>
                             </div>
                         </div>
                     </div>
                     <div class="p-6 space-y-6">
-                        <label class="flex items-center gap-3 p-4 rounded-lg border cursor-pointer">
-                            <input type="checkbox" name="auto_backup_enabled" {% if site_settings.auto_backup_enabled %}checked{% endif %} class="w-5 h-5 rounded">
-                            <span class="font-medium">Auto Backup</span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Frequency (days)</label>
-                                <input type="number" name="backup_frequency_days" value="{{ site_settings.backup_frequency_days }}" class="input-field">
+                        <!-- Automatic Backup -->
+                        <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-cyan-600">schedule</span>
+                                <h3 class="font-medium text-cyan-900">Automatic Backup Schedule</h3>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Retention (years)</label>
-                                <input type="number" name="data_retention_years" value="{{ site_settings.data_retention_years }}" class="input-field">
+                            <p class="text-sm text-cyan-700 mb-4">Configure automatic backups to protect your data.</p>
+                            
+                            <label class="flex items-center gap-3 p-4 rounded-lg border hover:bg-cyan-100 cursor-pointer">
+                                <input type="checkbox" name="auto_backup_enabled" {% if site_settings.auto_backup_enabled %}checked{% endif %} 
+                                       class="w-5 h-5 rounded text-cyan-600 focus:ring-cyan-500">
+                                <div>
+                                    <span class="font-medium text-gray-900">Enable Automatic Backups</span>
+                                    <p class="text-sm text-gray-500">Regularly backup all system data and configurations</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Backup Settings -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-blue-600">settings</span>
+                                <h3 class="font-medium text-blue-900">Backup Configuration</h3>
+                            </div>
+                            <p class="text-sm text-blue-700 mb-4">Set backup frequency and data retention policies.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">calendar_today</span>
+                                        Backup Frequency (days)
+                                    </label>
+                                    <input type="number" name="backup_frequency_days" value="{{ site_settings.backup_frequency_days }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           min="1" max="30">
+                                    <p class="text-xs text-gray-500 mt-1">How often to create backups</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <span class="material-icons-outlined text-sm align-middle mr-1">delete_sweep</span>
+                                        Data Retention (years)
+                                    </label>
+                                    <input type="number" name="data_retention_years" value="{{ site_settings.data_retention_years }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                           min="1" max="10">
+                                    <p class="text-xs text-gray-500 mt-1">How long to keep backup files</p>
+                                </div>
                             </div>
                         </div>
-                        <a href="{% url 'core:data_backup' %}" class="btn-secondary inline-flex">
-                            <span class="material-icons-outlined mr-2">download</span>
-                            Manual Backup
-                        </a>
+
+                        <!-- Manual Backup -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-icons-outlined text-gray-600">download</span>
+                                <h3 class="font-medium text-gray-900">Manual Backup</h3>
+                            </div>
+                            <p class="text-sm text-gray-700 mb-4">Create an immediate backup of all system data.</p>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Download Complete Backup</p>
+                                    <p class="text-xs text-gray-500">Includes all data, settings, and media files</p>
+                                </div>
+                                <a href="{% url 'core:data_backup' %}" class="btn-secondary">
+                                    <span class="material-icons-outlined text-sm mr-2 align-middle">download</span>
+                                    Manual Backup
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-end">
-                        <button type="submit" class="btn-primary">Save Backup</button>
+                    <div class="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="material-icons-outlined text-sm align-middle mr-1">info</span>
+                            Backups are essential for data protection
+                        </div>
+                        <button type="submit" class="btn-primary bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                            <span class="material-icons-outlined text-sm mr-2 align-middle">save</span>
+                            Save Backup Settings
+                        </button>
                     </div>
                 </form>
             </section>

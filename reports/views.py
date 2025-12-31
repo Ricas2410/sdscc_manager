@@ -429,6 +429,130 @@ def financial_report(request):
     return render(request, 'reports/financial_report.html', context)
 
 
+@login_required
+def financial_report_print(request):
+    """Print-optimized financial report."""
+    from core.models import Area, District, Branch, FiscalYear, SiteSettings
+    from contributions.models import Contribution, ContributionType
+    from expenditure.models import Expenditure, ExpenditureCategory
+    from members.models import Member
+    from attendance.models import AttendanceSession, AttendanceRecord
+    
+    if not (request.user.is_any_admin or request.user.is_auditor):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
+    # Get filters (same as main report)
+    area_id = request.GET.get('area')
+    district_id = request.GET.get('district')
+    branch_id = request.GET.get('branch')
+    from_date = request.GET.get('from_date')
+    to_date = request.GET.get('to_date')
+    
+    fiscal_year = FiscalYear.get_current()
+    site_settings = SiteSettings.objects.first()
+    
+    # Base querysets
+    contributions = Contribution.objects.filter(fiscal_year=fiscal_year)
+    expenditures = Expenditure.objects.filter(fiscal_year=fiscal_year)
+    
+    # Apply filters
+    districts = District.objects.filter(is_active=True)
+    branches = Branch.objects.filter(is_active=True)
+    
+    if area_id:
+        contributions = contributions.filter(branch__district__area_id=area_id)
+        expenditures = expenditures.filter(Q(branch__district__area_id=area_id) | Q(level='mission'))
+        districts = districts.filter(area_id=area_id)
+        branches = branches.filter(district__area_id=area_id)
+    
+    if district_id:
+        contributions = contributions.filter(branch__district_id=district_id)
+        expenditures = expenditures.filter(Q(branch__district_id=district_id) | Q(level='mission'))
+        branches = branches.filter(district_id=district_id)
+    
+    if branch_id:
+        contributions = contributions.filter(branch_id=branch_id)
+        expenditures = expenditures.filter(branch_id=branch_id)
+    
+    if from_date:
+        contributions = contributions.filter(date__gte=from_date)
+        expenditures = expenditures.filter(date__gte=from_date)
+    if to_date:
+        contributions = contributions.filter(date__lte=to_date)
+        expenditures = expenditures.filter(date__lte=to_date)
+    
+    # Calculate totals
+    total_income = contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    total_expenditure = expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    net_amount = total_income - total_expenditure
+    
+    # By contribution type
+    income_by_type = contributions.values('contribution_type__name').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    
+    # By expenditure category
+    expense_by_category = expenditures.values('category__name').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    
+    # Branch performance data
+    branch_performance = []
+    for branch in branches:
+        branch_income = contributions.filter(branch=branch).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        branch_expense = expenditures.filter(branch=branch).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        branch_net = branch_income - branch_expense
+        member_count = Member.objects.filter(user__branch=branch, status='active').count()
+        
+        branch_performance.append({
+            'name': branch.name,
+            'district': branch.district.name if branch.district else 'Mission',
+            'total_income': branch_income,
+            'total_expenditure': branch_expense,
+            'net_amount': branch_net,
+            'member_count': member_count
+        })
+    
+    # Calculate attendance rate
+    total_sessions = AttendanceSession.objects.filter(
+        date__year=timezone.now().year
+    ).count()
+    total_attendance = AttendanceRecord.objects.filter(
+        session__date__year=timezone.now().year,
+        status='present'
+    ).count()
+    total_members = Member.objects.filter(status='active').count()
+    
+    attendance_rate = 0
+    if total_members > 0 and total_sessions > 0:
+        attendance_rate = (total_attendance / (total_members * total_sessions)) * 100
+    
+    # Set date range for report
+    start_date = from_date or (fiscal_year.start_date if fiscal_year else timezone.now().date())
+    end_date = to_date or (fiscal_year.end_date if fiscal_year else timezone.now().date())
+    current_date = timezone.now()
+    
+    context = {
+        'site_settings': site_settings,
+        'fiscal_year': fiscal_year,
+        'total_income': total_income,
+        'total_expenditure': total_expenditure,
+        'net_amount': net_amount,
+        'income_by_type': income_by_type,
+        'expense_by_category': expense_by_category,
+        'branch_performance': branch_performance,
+        'total_members': total_members,
+        'total_branches': branches.count(),
+        'attendance_rate': attendance_rate,
+        'start_date': start_date,
+        'end_date': end_date,
+        'current_date': current_date,
+    }
+    
+    return render(request, 'reports/financial_report_print.html', context)
+
+
 # ============ MONTHLY REPORTS ============
 
 @login_required

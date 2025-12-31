@@ -14,18 +14,18 @@
                 {% endif %}
             </div>
             <div style="display: flex; gap: 12px; margin-top: 16px;">
-                <button onclick="window.print()" style="background-color: white; color: #1a1a1a; padding: 8px 16px; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                <button onclick="openPrintWindow()" style="background-color: white; color: #1a1a1a; padding: 8px 16px; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
                     <span style="vertical-align: middle; margin-right: 4px;">🖨️</span> Print Report
                 </button>
-                <a href="?export=pdf" style="background-color: #374151; color: white; padding: 8px 16px; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                <button onclick="exportToPDF()" style="background-color: #374151; color: white; padding: 8px 16px; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
                     <span style="vertical-align: middle; margin-right: 4px;">📥</span> Export PDF
-                </a>
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Enhanced Filter Section -->
-    <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 no-print">
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
@@ -39,7 +39,7 @@
             </div>
         </div>
         <div class="p-6">
-            <form method="get" class="space-y-6">
+            <form method="get" id="filterForm" class="space-y-6">
                 <!-- Location Filters -->
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center">
@@ -80,7 +80,7 @@
                                 <span class="material-icons-outlined text-sm mr-1">church</span>
                                 Branch (Optional)
                             </label>
-                            <select name="branch" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select name="branch" id="branchFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">All Branches</option>
                                 {% for branch in branches %}
                                 <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>
@@ -215,9 +215,9 @@
                 </h3>
             </div>
             
-            <!-- Visual Chart - Very Small -->
-            <div class="p-2 border-b">
-                <canvas id="incomeChart" height="80"></canvas>
+            <!-- Visual Chart - Optimized Size -->
+            <div class="p-4 border-b">
+                <canvas id="incomeChart" height="240"></canvas>
             </div>
             
             <!-- Detailed Text Report -->
@@ -280,16 +280,16 @@
 
         <!-- Expenditure Analysis -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-3">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-3">
                 <h3 class="text-lg font-semibold text-white flex items-center">
                     <span class="material-icons-outlined mr-2">receipt_long</span>
                     Expenditure Analysis
                 </h3>
             </div>
             
-            <!-- Visual Chart - Very Small -->
-            <div class="p-2 border-b">
-                <canvas id="expenseChart" height="80"></canvas>
+            <!-- Visual Chart - Optimized Size -->
+            <div class="p-4 border-b">
+                <canvas id="expenseChart" height="240"></canvas>
             </div>
             
             <!-- Detailed Text Report -->
@@ -514,8 +514,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }]
             },
             options: { 
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: { 
-                    legend: { position: 'bottom' },
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 8,
+                            font: { size: 10 }
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -534,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             return percentage + '%';
                         },
                         color: '#fff',
-                        font: { weight: 'bold', size: 14 }
+                        font: { weight: 'bold', size: 10 }
                     }
                 } 
             },
@@ -554,8 +563,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }]
             },
             options: { 
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: { 
-                    legend: { position: 'bottom' },
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 8,
+                            font: { size: 10 }
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -574,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             return percentage + '%';
                         },
                         color: '#fff',
-                        font: { weight: 'bold', size: 14 }
+                        font: { weight: 'bold', size: 10 }
                     }
                 } 
             },
@@ -582,37 +600,140 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Hierarchical filtering
-    document.getElementById('areaFilter').addEventListener('change', function() {
-        document.getElementById('filterForm').submit();
+    // Hierarchical filtering with proper dependencies
+    const areaFilter = document.getElementById('areaFilter');
+    const districtFilter = document.getElementById('districtFilter');
+    const branchFilter = document.getElementById('branchFilter');
+    const filterForm = document.getElementById('filterForm');
+    
+    // Area filter change - clear district and branch, then submit
+    areaFilter.addEventListener('change', function() {
+        districtFilter.value = '';
+        branchFilter.value = '';
+        filterForm.submit();
     });
-    document.getElementById('districtFilter').addEventListener('change', function() {
-        document.getElementById('filterForm').submit();
+    
+    // District filter change - clear branch, then submit
+    districtFilter.addEventListener('change', function() {
+        branchFilter.value = '';
+        filterForm.submit();
+    });
+    
+    // Branch filter change - just submit
+    branchFilter.addEventListener('change', function() {
+        filterForm.submit();
     });
 });
+
+// Print functionality
+function openPrintWindow() {
+    const currentURL = window.location.href;
+    const printURL = currentURL.replace('/financial/', '/financial-print/') + '?print=true';
+    const printWindow = window.open(printURL, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    
+    if (printWindow) {
+        printWindow.focus();
+    } else {
+        alert('Please allow popups for this website to use the print feature.');
+    }
+}
+
+// PDF Export functionality
+function exportToPDF() {
+    // Show loading state
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<span style="vertical-align: middle; margin-right: 4px;">⏳</span> Generating PDF...';
+    button.disabled = true;
+    
+    // Create a temporary form for PDF export
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.pathname;
+    form.target = '_blank';
+    
+    // Add current URL parameters as hidden fields
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.forEach((value, key) => {
+        if (key !== 'export') {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+        }
+    });
+    
+    // Add export parameter
+    const exportInput = document.createElement('input');
+    exportInput.type = 'hidden';
+    exportInput.name = 'export';
+    exportInput.value = 'pdf';
+    form.appendChild(exportInput);
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    form.appendChild(csrfInput);
+    
+    // Submit form
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    
+    // Reset button after a delay
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    }, 3000);
+}
 </script>
 {% endblock %}
 
 <!-- Print Styles -->
 <style>
 @media print {
+    /* Hide unnecessary elements */
     .no-print {
         display: none !important;
     }
     
-    .bg-gradient-to-r {
-        background: none !important;
-        color: #000 !important;
+    /* Hide header buttons */
+    div[style*="display: flex"] > div[style*="display: flex"] {
+        display: none !important;
     }
     
-    .shadow-lg {
-        box-shadow: none !important;
+    /* Fix header colors for print */
+    .bg-gradient-to-r {
+        background: #1a1a1a !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
     .text-white {
-        color: #000 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
     
+    /* Fix green headers for print */
+    .bg-gradient-to-r.from-green-500 {
+        background: #10b981 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    /* Remove shadows and borders */
+    .shadow-lg {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    /* Improve background colors for print */
     .bg-green-50, .bg-red-50, .bg-blue-50, .bg-purple-50, .bg-gray-50 {
         background: #f9fafb !important;
         border: 1px solid #e5e7eb !important;
@@ -623,17 +744,38 @@ document.addEventListener('DOMContentLoaded', function() {
         border: 1px solid #d1d5db !important;
     }
     
+    /* Optimize charts for print */
     canvas {
-        max-height: 200px !important;
+        max-height: 300px !important;
+        max-width: 100% !important;
     }
     
+    /* Improve layout for print */
     .grid {
         display: block !important;
     }
     
     .grid > div {
-        margin-bottom: 1rem !important;
+        margin-bottom: 1.5rem !important;
         page-break-inside: avoid;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    /* Ensure text is readable */
+    body {
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
+        color: #000 !important;
+    }
+    
+    /* Hide navigation and footer */
+    nav, footer {
+        display: none !important;
+    }
+    
+    /* Add page margins */
+    @page {
+        margin: 0.5in;
     }
 }
 </style>

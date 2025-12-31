@@ -6,6 +6,7 @@ from django.urls import path
 from . import views, financial_views, mission_financial_views
 from . import views_assets
 from . import monthly_closing_views
+from . import archive_views
 
 app_name = 'core'
 
@@ -98,6 +99,12 @@ urlpatterns = [
     
     # Archives
     path('archives/', views.archives, name='archives'),
+    
+    # Year-based Archive System
+    path('archive/', archive_views.archive_dashboard, name='archive_dashboard'),
+    path('archive/year/<uuid:year_id>/', archive_views.year_detail, name='year_detail'),
+    path('archive/create-year/', archive_views.create_fiscal_year, name='create_fiscal_year'),
+    path('archive/archive-year/<uuid:year_id>/', archive_views.archive_fiscal_year_view, name='archive_fiscal_year'),
 
     # PWA
     path('manifest.json', views.manifest_json, name='manifest'),
