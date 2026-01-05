@@ -4,37 +4,98 @@
 {% block title %}Variance Analysis{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Variance Analysis</h1>
-                <p class="text-gray-600 mt-1">Target vs Actual Performance Analysis</p>
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Professional Header -->
+    <div class="mb-8">
+        <div class="bg-gradient-to-r from-indigo-700 to-purple-800 rounded-2xl p-8 text-white shadow-xl">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <div class="flex items-center mb-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                            <span class="material-icons text-2xl">analytics</span>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-white">Variance Analysis</h1>
+                            <p class="text-indigo-100 mt-1">Target vs Actual Performance Analysis</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-6 text-sm">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 bg-indigo-300 rounded-full mr-2"></span>
+                            <span class="text-indigo-100">{{ summary.target_total|currency }} Target Total</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 bg-purple-300 rounded-full mr-2"></span>
+                            <span class="text-indigo-100">{{ summary.actual_total|currency }} Actual Total</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="{% url 'auditing:contributions' %}" class="px-4 py-2 bg-white text-indigo-700 hover:bg-indigo-50 border border-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">payments</span>
+                        Contributions
+                    </a>
+                    <a href="{% url 'auditing:expenditures' %}" class="px-4 py-2 bg-white text-indigo-700 hover:bg-indigo-50 border border-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">receipt_long</span>
+                        Expenditures
+                    </a>
+                    <button onclick="exportToExcel()" class="px-4 py-2 bg-white text-indigo-700 hover:bg-indigo-50 border border-white rounded-lg font-medium transition-colors">
+                        <span class="material-icons-outlined mr-2 text-sm">download</span>
+                        Export
+                    </button>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <select id="periodFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+    </div>
+
+    <!-- Enhanced Filters Section -->
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 shadow-lg border border-indigo-200 mb-6">
+        <div class="flex items-center mb-4">
+            <span class="material-icons text-indigo-700 mr-2">filter_list</span>
+            <h2 class="text-lg font-semibold text-indigo-900">Analysis Parameters</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                <select id="periodFilter" class="input-field">
                     <option value="month" {% if period == 'month' %}selected{% endif %}>Monthly</option>
                     <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>Quarterly</option>
                     <option value="year" {% if period == 'year' %}selected{% endif %}>Yearly</option>
                 </select>
-                <select id="yearFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                <select id="yearFilter" class="input-field">
                     {% for y in years %}
                     <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
                 </select>
-                <select id="branchFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <select id="branchFilter" class="input-field">
                     <option value="">All Branches</option>
                     {% for branch in branches %}
                     <option value="{{ branch.id }}" {% if branch.id == selected_branch %}selected{% endif %}>{{ branch.name }}</option>
                     {% endfor %}
                 </select>
-                <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Variance Type</label>
+                <select id="varianceTypeFilter" class="input-field">
+                    <option value="all">All Variances</option>
+                    <option value="positive">Positive Only</option>
+                    <option value="negative">Negative Only</option>
+                    <option value="significant">Significant (>10%)</option>
+                </select>
+            </div>
+            <div class="flex items-end space-x-2">
+                <button onclick="applyFilters()" class="btn-primary flex-1">
+                    <span class="material-icons-outlined mr-1 text-sm">search</span>
                     Apply
                 </button>
-                <button onclick="exportToExcel()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    <i class="material-icons mr-2">download</i>
-                    Export
+                <button onclick="resetFilters()" class="btn-secondary">
+                    <span class="material-icons-outlined mr-1 text-sm">refresh</span>
                 </button>
             </div>
         </div>

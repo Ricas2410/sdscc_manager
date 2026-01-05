@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mission Yearly Financial Report - {{ year }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #1e40af;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #1e40af;
+            font-size: 18pt;
+            margin: 0 0 5px 0;
+        }
+        .header h2 {
+            color: #333;
+            font-size: 14pt;
+            margin: 0 0 5px 0;
+            font-weight: normal;
+        }
+        .header p {
+            color: #666;
+            font-size: 10pt;
+            margin: 0;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            background-color: #1e40af;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .total-row {
+            background-color: #e0e7ff;
+            font-weight: bold;
+        }
+        .summary-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        .amount-positive {
+            color: #059669;
+        }
+        .amount-negative {
+            color: #dc2626;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 9pt;
+            color: #666;
+        }
+        .net-position {
+            background-color: #1e40af;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .net-position .label {
+            font-size: 10pt;
+            margin-bottom: 5px;
+        }
+        .net-position .amount {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ site_settings.site_name }}</h1>
+        <h2>Mission Yearly Financial Report</h2>
+        <p>For the Year Ended December 31, {{ year }}</p>
+        <p>Generated: {{ generated_date|date:"F d, Y" }}</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Income Summary</div>
+        <table>
+            <tr>
+                <td>Money Received from Branches (Remittances)</td>
+                <td class="text-right">{{ site_settings.currency_symbol }}{{ total_remittances_received|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Mission-Level Donations</td>
+                <td class="text-right">{{ site_settings.currency_symbol }}{{ total_mission_contributions|floatformat:2 }}</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>Total Mission Income</strong></td>
+                <td class="text-right"><strong>{{ site_settings.currency_symbol }}{{ total_mission_income|floatformat:2 }}</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Expenditure Summary</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in expenditures_by_category %}
+                <tr>
+                    <td>{{ item.category__name|default:"Uncategorized" }}</td>
+                    <td class="text-right">{{ site_settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" style="text-align: center; color: #666;">No expenditures recorded</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td><strong>Total Mission Expenditure</strong></td>
+                    <td class="text-right"><strong>{{ site_settings.currency_symbol }}{{ total_mission_expenditures|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="net-position">
+        <div class="label">Net Financial Position</div>
+        <div class="amount">{{ site_settings.currency_symbol }}{{ net_position|floatformat:2 }}</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Branch Remittance Details</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Branch</th>
+                    <th class="text-right">Remittances</th>
+                    <th class="text-right">Amount Received</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in branch_remittances %}
+                <tr>
+                    <td>{{ item.branch__name }} ({{ item.branch__code }})</td>
+                    <td class="text-right">{{ item.count }}</td>
+                    <td class="text-right">{{ site_settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #666;">No remittances received</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"><strong>-</strong></td>
+                    <td class="text-right"><strong>{{ site_settings.currency_symbol }}{{ total_remittances_received|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p><strong>Notes:</strong></p>
+        <ul>
+            <li>This report reflects data from closed months only.</li>
+            <li>Mission income is derived exclusively from verified remittances from branches.</li>
+            <li>All figures are in {{ site_settings.currency_code }}.</li>
+        </ul>
+        <p style="margin-top: 15px; text-align: center;">
+            This is a computer-generated report. No signature required.
+        </p>
+    </div>
+</body>
+</html>

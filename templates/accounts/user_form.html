@@ -130,8 +130,8 @@ setTimeout(function() {
                         <label class="form-label">Gender</label>
                         <select name="gender" class="form-input form-select">
                             <option value="">Select Gender</option>
-                            <option value="M" {% if form_data.gender == 'M' or (edit_user and edit_user.gender == 'M') %}selected{% endif %}>Male</option>
-                            <option value="F" {% if form_data.gender == 'F' or (edit_user and edit_user.gender == 'F') %}selected{% endif %}>Female</option>
+                            <option value="M" {% if form_data.gender == 'M' or edit_user.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if form_data.gender == 'F' or edit_user.gender == 'F' %}selected{% endif %}>Female</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -140,10 +140,47 @@ setTimeout(function() {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Profile Picture</label>
-                        <input type="file" name="profile_picture" accept="image/*" class="form-input">
-                        {% if edit_user and edit_user.profile_picture %}
-                        <p class="text-xs text-gray-500 mt-1">Current: {{ edit_user.profile_picture.name }}</p>
-                        {% endif %}
+                        <div class="flex items-center gap-4">
+                            <div class="flex-shrink-0">
+                                {% if edit_user and edit_user.profile_picture %}
+                                <img id="photoPreview" src="{{ edit_user.profile_picture.url }}" 
+                                     class="h-16 w-16 rounded-full object-cover border-2 border-gray-200">
+                                {% else %}
+                                <div id="photoPreview" class="h-16 w-16 rounded-full bg-gray-200 border-2 border-gray-200 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-gray-400 text-2xl">person</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" onclick="openCamera()" 
+                                            class="btn btn-secondary btn-sm flex items-center">
+                                        <span class="material-icons-outlined mr-2">camera_alt</span>
+                                        Take Photo
+                                    </button>
+                                    <button type="button" onclick="document.getElementById('profilePictureInput').click()" 
+                                            class="btn btn-secondary btn-sm flex items-center">
+                                        <span class="material-icons-outlined mr-2">upload_file</span>
+                                        Choose File
+                                    </button>
+                                </div>
+                                <input type="file" id="profilePictureInput" name="profile_picture"
+                                       accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;"
+                                       onchange="handlePictureUpload(this)">
+                                <input type="file" id="cameraInput" 
+                                       accept="image/jpeg,image/png,image/gif,image/webp" capture="environment" style="display: none;"
+                                       onchange="handlePictureUpload(this)">
+                                <p class="text-xs text-gray-500 mt-2">
+                                    Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
+                                </p>
+                                <div id="uploadProgress" class="hidden mt-3">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="uploadProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div id="uploadStatus" class="mt-2 text-sm"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -215,10 +252,10 @@ setTimeout(function() {
                         <label class="form-label">Marital Status</label>
                         <select name="marital_status" class="form-input form-select">
                             <option value="">Select Status</option>
-                            <option value="single" {% if form_data.marital_status == 'single' or (profile and profile.marital_status == 'single') %}selected{% endif %}>Single</option>
-                            <option value="married" {% if form_data.marital_status == 'married' or (profile and profile.marital_status == 'married') %}selected{% endif %}>Married</option>
-                            <option value="divorced" {% if form_data.marital_status == 'divorced' or (profile and profile.marital_status == 'divorced') %}selected{% endif %}>Divorced</option>
-                            <option value="widowed" {% if form_data.marital_status == 'widowed' or (profile and profile.marital_status == 'widowed') %}selected{% endif %}>Widowed</option>
+                            <option value="single" {% if form_data.marital_status == 'single' or profile.marital_status == 'single' %}selected{% endif %}>Single</option>
+                            <option value="married" {% if form_data.marital_status == 'married' or profile.marital_status == 'married' %}selected{% endif %}>Married</option>
+                            <option value="divorced" {% if form_data.marital_status == 'divorced' or profile.marital_status == 'divorced' %}selected{% endif %}>Divorced</option>
+                            <option value="widowed" {% if form_data.marital_status == 'widowed' or profile.marital_status == 'widowed' %}selected{% endif %}>Widowed</option>
                         </select>
                     </div>
                 </div>
@@ -336,21 +373,51 @@ setTimeout(function() {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="form-group">
                         <label class="form-label required">Role</label>
-                        <select name="role" required class="form-input form-select">
+                        <select name="role" required class="form-input form-select" onchange="updateAssignmentFields()">
                             <option value="">Select Role</option>
                             {% for value, label in roles %}
-                            <option value="{{ value }}" {% if form_data.role == value or (edit_user and edit_user.role == value) %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}" {% if form_data.role == value or edit_user.role == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Branch</label>
-                        <select name="branch" class="form-input form-select">
+                        <select name="branch" class="form-input form-select" onchange="updateAreaDistrictFromBranch()">
                             <option value="">No Branch (Mission-level)</option>
                             {% for branch in branches %}
-                            <option value="{{ branch.id }}" {% if form_data.branch == branch.id|stringformat:"s" or (edit_user and edit_user.branch_id == branch.id) %}selected{% endif %}>{{ branch.name }}</option>
+                            <option value="{{ branch.id }}" 
+                                    data-district="{{ branch.district.id }}"
+                                    data-area="{{ branch.district.area.id }}"
+                                    {% if form_data.branch == branch.id|stringformat:"s" or edit_user.branch_id == branch.id %}selected{% endif %}>
+                                {{ branch.name }}
+                            </option>
                             {% endfor %}
                         </select>
+                    </div>
+                </div>
+                
+                <!-- Automatic Assignment Notice for Executives -->
+                <div class="grid grid-cols-1 gap-6" id="executive-assignment-notice" style="display: none;">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex">
+                            <span class="material-icons-outlined text-blue-600 mr-3 mt-0.5">info</span>
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-900">Automatic Assignment</h4>
+                                <p class="text-sm text-blue-700 mt-1">
+                                    {% if edit_user %}
+                                        This executive's Area/District assignment is automatically determined by their Branch hierarchy.
+                                        No manual assignment is required.
+                                    {% else %}
+                                        Area and District assignments will be automatically determined based on the selected Branch's hierarchy.
+                                        No manual assignment is required - executives can login immediately after creation.
+                                    {% endif %}
+                                </p>
+                                <div class="mt-2 text-xs text-blue-600">
+                                    <strong>Example:</strong> If user belongs to Mana branch (Achiase District, Oda Area) and role is District Executive,
+                                    they will automatically manage Achiase District.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -433,12 +500,12 @@ setTimeout(function() {
                         <label class="form-label">Relationship</label>
                         <select name="emergency_contact_relationship" class="form-input form-select">
                             <option value="">Select Relationship</option>
-                            <option value="Spouse" {% if form_data.emergency_contact_relationship == 'Spouse' or (profile and profile.emergency_contact_relationship == 'Spouse') %}selected{% endif %}>Spouse</option>
-                            <option value="Parent" {% if form_data.emergency_contact_relationship == 'Parent' or (profile and profile.emergency_contact_relationship == 'Parent') %}selected{% endif %}>Parent</option>
-                            <option value="Sibling" {% if form_data.emergency_contact_relationship == 'Sibling' or (profile and profile.emergency_contact_relationship == 'Sibling') %}selected{% endif %}>Sibling</option>
-                            <option value="Child" {% if form_data.emergency_contact_relationship == 'Child' or (profile and profile.emergency_contact_relationship == 'Child') %}selected{% endif %}>Child</option>
-                            <option value="Friend" {% if form_data.emergency_contact_relationship == 'Friend' or (profile and profile.emergency_contact_relationship == 'Friend') %}selected{% endif %}>Friend</option>
-                            <option value="Other" {% if form_data.emergency_contact_relationship == 'Other' or (profile and profile.emergency_contact_relationship == 'Other') %}selected{% endif %}>Other</option>
+                            <option value="Spouse" {% if form_data.emergency_contact_relationship == 'Spouse' or profile.emergency_contact_relationship == 'Spouse' %}selected{% endif %}>Spouse</option>
+                            <option value="Parent" {% if form_data.emergency_contact_relationship == 'Parent' or profile.emergency_contact_relationship == 'Parent' %}selected{% endif %}>Parent</option>
+                            <option value="Sibling" {% if form_data.emergency_contact_relationship == 'Sibling' or profile.emergency_contact_relationship == 'Sibling' %}selected{% endif %}>Sibling</option>
+                            <option value="Child" {% if form_data.emergency_contact_relationship == 'Child' or profile.emergency_contact_relationship == 'Child' %}selected{% endif %}>Child</option>
+                            <option value="Friend" {% if form_data.emergency_contact_relationship == 'Friend' or profile.emergency_contact_relationship == 'Friend' %}selected{% endif %}>Friend</option>
+                            <option value="Other" {% if form_data.emergency_contact_relationship == 'Other' or profile.emergency_contact_relationship == 'Other' %}selected{% endif %}>Other</option>
                         </select>
                     </div>
                 </div>
@@ -556,10 +623,122 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function updateAssignmentFields() {
+        const role = roleSelect.value;
+        const executiveNotice = document.getElementById('executive-assignment-notice');
+
+        // Hide assignment notice first
+        executiveNotice.style.display = 'none';
+
+        // Show automatic assignment notice for executive roles
+        if (role === 'area_executive' || role === 'district_executive') {
+            executiveNotice.style.display = 'block';
+        }
+    }
+
     roleSelect.addEventListener('change', updateSectionsVisibility);
+    roleSelect.addEventListener('change', updateAssignmentFields);
 
     // Initial check
     updateSectionsVisibility();
+    updateAssignmentFields();
 });
+
+// Assignment field functions
+function updateAssignmentFields() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const executiveNotice = document.getElementById('executive-assignment-notice');
+
+    // Hide assignment notice first
+    executiveNotice.style.display = 'none';
+
+    // Show automatic assignment notice for executive roles
+    if (roleSelect.value === 'area_executive' || roleSelect.value === 'district_executive') {
+        executiveNotice.style.display = 'block';
+    }
+}
+
+// Picture upload functions
+function openCamera() {
+    const cameraInput = document.getElementById('cameraInput');
+    cameraInput.click();
+}
+
+function handlePictureUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Client-side validation
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (file.size > maxSize) {
+        showUploadStatus('File is too large! Please choose an image smaller than 5MB.', 'error');
+        input.value = '';
+        return;
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+        showUploadStatus('Invalid file type! Please choose a JPG, PNG, GIF, or WebP image.', 'error');
+        input.value = '';
+        return;
+    }
+    
+    // Show progress bar
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('uploadProgressBar');
+    if (progressDiv) {
+        progressDiv.classList.remove('hidden');
+        progressBar.style.width = '0%';
+    }
+    
+    showUploadStatus('Processing image...', 'loading');
+    
+    // Show preview with progress
+    const reader = new FileReader();
+    reader.onprogress = function(e) {
+        if (e.lengthComputable && progressBar) {
+            const percentLoaded = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percentLoaded + '%';
+        }
+    };
+    reader.onload = function(e) {
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = `<img src="${e.target.result}" class="h-16 w-16 rounded-full object-cover border-2 border-gray-200">`;
+        
+        // Complete progress
+        if (progressBar) progressBar.style.width = '100%';
+        
+        setTimeout(() => {
+            if (progressDiv) progressDiv.classList.add('hidden');
+            showUploadStatus('Photo selected. Save form to upload.', 'success');
+        }, 500);
+    };
+    reader.readAsDataURL(file);
+}
+
+function showUploadStatus(message, type) {
+    const statusDiv = document.getElementById('uploadStatus');
+    if (!statusDiv) return;
+    
+    statusDiv.textContent = message;
+    statusDiv.className = 'mt-2 text-sm';
+    
+    if (type === 'success') {
+        statusDiv.classList.add('text-green-600');
+    } else if (type === 'error') {
+        statusDiv.classList.add('text-red-600');
+    } else if (type === 'loading') {
+        statusDiv.classList.add('text-blue-600');
+    }
+    
+    // Clear status after 5 seconds for non-loading states
+    if (type !== 'loading') {
+        setTimeout(() => {
+            statusDiv.textContent = '';
+            statusDiv.className = 'mt-2 text-sm';
+        }, 5000);
+    }
+}
 </script>
 {% endblock %}

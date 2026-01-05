@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+{% load financial_terms %}
+
+{% block title %}Opening Balances{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Opening Balances</h1>
+            <p class="text-gray-600">Manage pre-system funds for Branch and Mission CASH</p>
+        </div>
+        
+        {% if user.is_mission_admin %}
+        <div class="mt-4 md:mt-0">
+            <a href="{% url 'contributions:opening_balance_add' %}" class="btn-primary">
+                <span class="material-icons-outlined text-lg mr-1">add</span>
+                Add Opening Balance
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">About Opening Balances</h2>
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <span class="material-icons-outlined text-blue-500">info</span>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            Opening balances represent pre-system funds that existed before system adoption.
+                            They are one-time entries per contribution type and require Mission Admin approval.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                <li>Opening balances are for CASH only (no PAYABLE/RECEIVABLE)</li>
+                <li>They are excluded from income, tithe, and commission calculations</li>
+                <li>They are clearly labeled as "Opening Balance – Pre-System Funds"</li>
+                <li>They are included in balance visibility</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800">Opening Balance List</h2>
+        </div>
+        
+        {% if opening_balances %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entity</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contribution Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for balance in opening_balances %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if balance.level == 'mission' %}bg-purple-100 text-purple-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ balance.get_level_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if balance.branch %}{{ balance.branch.name }}{% else %}Mission{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ balance.contribution_type.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ balance.amount|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ balance.date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if balance.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif balance.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ balance.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'contributions:opening_balance_detail' balance.id %}" class="text-blue-600 hover:text-blue-900">View</a>
+                            {% if user.is_mission_admin and balance.status == 'pending' %}
+                            <a href="{% url 'contributions:opening_balance_approve' balance.id %}" class="ml-3 text-green-600 hover:text-green-900">Approve</a>
+                            <a href="{% url 'contributions:opening_balance_reject' balance.id %}" class="ml-3 text-red-600 hover:text-red-900">Reject</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-6 text-center">
+            <p class="text-gray-500">No opening balances found.</p>
+            {% if user.is_mission_admin %}
+            <a href="{% url 'contributions:opening_balance_add' %}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <span class="material-icons-outlined text-lg mr-1">add</span>
+                Add Opening Balance
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

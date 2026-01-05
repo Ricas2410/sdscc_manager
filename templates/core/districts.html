@@ -204,45 +204,99 @@
                 <input type="hidden" name="district_id" id="edit_district_id">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-gray-900">Edit District</h3>
-                        <button type="button" onclick="closeEditDistrictModal()" class="text-gray-400 hover:text-gray-500">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 p-2 bg-yellow-100 rounded-lg">
+                                <span class="material-icons-outlined text-yellow-600">edit</span>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-gray-900">Edit District</h3>
+                        </div>
+                        <button type="button" onclick="closeEditDistrictModal()" class="text-gray-400 hover:text-gray-500 transition-colors">
                             <span class="material-icons-outlined">close</span>
                         </button>
                     </div>
                 </div>
-                <div class="px-6 py-4 space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">District Name <span class="text-red-500">*</span></label>
-                        <input type="text" name="name" id="edit_district_name" required class="input-field">
+                <div class="px-6 py-4 space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            District Name <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">location_city</span>
+                            </div>
+                            <input type="text" name="name" id="edit_district_name" required
+                                   class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                                   placeholder="e.g., Central District">
+                        </div>
+                        <p class="text-xs text-gray-500">Enter the full name of the church district</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Code <span class="text-red-500">*</span></label>
-                        <input type="text" name="code" id="edit_district_code" required class="input-field">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            District Code <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">tag</span>
+                            </div>
+                            <input type="text" name="code" id="edit_district_code" required maxlength="5"
+                                   class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors uppercase"
+                                   placeholder="e.g., CD">
+                        </div>
+                        <p class="text-xs text-gray-500">Unique 2-5 letter code for this district</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Area <span class="text-red-500">*</span></label>
-                        <select name="area_id" id="edit_district_area" required class="input-field">
-                            {% for area in areas %}
-                            <option value="{{ area.id }}">{{ area.name }}</option>
-                            {% endfor %}
-                        </select>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Parent Area <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                                <span class="material-icons-outlined text-gray-400 text-sm">map</span>
+                            </div>
+                            <select name="area_id" id="edit_district_area" required
+                                    class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors appearance-none bg-white">
+                                <option value="">Select Parent Area</option>
+                                {% for area in areas %}
+                                <option value="{{ area.id }}">{{ area.name }} ({{ area.code }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">arrow_drop_down</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500">Select the area this district belongs to</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">District Executive</label>
-                        <select name="executive_id" id="edit_executive_id" class="input-field">
-                            <option value="">Select Executive (Optional)</option>
-                            {% for executive in executives %}
-                            <option value="{{ executive.id }}">
-                                {{ executive.get_full_name|default:executive.username }}
-                                {% if executive.role == 'pastor' %}(Pastor - {{ executive.get_pastoral_rank_display }}){% else %}(District Executive){% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            District Executive
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="material-icons-outlined text-gray-400 text-sm">person</span>
+                            </div>
+                            <select name="executive_id" id="edit_executive_id"
+                                    class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors">
+                                <option value="">Select Executive (Optional)</option>
+                                {% for executive in executives %}
+                                <option value="{{ executive.id }}">
+                                    {{ executive.get_full_name|default:executive.username }}
+                                    {% if executive.role == 'pastor' %}(Pastor - {{ executive.get_pastoral_rank_display }}){% else %}(District Executive){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-500">Assign a district executive or pastor to manage this district</p>
                     </div>
                 </div>
                 <div class="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3 rounded-b-lg">
-                    <button type="button" onclick="closeEditDistrictModal()" class="btn-secondary">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="button" onclick="closeEditDistrictModal()"
+                            class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2.5 text-sm font-medium text-white bg-yellow-600 border border-transparent rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors">
+                        <span class="material-icons-outlined text-sm mr-1">save</span>
+                        Save Changes
+                    </button>
                 </div>
             </form>
         </div>

@@ -31,11 +31,25 @@ def auditor_dashboard(request):
     current_month = today.month
     current_year = today.year
     
-    # Get fiscal year
-    fiscal_year = FiscalYear.get_current()
+    # Get filters
+    area_id = request.GET.get('area')
+    district_id = request.GET.get('district')
+    branch_id = request.GET.get('branch')
     
-    # Overall statistics
-    total_branches = Branch.objects.filter(is_active=True).count()
+    # Get fiscal year
+    # DEPRECATED: Year-as-state architecture - Use date filtering only
+    fiscal_year = None  # Not used anymore
+    
+    # Filter branches based on hierarchy
+    branches = Branch.objects.filter(is_active=True)
+    if area_id:
+        branches = branches.filter(district__area_id=area_id)
+    if district_id:
+        branches = branches.filter(district_id=district_id)
+    if branch_id:
+        branches = branches.filter(id=branch_id)
+    
+    total_branches = branches.count()
     
     # Current month statistics
     month_start = date(current_year, current_month, 1)
@@ -45,20 +59,22 @@ def auditor_dashboard(request):
         month_end = date(current_year, current_month + 1, 1) - timedelta(days=1)
     
     # Contributions this month
+    # DEPRECATED: Year-as-state architecture - Use date filtering only
     month_contributions = Contribution.objects.filter(
+        branch__in=branches,
         date__gte=month_start,
-        date__lte=month_end,
-        fiscal_year=fiscal_year
+        date__lte=month_end
     ).aggregate(
         total=Sum('amount'),
         count=Count('id')
     )
     
     # Expenditures this month
+    # DEPRECATED: Year-as-state architecture - Use date filtering only
     month_expenditures = Expenditure.objects.filter(
+        branch__in=branches,
         date__gte=month_start,
-        date__lte=month_end,
-        fiscal_year=fiscal_year
+        date__lte=month_end
     ).aggregate(
         total=Sum('amount'),
         count=Count('id')
@@ -66,6 +82,7 @@ def auditor_dashboard(request):
     
     # Remittances pending
     pending_remittances = Remittance.objects.filter(
+        branch__in=branches,
         status__in=['pending', 'sent']
     ).aggregate(
         total=Sum('amount_due'),
@@ -79,28 +96,78 @@ def auditor_dashboard(request):
     ).count()
     
     # Top contributing branches this month
+    # DEPRECATED: Year-as-state architecture - Use date filtering only
     top_branches = Contribution.objects.filter(
+        branch__in=branches,
         date__gte=month_start,
-        date__lte=month_end,
-        fiscal_year=fiscal_year
+        date__lte=month_end
     ).values('branch__name', 'branch__id').annotate(
         total=Sum('amount')
     ).order_by('-total')[:10]
     
     # Recent transactions (last 20)
-    recent_contributions = Contribution.objects.select_related(
+    recent_contributions = Contribution.objects.filter(
+        branch__in=branches
+    ).select_related(
         'branch', 'contribution_type', 'created_by'
     ).order_by('-created_at')[:10]
     
-    recent_expenditures = Expenditure.objects.select_related(
+    recent_expenditures = Expenditure.objects.filter(
+        branch__in=branches
+    ).select_related(
         'branch', 'category', 'created_by'
     ).order_by('-created_at')[:10]
+    
+    # Branch performance data
+    branch_performance = []
+    for branch in branches[:20]:  # Limit to 20 for dashboard
+        branch_contribs = Contribution.objects.filter(
+            branch=branch,
+            date__gte=month_start,
+            date__lte=month_end
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        branch_expends = Expenditure.objects.filter(
+            branch=branch,
+            date__gte=month_start,
+            date__lte=month_end
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        # Calculate mission due (10% of tithe)
+        tithe_amount = Contribution.objects.filter(
+            branch=branch,
+            date__gte=month_start,
+            date__lte=month_end,
+            contribution_type__category='tithe'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        mission_due = tithe_amount * Decimal('0.10')
+        
+        # Get remittance status
+        remittance = Remittance.objects.filter(
+            branch=branch,
+            year=current_year,
+            month=current_month
+        ).first()
+        
+        remittance_status = 'pending'
+        if remittance:
+            remittance_status = remittance.status
+        
+        branch_performance.append({
+            'name': branch.name,
+            'total_contributions': branch_contribs,
+            'mission_due': mission_due,
+            'total_expenditures': branch_expends,
+            'net_balance': branch_contribs - branch_expends,
+            'remittance_status': remittance_status,
+        })
     
     # Alerts and issues
     alerts = []
     
     # Check for branches with no contributions this month
-    branches_no_contrib = Branch.objects.filter(is_active=True).exclude(
+    branches_no_contrib = branches.exclude(
         contributions__date__gte=month_start,
         contributions__date__lte=month_end
     ).count()
@@ -113,9 +180,11 @@ def auditor_dashboard(request):
     
     # Check for overdue remittances
     overdue_remittances = Remittance.objects.filter(
+        branch__in=branches,
         status='pending',
         year__lt=current_year
     ).count() + Remittance.objects.filter(
+        branch__in=branches,
         status='pending',
         year=current_year,
         month__lt=current_month
@@ -129,6 +198,7 @@ def auditor_dashboard(request):
     
     # Check for unverified contributions
     unverified_contrib = Contribution.objects.filter(
+        branch__in=branches,
         status='pending'
     ).count()
     
@@ -137,6 +207,18 @@ def auditor_dashboard(request):
             'type': 'info',
             'message': f'{unverified_contrib} contributions pending verification'
         })
+    
+    # Calculate stats for display
+    stats = {
+        'total_contributions': month_contributions.get('total') or Decimal('0.00'),
+        'contribution_count': month_contributions.get('count') or 0,
+        'total_mission': month_contributions.get('total', Decimal('0.00')) * Decimal('0.10') if month_contributions.get('total') else Decimal('0.00'),
+        'mission_percentage': 10,
+        'total_expenditures': month_expenditures.get('total') or Decimal('0.00'),
+        'expenditure_count': month_expenditures.get('count') or 0,
+        'net_balance': (month_contributions.get('total') or Decimal('0.00')) - (month_expenditures.get('total') or Decimal('0.00')),
+        'branch_count': total_branches,
+    }
     
     context = {
         'total_branches': total_branches,
@@ -147,10 +229,18 @@ def auditor_dashboard(request):
         'top_branches': top_branches,
         'recent_contributions': recent_contributions,
         'recent_expenditures': recent_expenditures,
+        'branch_performance': branch_performance,
         'alerts': alerts,
+        'stats': stats,
         'current_month': current_month,
         'current_year': current_year,
         'month_name': calendar.month_name[current_month],
+        'areas': Area.objects.filter(is_active=True),
+        'districts': District.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(is_active=True),
+        'selected_area': area_id,
+        'selected_district': district_id,
+        'selected_branch': branch_id,
     }
     
     return render(request, 'auditing/auditor_dashboard.html', context)
@@ -185,7 +275,8 @@ def financial_audit_report(request):
         end_date = date(year, 12, 31)
         period_type = 'yearly'
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering only
+    fiscal_year = None  # Not used anymore
     
     # Filter branches
     branches = Branch.objects.filter(is_active=True)
@@ -211,11 +302,11 @@ def financial_audit_report(request):
     
     for branch in branches:
         # Contributions
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         contributions = Contribution.objects.filter(
             branch=branch,
             date__gte=start_date,
-            date__lte=end_date,
-            fiscal_year=fiscal_year
+            date__lte=end_date
         )
         
         contrib_total = contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
@@ -223,11 +314,11 @@ def financial_audit_report(request):
         branch_retained = contributions.aggregate(total=Sum('branch_amount'))['total'] or Decimal('0')
         
         # Expenditures
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         expenditures = Expenditure.objects.filter(
             branch=branch,
             date__gte=start_date,
-            date__lte=end_date,
-            fiscal_year=fiscal_year
+            date__lte=end_date
         )
         
         expend_total = expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0')

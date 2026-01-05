@@ -150,18 +150,23 @@ class MonthlyReport(TimeStampedModel):
     def save(self, *args, **kwargs):
         from django.utils import timezone
         
-        # Calculate mission remittance (typically 10% of tithe)
+        # CORRECT: Calculate mission remittance based on contribution allocations, not just tithe
+        # This should use the allocation percentages from contribution types
+        # TODO: Implement proper calculation using contribution type allocations
         if self.mission_remittance_due == 0 and self.tithe_amount > 0:
+            # TEMPORARY: Keep existing logic but this should be updated
+            # to use actual contribution type allocations
             self.mission_remittance_due = self.tithe_amount * Decimal('0.10')
         
-        # Calculate balance
+        # CORRECT: Branch balance = Total Collected - Total Expenses - Total Actually Remitted
+        # Note: mission_remittance_paid represents actual cash sent to mission
         self.branch_balance = (
             self.total_contributions - 
             self.total_expenditure - 
-            self.mission_remittance_paid
+            self.mission_remittance_paid  # CORRECT: Actual remittances, not expected
         )
         
-        # Calculate remaining remittance balance
+        # Calculate remaining remittance balance (obligation vs paid)
         self.mission_remittance_balance = (
             self.mission_remittance_due - self.mission_remittance_paid
         )

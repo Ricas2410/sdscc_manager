@@ -25,7 +25,7 @@ def tithe_performance(request):
     Tithe Performance Tracking Dashboard
     Shows branches meeting/not meeting targets, commission calculations
     """
-    if not (request.user.is_mission_admin or request.user.is_branch_executive):
+    if not (request.user.is_mission_admin or request.user.is_branch_executive or request.user.is_area_executive):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     
@@ -270,7 +270,7 @@ def commission_management(request):
                 
                 Expenditure.objects.create(
                     branch=commission.branch,
-                    fiscal_year=commission.fiscal_year,
+                    # fiscal_year=commission.fiscal_year,  # REMOVED: Use date filtering instead
                     category=category,
                     level='mission',
                     amount=commission.commission_amount,

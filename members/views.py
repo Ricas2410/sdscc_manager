@@ -43,6 +43,11 @@ def member_list(request):
         members = members.filter(branch=request.user.branch)
         user_scope = 'branch'
         show_hierarchy_filters = False
+    elif request.user.is_pastor and request.user.pastoral_rank == 'area' and request.user.managed_area:
+        # Area pastors see all members in their area
+        members = members.filter(branch__district__area=request.user.managed_area)
+        user_scope = 'area'
+        show_hierarchy_filters = True
     elif request.user.is_district_executive and request.user.managed_district:
         # District executives see all members in their district
         members = members.filter(branch__district=request.user.managed_district)
@@ -55,8 +60,22 @@ def member_list(request):
         show_hierarchy_filters = True
     
     # Initialize filter options based on user scope
-    districts = District.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True)
+    if user_scope == 'area':
+        # Area executives see only districts and branches in their area
+        districts = District.objects.filter(area=request.user.managed_area, is_active=True)
+        branches = Branch.objects.filter(district__area=request.user.managed_area, is_active=True)
+    elif user_scope == 'district':
+        # District executives see only branches in their district
+        districts = District.objects.filter(pk=request.user.managed_district.pk, is_active=True)
+        branches = Branch.objects.filter(district=request.user.managed_district, is_active=True)
+    elif user_scope == 'branch':
+        # Branch executives see only their branch
+        districts = District.objects.none()
+        branches = Branch.objects.filter(pk=request.user.branch.pk, is_active=True)
+    else:
+        # Mission admins see all
+        districts = District.objects.filter(is_active=True)
+        branches = Branch.objects.filter(is_active=True)
     
     # Apply hierarchical filters (only for users with hierarchy access)
     if show_hierarchy_filters:
@@ -104,7 +123,7 @@ def member_list(request):
     
     context = {
         'members': members,
-        'areas': Area.objects.filter(is_active=True),
+        'areas': Area.objects.filter(pk=request.user.managed_area.pk, is_active=True) if user_scope == 'area' else Area.objects.filter(is_active=True),
         'districts': districts,
         'branches': branches,
         'user_scope': user_scope,
@@ -516,7 +535,25 @@ def member_edit(request, member_id):
 def get_districts(request, area_id):
     """AJAX endpoint to get districts for an area."""
     from core.models import District
-    districts = District.objects.filter(area_id=area_id, is_active=True).values('id', 'name')
+    
+    # Respect user hierarchy - only show districts they can access
+    if request.user.is_area_executive and request.user.managed_area:
+        # Area executives can only see districts in their area
+        if str(area_id) != str(request.user.managed_area.pk):
+            return JsonResponse({'districts': []})  # Return empty if trying to access other areas
+        districts = District.objects.filter(area_id=area_id, is_active=True).values('id', 'name')
+    elif request.user.is_district_executive and request.user.managed_district:
+        # District executives can only see their own district
+        if str(request.user.managed_district.area_id) != str(area_id):
+            return JsonResponse({'districts': []})  # Return empty if not their area
+        districts = District.objects.filter(pk=request.user.managed_district.pk, is_active=True).values('id', 'name')
+    elif request.user.is_mission_admin or request.user.is_auditor:
+        # Mission admins and auditors can see all districts in the area
+        districts = District.objects.filter(area_id=area_id, is_active=True).values('id', 'name')
+    else:
+        # Other roles get no districts
+        districts = District.objects.none().values('id', 'name')
+    
     return JsonResponse({'districts': list(districts)})
 
 
@@ -524,7 +561,31 @@ def get_districts(request, area_id):
 def get_branches(request, district_id):
     """AJAX endpoint to get branches for a district."""
     from core.models import Branch
-    branches = Branch.objects.filter(district_id=district_id, is_active=True).values('id', 'name')
+    
+    # Respect user hierarchy - only show branches they can access
+    if request.user.is_area_executive and request.user.managed_area:
+        # Area executives can only see branches in districts within their area
+        district = District.objects.filter(pk=district_id, area=request.user.managed_area, is_active=True).first()
+        if not district:
+            return JsonResponse({'branches': []})  # Return empty if district not in their area
+        branches = Branch.objects.filter(district_id=district_id, is_active=True).values('id', 'name')
+    elif request.user.is_district_executive and request.user.managed_district:
+        # District executives can only see branches in their district
+        if str(district_id) != str(request.user.managed_district.pk):
+            return JsonResponse({'branches': []})  # Return empty if not their district
+        branches = Branch.objects.filter(district_id=district_id, is_active=True).values('id', 'name')
+    elif request.user.is_branch_executive and request.user.branch:
+        # Branch executives can only see their own branch
+        if str(request.user.branch.district_id) != str(district_id):
+            return JsonResponse({'branches': []})  # Return empty if not their district
+        branches = Branch.objects.filter(pk=request.user.branch.pk, is_active=True).values('id', 'name')
+    elif request.user.is_mission_admin or request.user.is_auditor:
+        # Mission admins and auditors can see all branches in the district
+        branches = Branch.objects.filter(district_id=district_id, is_active=True).values('id', 'name')
+    else:
+        # Other roles get no branches
+        branches = Branch.objects.none().values('id', 'name')
+    
     return JsonResponse({'branches': list(branches)})
 
 

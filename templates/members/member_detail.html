@@ -81,17 +81,6 @@
                         </div>
                         <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
                             <div class="flex items-center gap-3">
-                                <div class="p-2 rounded-lg bg-purple-100">
-                                    <span class="material-icons-outlined text-purple-600">person</span>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Pastor</p>
-                                    <p class="font-semibold text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                            <div class="flex items-center gap-3">
                                 <div class="p-2 rounded-lg bg-green-100">
                                     <span class="material-icons-outlined text-green-600">payments</span>
                                 </div>
@@ -248,10 +237,6 @@
                         <dd class="font-medium text-gray-900">{{ member.branch.name|default:"-" }}</dd>
                     </div>
                     <div>
-                        <dt class="text-sm text-gray-500">Pastor</dt>
-                        <dd class="font-medium text-gray-900">{{ member.branch.pastor.get_full_name|default:"Not Assigned" }}</dd>
-                    </div>
-                    <div>
                         <dt class="text-sm text-gray-500">District / Area</dt>
                         <dd class="font-medium text-gray-900">
                             {% if member.branch %}{{ member.branch.district.name }} / {{ member.branch.district.area.name }}{% else %}-{% endif %}
@@ -370,8 +355,12 @@
                         <td>{{ record.session.date|date:"M d, Y" }}</td>
                         <td>{{ record.session.service_type.name|default:"Service" }}</td>
                         <td>
-                            {% if record.is_present %}
+                            {% if record.status == 'present' %}
                             <span class="badge badge-success">Present</span>
+                            {% elif record.status == 'late' %}
+                            <span class="badge badge-warning">Late</span>
+                            {% elif record.status == 'excused' %}
+                            <span class="badge badge-secondary">Excused</span>
                             {% else %}
                             <span class="badge badge-danger">Absent</span>
                             {% endif %}

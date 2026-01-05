@@ -2,81 +2,163 @@
 {% block title %}Expenditure Details{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
-    <div class="flex items-center justify-between">
+<div class="space-y-6 px-4 py-6 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center">
-            <a href="{% url 'expenditure:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
-                <span class="material-icons-outlined">arrow_back</span>
+            <a href="{% url 'expenditure:list' %}" class="inline-flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors mr-4">
+                <span class="material-icons-outlined text-lg mr-2">arrow_back</span>
+                Back to Expenditures
             </a>
-            <h1 class="text-2xl font-bold text-gray-900">Expenditure Details</h1>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Expenditure Details</h1>
+                <p class="text-gray-600 mt-1">View and manage expenditure information</p>
+            </div>
         </div>
-        {% if not expenditure.is_approved and user.role in 'mission_admin,branch_executive' %}
-        <form method="post" action="{% url 'expenditure:detail' expenditure.id %}">
+        {% if not expenditure.is_approved %}
+            {% if user.role == 'mission_admin' or user.role == 'branch_executive' %}
+        <form method="post" action="{% url 'expenditure:detail' expenditure.id %}" class="inline-flex">
             {% csrf_token %}
-            <button type="submit" name="approve" class="btn-primary">
-                <span class="material-icons-outlined mr-1">check</span> Approve
+            <button type="submit" name="approve" class="inline-flex items-center px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm">
+                <span class="material-icons-outlined text-lg mr-2">check_circle</span>
+                Approve Expenditure
             </button>
         </form>
+            {% endif %}
         {% endif %}
     </div>
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-6 py-8 text-center border-b bg-gradient-to-r from-red-50 to-red-100">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 mb-4">
+    <!-- Main Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <!-- Header Section -->
+        <div class="px-6 py-8 text-center border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-100">
+            <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mb-4">
+                <span class="material-icons-outlined text-sm mr-1">category</span>
                 {{ expenditure.category.name }}
-            </span>
-            <p class="text-4xl font-bold text-red-600">{{ expenditure.amount|currency }}</p>
-            <p class="text-gray-500 mt-2">{{ expenditure.date|date:"l, F d, Y" }}</p>
+            </div>
+            <p class="text-5xl font-bold text-gray-900 mb-2">{{ expenditure.amount|currency }}</p>
+            <p class="text-gray-600 text-lg">{{ expenditure.date|date:"l, F d, Y" }}</p>
+            
+            <!-- Status Badge -->
+            <div class="mt-4">
+                {% if expenditure.status == 'approved' %}
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <span class="material-icons-outlined text-sm mr-1">check_circle</span>
+                    Approved
+                </span>
+                {% elif expenditure.status == 'paid' %}
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <span class="material-icons-outlined text-sm mr-1">payments</span>
+                    Paid
+                </span>
+                {% elif expenditure.status == 'pending' %}
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                    <span class="material-icons-outlined text-sm mr-1">pending</span>
+                    Pending Approval
+                </span>
+                {% elif expenditure.status == 'rejected' %}
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <span class="material-icons-outlined text-sm mr-1">cancel</span>
+                    Rejected
+                </span>
+                {% endif %}
+            </div>
         </div>
         
+        <!-- Details Section -->
         <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">Expenditure Information</h2>
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Description -->
                 <div class="md:col-span-2">
-                    <dt class="text-sm text-gray-500">Description</dt>
-                    <dd class="mt-1 text-gray-900">{{ expenditure.description }}</dd>
+                    <dt class="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">description</span>
+                        Description
+                    </dt>
+                    <dd class="text-gray-900 bg-gray-50 rounded-lg p-4">{{ expenditure.description|default:"No description provided" }}</dd>
                 </div>
+                
+                <!-- Branch -->
                 <div>
-                    <dt class="text-sm text-gray-500">Branch</dt>
-                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.branch.name }}</dd>
+                    <dt class="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">account_balance</span>
+                        Branch
+                    </dt>
+                    <dd class="text-gray-900 font-medium">{{ expenditure.branch.name }}</dd>
                 </div>
+                
+                <!-- Payment Method -->
                 <div>
-                    <dt class="text-sm text-gray-500">Payment Method</dt>
-                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.get_payment_method_display|default:"Cash" }}</dd>
+                    <dt class="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">payment</span>
+                        Payment Method
+                    </dt>
+                    <dd class="text-gray-900 font-medium">{{ expenditure.get_payment_method_display|default:"Cash" }}</dd>
                 </div>
+                
+                <!-- Vendor -->
                 <div>
-                    <dt class="text-sm text-gray-500">Vendor/Payee</dt>
-                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.vendor|default:"-" }}</dd>
+                    <dt class="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">business</span>
+                        Vendor/Payee
+                    </dt>
+                    <dd class="text-gray-900 font-medium">{{ expenditure.vendor|default:"-" }}</dd>
                 </div>
+                
+                <!-- Receipt Number -->
                 <div>
-                    <dt class="text-sm text-gray-500">Receipt Number</dt>
-                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.receipt_number|default:"-" }}</dd>
+                    <dt class="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">receipt</span>
+                        Receipt Number
+                    </dt>
+                    <dd class="text-gray-900 font-medium">{{ expenditure.receipt_number|default:"-" }}</dd>
                 </div>
+                
+                <!-- Created By -->
                 <div>
-                    <dt class="text-sm text-gray-500">Status</dt>
-                    <dd class="mt-1">
-                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {% if expenditure.is_approved %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                            {% if expenditure.is_approved %}Approved{% else %}Pending Approval{% endif %}
-                        </span>
+                    <dt class="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                        <span class="material-icons-outlined text-sm mr-1">person</span>
+                        Created By
+                    </dt>
+                    <dd class="text-gray-900 font-medium">
+                        {% if expenditure.created_by %}
+                            {{ expenditure.created_by.get_full_name|default:expenditure.created_by.username }}
+                        {% else %}
+                            <span class="text-gray-400">Not specified</span>
+                        {% endif %}
                     </dd>
-                </div>
-                <div>
-                    <dt class="text-sm text-gray-500">Recorded By</dt>
-                    <dd class="mt-1 font-medium text-gray-900">{{ expenditure.recorded_by.get_full_name|default:"-" }}</dd>
                 </div>
             </dl>
 
+            <!-- Receipt Attachment -->
             {% if expenditure.receipt %}
-            <div class="mt-6 pt-6 border-t">
-                <dt class="text-sm text-gray-500 mb-2">Receipt/Invoice</dt>
-                <a href="{{ expenditure.receipt.url }}" target="_blank" class="inline-flex items-center text-primary-600 hover:text-primary-500">
-                    <span class="material-icons-outlined mr-1">attachment</span> View Attachment
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <dt class="text-sm font-medium text-gray-500 mb-3 flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">attach_file</span>
+                    Receipt/Invoice
+                </dt>
+                <a href="{{ expenditure.receipt.url }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                    <span class="material-icons-outlined mr-2">visibility</span>
+                    View Attachment
                 </a>
             </div>
             {% endif %}
         </div>
 
-        <div class="border-t px-6 py-4 text-sm text-gray-500">
-            <p>Created: {{ expenditure.created_at|date:"M d, Y H:i" }}</p>
+        <!-- Footer -->
+        <div class="border-t border-gray-200 px-6 py-4 bg-gray-50">
+            <div class="flex items-center justify-between text-sm text-gray-500">
+                <div class="flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">schedule</span>
+                    Created: {{ expenditure.created_at|date:"M d, Y H:i" }}
+                </div>
+                {% if expenditure.updated_at != expenditure.created_at %}
+                <div class="flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">update</span>
+                    Updated: {{ expenditure.updated_at|date:"M d, Y H:i" }}
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

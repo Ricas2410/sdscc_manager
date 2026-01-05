@@ -74,6 +74,11 @@
                             <p class="text-xs text-gray-500 mt-2">
                                 Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
                             </p>
+                            <div id="uploadProgress" class="hidden mt-3">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="uploadProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
                             <div id="uploadStatus" class="mt-2 text-sm"></div>
                         </div>
                     </div>
@@ -533,109 +538,10 @@
     </form>
 </div>
 
-{% if not is_branch_admin %}
 <script>
-    function loadDistricts() {
-        const areaId = document.getElementById('areaSelect').value;
-        const districtSelect = document.getElementById('districtSelect');
-        const branchSelect = document.getElementById('branchSelect');
-
-        districtSelect.innerHTML = '<option value="">Loading...</option>';
-        districtSelect.disabled = true;
-        branchSelect.innerHTML = '<option value="">Select Branch</option>';
-        branchSelect.disabled = true;
-
-        if (!areaId) {
-            districtSelect.innerHTML = '<option value="">Select District</option>';
-            return;
-        }
-
-        fetch(`/members/api/districts/${areaId}/`)
-            .then(res => res.json())
-            .then(data => {
-                districtSelect.innerHTML = '<option value="">Select District</option>';
-                data.districts.forEach(d => {
-                    districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
-                });
-                districtSelect.disabled = false;
-            });
-    }
-
-    function loadBranches() {
-        const districtId = document.getElementById('districtSelect').value;
-        const branchSelect = document.getElementById('branchSelect');
-
-        branchSelect.innerHTML = '<option value="">Loading...</option>';
-        branchSelect.disabled = true;
-
-        if (!districtId) {
-            branchSelect.innerHTML = '<option value="">Select Branch</option>';
-            return;
-        }
-
-        fetch(`/members/api/branches/${districtId}/`)
-            .then(res => res.json())
-            .then(data => {
-                branchSelect.innerHTML = '<option value="">Select Branch</option>';
-                data.branches.forEach(b => {
-                    branchSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
-                });
-                branchSelect.disabled = false;
-            });
-    }
-
-    function toggleSalaryFields() {
-        const checkbox = document.getElementById('qualifiesForSalary');
-        const salaryGroup = document.getElementById('baseSalaryGroup');
-        
-        if (checkbox.checked) {
-            salaryGroup.style.display = 'block';
-            document.getElementById('baseSalaryField').setAttribute('required', 'required');
-        } else {
-            salaryGroup.style.display = 'none';
-            document.getElementById('baseSalaryField').removeAttribute('required');
-        }
-    }
-
-    function toggleBaptismFields() {
-        const baptizedSelect = document.querySelector('select[name="baptized"]');
-        const baptismDateGroup = document.getElementById('baptismDateGroup');
-        const baptismByGroup = document.getElementById('baptismByGroup');
-        
-        if (baptizedSelect.value === 'yes') {
-            baptismDateGroup.style.display = 'block';
-            baptismByGroup.style.display = 'block';
-        } else {
-            baptismDateGroup.style.display = 'none';
-            baptismByGroup.style.display = 'none';
-            // Clear the fields if "No" is selected
-            document.querySelector('input[name="baptism_date"]').value = '';
-            document.querySelector('input[name="baptism_by"]').value = '';
-        }
-    }
-
-    function togglePastorFields() {
-        const roleSelect = document.querySelector('select[name="role"]');
-        const pastoralRankGroup = document.getElementById('pastoralRankGroup');
-        const pastorInfoSection = document.getElementById('pastorInfoSection');
-        
-        if (roleSelect.value === 'pastor') {
-            pastoralRankGroup.style.display = 'block';
-            pastorInfoSection.style.display = 'block';
-        } else {
-            pastoralRankGroup.style.display = 'none';
-            pastorInfoSection.style.display = 'none';
-            // Clear pastor fields if not pastor
-            document.querySelector('select[name="pastoral_rank"]').value = '';
-            document.querySelector('input[name="ordination_date"]').value = '';
-            document.querySelector('input[name="ordination_place"]').value = '';
-            document.querySelector('input[name="ordaining_minister"]').value = '';
-        }
-    }
-
+    // Photo upload functions - Available to ALL admins (mission and branch)
     function openCamera() {
         const cameraInput = document.getElementById('cameraInput');
-        // Try to open camera directly
         cameraInput.click();
     }
     
@@ -659,6 +565,14 @@
             return;
         }
         
+        // Show progress bar
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('uploadProgressBar');
+        if (progressDiv) {
+            progressDiv.classList.remove('hidden');
+            progressBar.style.width = '30%';
+        }
+        
         // Show loading status
         showUploadStatus('Uploading...', 'loading');
         
@@ -669,6 +583,9 @@
         // Get CSRF token
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         
+        // Simulate progress
+        if (progressBar) progressBar.style.width = '60%';
+        
         // AJAX upload
         fetch(`{% if member %}{% url 'members:upload_picture' member.id %}{% endif %}`, {
             method: 'POST',
@@ -677,21 +594,32 @@
                 'X-CSRFToken': csrfToken
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (progressBar) progressBar.style.width = '90%';
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
+                if (progressBar) progressBar.style.width = '100%';
                 showUploadStatus('Profile picture updated successfully!', 'success');
                 // Update preview
                 const preview = document.getElementById('photoPreview');
                 preview.innerHTML = `<img src="${data.picture_url}" class="h-24 w-24 rounded-full object-cover border-4 border-gray-200">`;
                 // Show remove button if it doesn't exist
                 updateRemoveButton(true);
+                
+                // Hide progress bar after delay
+                setTimeout(() => {
+                    if (progressDiv) progressDiv.classList.add('hidden');
+                }, 1000);
             } else {
+                if (progressDiv) progressDiv.classList.add('hidden');
                 showUploadStatus(data.error || 'Upload failed. Please try again.', 'error');
             }
         })
         .catch(error => {
             console.error('Upload error:', error);
+            if (progressDiv) progressDiv.classList.add('hidden');
             showUploadStatus('Upload failed. Please check your connection and try again.', 'error');
         })
         .finally(() => {
@@ -770,7 +698,6 @@
         const existingRemoveBtn = container.querySelector('button[onclick*="removeProfilePicture"]');
         
         if (show && !existingRemoveBtn) {
-            // Add remove button with mobile-friendly text
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.onclick = removeProfilePicture;
@@ -778,8 +705,54 @@
             removeBtn.innerHTML = '<span class="material-icons-outlined mr-2">delete</span><span class="hidden sm:inline">Remove</span>';
             container.appendChild(removeBtn);
         } else if (!show && existingRemoveBtn) {
-            // Remove remove button
             existingRemoveBtn.remove();
+        }
+    }
+
+    function toggleSalaryFields() {
+        const checkbox = document.getElementById('qualifiesForSalary');
+        const salaryGroup = document.getElementById('baseSalaryGroup');
+        
+        if (checkbox.checked) {
+            salaryGroup.style.display = 'block';
+            document.getElementById('baseSalaryField').setAttribute('required', 'required');
+        } else {
+            salaryGroup.style.display = 'none';
+            document.getElementById('baseSalaryField').removeAttribute('required');
+        }
+    }
+
+    function toggleBaptismFields() {
+        const baptizedSelect = document.querySelector('select[name="baptized"]');
+        const baptismDateGroup = document.getElementById('baptismDateGroup');
+        const baptismByGroup = document.getElementById('baptismByGroup');
+        
+        if (baptizedSelect.value === 'yes') {
+            baptismDateGroup.style.display = 'block';
+            baptismByGroup.style.display = 'block';
+        } else {
+            baptismDateGroup.style.display = 'none';
+            baptismByGroup.style.display = 'none';
+            document.querySelector('input[name="baptism_date"]').value = '';
+            document.querySelector('input[name="baptism_by"]').value = '';
+        }
+    }
+
+    function togglePastorFields() {
+        const roleSelect = document.querySelector('select[name="role"]');
+        const pastoralRankGroup = document.getElementById('pastoralRankGroup');
+        const pastorInfoSection = document.getElementById('pastorInfoSection');
+        
+        if (roleSelect.value === 'pastor') {
+            pastoralRankGroup.style.display = 'block';
+            pastorInfoSection.style.display = 'block';
+        } else {
+            pastoralRankGroup.style.display = 'none';
+            pastorInfoSection.style.display = 'none';
+            document.querySelector('select[name="pastoral_rank"]').value = '';
+            document.querySelector('input[name="ordination_date"]').value = '';
+            document.querySelector('input[name="ordination_place"]').value = '';
+            document.querySelector('input[name="ordaining_minister"]').value = '';
         }
     }
 
@@ -794,6 +767,59 @@
             togglePastorFields();
         }
     });
+</script>
+
+{% if not is_branch_admin %}
+<script>
+    // Area/District/Branch selection functions - Only for Mission Admins
+    function loadDistricts() {
+        const areaId = document.getElementById('areaSelect').value;
+        const districtSelect = document.getElementById('districtSelect');
+        const branchSelect = document.getElementById('branchSelect');
+
+        districtSelect.innerHTML = '<option value="">Loading...</option>';
+        districtSelect.disabled = true;
+        branchSelect.innerHTML = '<option value="">Select Branch</option>';
+        branchSelect.disabled = true;
+
+        if (!areaId) {
+            districtSelect.innerHTML = '<option value="">Select District</option>';
+            return;
+        }
+
+        fetch(`/members/api/districts/${areaId}/`)
+            .then(res => res.json())
+            .then(data => {
+                districtSelect.innerHTML = '<option value="">Select District</option>';
+                data.districts.forEach(d => {
+                    districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                });
+                districtSelect.disabled = false;
+            });
+    }
+
+    function loadBranches() {
+        const districtId = document.getElementById('districtSelect').value;
+        const branchSelect = document.getElementById('branchSelect');
+
+        branchSelect.innerHTML = '<option value="">Loading...</option>';
+        branchSelect.disabled = true;
+
+        if (!districtId) {
+            branchSelect.innerHTML = '<option value="">Select Branch</option>';
+            return;
+        }
+
+        fetch(`/members/api/branches/${districtId}/`)
+            .then(res => res.json())
+            .then(data => {
+                branchSelect.innerHTML = '<option value="">Select Branch</option>';
+                data.branches.forEach(b => {
+                    branchSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                });
+                branchSelect.disabled = false;
+            });
+    }
 
     // Load existing data for edit mode
     {% if member.branch %}

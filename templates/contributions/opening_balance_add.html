@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Add Opening Balance{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Add Opening Balance</h1>
+            <p class="text-gray-600">Record one-time pre-system funds for Branch or Mission CASH</p>
+        </div>
+        <a href="{% url 'contributions:opening_balances' %}" class="btn btn-secondary">
+            <span class="material-icons-outlined mr-2">arrow_back</span>Back to Opening Balances
+        </a>
+    </div>
+    
+    <!-- Important Information -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <span class="material-icons-outlined text-blue-500">info</span>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                    <strong>Important:</strong> Opening balances are for pre-system funds only. These are one-time entries that require Mission Admin approval. Only CASH entries are created (no PAYABLE or RECEIVABLE).
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-md">
+        <form method="post" enctype="multipart/form-data" class="p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Level Selection -->
+                <div class="form-group">
+                    <label class="form-label required">Level</label>
+                    <select name="level" id="level" required class="form-input form-select" onchange="toggleBranchField()">
+                        <option value="">Select Level</option>
+                        <option value="mission">Mission</option>
+                        <option value="branch">Branch</option>
+                    </select>
+                </div>
+                
+                <!-- Branch Selection (shown only for branch level) -->
+                <div class="form-group" id="branchField" style="display: none;">
+                    <label class="form-label required">Branch</label>
+                    <select name="branch" id="branch" class="form-input form-select">
+                        <option value="">Select Branch</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}">{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Contribution Type -->
+                <div class="form-group">
+                    <label class="form-label required">Contribution Type (Fund)</label>
+                    <select name="contribution_type" required class="form-input form-select">
+                        <option value="">Select Fund</option>
+                        {% for ctype in contribution_types %}
+                        <option value="{{ ctype.id }}">{{ ctype.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Amount -->
+                <div class="form-group">
+                    <label class="form-label required">Amount ({{ site_settings.currency_symbol }})</label>
+                    <input type="number" name="amount" step="0.01" min="0.01" required class="form-input" placeholder="0.00">
+                </div>
+                
+                <!-- Date -->
+                <div class="form-group">
+                    <label class="form-label required">Date</label>
+                    <input type="date" name="date" required class="form-input">
+                </div>
+                
+                <!-- Reference Number -->
+                <div class="form-group">
+                    <label class="form-label">Reference Number (Optional)</label>
+                    <input type="text" name="reference_number" class="form-input" placeholder="e.g., OB-2024-001">
+                </div>
+            </div>
+            
+            <!-- Description -->
+            <div class="form-group mt-6">
+                <label class="form-label required">Description</label>
+                <textarea name="description" rows="4" required class="form-input" placeholder="Describe the source of these pre-system funds..."></textarea>
+            </div>
+            
+            <!-- Supporting Documentation -->
+            <div class="form-group mt-6">
+                <label class="form-label">Supporting Documentation (Optional)</label>
+                <div class="flex items-center gap-4">
+                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <span class="material-icons-outlined text-3xl text-gray-400">description</span>
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" name="supporting_document" accept="image/*,.pdf" class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
+                        <p class="text-xs text-gray-500 mt-1">Upload image or PDF (optional)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div class="flex flex-col sm:flex-row justify-end gap-4 mt-8 pt-6 border-t">
+                <a href="{% url 'contributions:opening_balances' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <span class="material-icons-outlined mr-2">save</span>Save Opening Balance
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Set default date to today
+document.querySelector('input[name="date"]').value = new Date().toISOString().split('T')[0];
+
+// Toggle branch field based on level selection
+function toggleBranchField() {
+    const level = document.getElementById('level').value;
+    const branchField = document.getElementById('branchField');
+    
+    if (level === 'branch') {
+        branchField.style.display = 'block';
+        document.getElementById('branch').required = true;
+    } else {
+        branchField.style.display = 'none';
+        document.getElementById('branch').required = false;
+        document.getElementById('branch').value = '';
+    }
+}
+</script>
+{% endblock %}

@@ -242,3 +242,291 @@ class WeeklyAttendance(TimeStampedModel):
         )
         
         return obj
+
+
+class Meeting(TimeStampedModel):
+    """
+    Meeting scheduling and calendar system.
+    Allows admins to schedule meetings and track attendance.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    
+    # Scheduling
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField(null=True, blank=True)
+    
+    # Location
+    location = models.CharField(max_length=200, blank=True)
+    is_virtual = models.BooleanField(default=False)
+    virtual_link = models.URLField(blank=True)
+    
+    # Scope - who should attend
+    class Scope(models.TextChoices):
+        MISSION = 'mission', 'Mission-Wide'
+        AREA = 'area', 'Area'
+        DISTRICT = 'district', 'District'
+        BRANCH = 'branch', 'Branch'
+        CUSTOM = 'custom', 'Custom Selection'
+    
+    scope = models.CharField(max_length=20, choices=Scope.choices, default=Scope.BRANCH)
+    
+    # Hierarchy references for scope
+    branch = models.ForeignKey(
+        'core.Branch', on_delete=models.CASCADE, null=True, blank=True, related_name='meetings'
+    )
+    district = models.ForeignKey(
+        'core.District', on_delete=models.CASCADE, null=True, blank=True, related_name='meetings'
+    )
+    area = models.ForeignKey(
+        'core.Area', on_delete=models.CASCADE, null=True, blank=True, related_name='meetings'
+    )
+    
+    # Meeting type
+    class MeetingType(models.TextChoices):
+        GENERAL = 'general', 'General Meeting'
+        BOARD = 'board', 'Board Meeting'
+        STAFF = 'staff', 'Staff Meeting'
+        EXECUTIVE = 'executive', 'Executive Meeting'
+        TRAINING = 'training', 'Training Session'
+        PRAYER = 'prayer', 'Prayer Meeting'
+        OTHER = 'other', 'Other'
+    
+    meeting_type = models.CharField(max_length=20, choices=MeetingType.choices, default=MeetingType.GENERAL)
+    
+    # Organizer
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_meetings'
+    )
+    
+    # Status
+    class Status(models.TextChoices):
+        SCHEDULED = 'scheduled', 'Scheduled'
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        COMPLETED = 'completed', 'Completed'
+        CANCELLED = 'cancelled', 'Cancelled'
+        POSTPONED = 'postponed', 'Postponed'
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
+    
+    # Notifications
+    send_reminder = models.BooleanField(default=True)
+    reminder_hours_before = models.IntegerField(default=24)
+    reminder_sent = models.BooleanField(default=False)
+    
+    # Attendance tracking
+    attendance_required = models.BooleanField(default=True)
+    
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-date', '-start_time']
+        verbose_name = 'Meeting'
+        verbose_name_plural = 'Meetings'
+    
+    def __str__(self):
+        return f"{self.title} - {self.date}"
+    
+    @property
+    def is_upcoming(self):
+        """Check if meeting is in the future."""
+        from datetime import datetime
+        meeting_datetime = datetime.combine(self.date, self.start_time)
+        return meeting_datetime > datetime.now()
+    
+    @property
+    def attendee_count(self):
+        """Get count of expected attendees."""
+        return self.attendees.count()
+    
+    @property
+    def present_count(self):
+        """Get count of attendees marked present."""
+        return self.attendees.filter(status='present').count()
+
+
+class MeetingAttendee(TimeStampedModel):
+    """
+    Track meeting attendees and their attendance status.
+    Staff members are auto-listed but NOT auto-marked present.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='attendees')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='meeting_attendances')
+    
+    # Attendance status
+    class Status(models.TextChoices):
+        INVITED = 'invited', 'Invited'
+        CONFIRMED = 'confirmed', 'Confirmed'
+        PRESENT = 'present', 'Present'
+        ABSENT = 'absent', 'Absent'
+        EXCUSED = 'excused', 'Excused'
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.INVITED)
+    
+    # Timestamps
+    check_in_time = models.DateTimeField(null=True, blank=True)
+    marked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='marked_meeting_attendances'
+    )
+    marked_at = models.DateTimeField(null=True, blank=True)
+    
+    # Is this a staff member (for sitting allowance tracking)
+    is_staff_member = models.BooleanField(default=False)
+    
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['user__first_name', 'user__last_name']
+        unique_together = ['meeting', 'user']
+        verbose_name = 'Meeting Attendee'
+        verbose_name_plural = 'Meeting Attendees'
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.meeting.title}"
+
+
+class MissionStaffAttendance(TimeStampedModel):
+    """
+    Mission Staff Attendance Register
+    Simple, session-based attendance tracking for mission-level staff
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Attendance date and session details
+    date = models.DateField(help_text="Date of the staff meeting/attendance")
+    title = models.CharField(
+        max_length=200, 
+        default="Mission Staff Meeting",
+        help_text="Optional custom title for this attendance session"
+    )
+    
+    # Status and locking
+    is_locked = models.BooleanField(default=False, help_text="Attendance is locked after 24 hours")
+    locked_at = models.DateTimeField(null=True, blank=True)
+    locked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='locked_staff_attendances'
+    )
+    
+    # Attendance summary
+    total_staff = models.IntegerField(default=0, help_text="Total mission staff members")
+    present_count = models.IntegerField(default=0)
+    absent_count = models.IntegerField(default=0)
+    
+    # Meeting details (optional)
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    notes = models.TextField(blank=True, help_text="Meeting notes or agenda")
+    
+    # Created by
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_staff_attendances'
+    )
+    
+    class Meta:
+        ordering = ['-date']
+        unique_together = ['date']
+        verbose_name = 'Mission Staff Attendance'
+        verbose_name_plural = 'Mission Staff Attendances'
+    
+    def __str__(self):
+        return f"Mission Staff Attendance - {self.date}"
+    
+    def can_be_edited(self):
+        """Check if attendance can still be edited (within 24 hours)."""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        if self.is_locked:
+            return False
+        
+        # Check if 24 hours have passed
+        attendance_datetime = timezone.make_aware(
+            timezone.datetime.combine(self.date, timezone.datetime.min.time())
+        )
+        time_passed = timezone.now() - attendance_datetime
+        return time_passed < timedelta(hours=24)
+    
+    def lock_attendance(self, user):
+        """Lock the attendance to prevent further changes."""
+        self.is_locked = True
+        self.locked_at = timezone.now()
+        self.locked_by = user
+        self.save()
+    
+    def update_counts(self):
+        """Update attendance counts from records."""
+        self.present_count = self.records.filter(status='present').count()
+        self.absent_count = self.records.filter(status='absent').count()
+        self.save()
+
+
+class MissionStaffAttendanceRecord(TimeStampedModel):
+    """
+    Individual attendance record for mission staff
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    attendance = models.ForeignKey(
+        MissionStaffAttendance,
+        on_delete=models.CASCADE,
+        related_name='records'
+    )
+    staff_member = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='mission_staff_attendance_records'
+    )
+    
+    class Status(models.TextChoices):
+        PRESENT = 'present', 'Present'
+        ABSENT = 'absent', 'Absent'
+        EXCUSED = 'excused', 'Excused'
+    
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PRESENT
+    )
+    
+    # Who marked this attendance
+    marked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='marked_staff_attendance_records'
+    )
+    marked_at = models.DateTimeField(null=True, blank=True)
+    
+    # Notes for this specific staff member
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['staff_member__first_name', 'staff_member__last_name']
+        unique_together = ['attendance', 'staff_member']
+        verbose_name = 'Mission Staff Attendance Record'
+        verbose_name_plural = 'Mission Staff Attendance Records'
+    
+    def __str__(self):
+        return f"{self.staff_member.get_full_name()} - {self.attendance.date} - {self.get_status_display()}"
+    
+    def save(self, *args, **kwargs):
+        # Set marked timestamp if status is being set
+        if self.marked_by and not self.marked_at:
+            self.marked_at = timezone.now()
+        super().save(*args, **kwargs)
+        
+        # Update parent attendance counts
+        self.attendance.update_counts()

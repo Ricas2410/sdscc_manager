@@ -207,7 +207,7 @@ fly deploy
 ## Support Contacts
 
 ### Technical Support
-- **Email:** tech@sdscc.org
+- **Email:** tech@7dscc.org
 - **Phone:** +233-XXX-XXXX
 - **Hours:** 8 AM - 6 PM GMT
 

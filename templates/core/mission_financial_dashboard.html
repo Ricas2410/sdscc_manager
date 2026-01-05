@@ -46,50 +46,57 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="space-y-6 px-4 py-6 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="h3 mb-1">Mission Financial Dashboard</h1>
-            <p class="text-muted mb-0">{{ period_name }}</p>
+            <h1 class="text-3xl font-bold text-gray-900">Mission Financial Dashboard</h1>
+            <p class="text-gray-600 mt-1">{{ period_name }}</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'core:mission_expenditure_list' %}" class="btn btn-outline-primary">
-                <i class="fas fa-list"></i> Expenditures
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'core:ledger_dashboard' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="material-icons-outlined text-lg mr-2">account_balance</span>
+                Financial Ledger
             </a>
-            <a href="{% url 'core:mission_remittance_tracking' %}" class="btn btn-outline-primary">
-                <i class="fas fa-exchange-alt"></i> Remittances
+            <a href="{% url 'core:mission_expenditure_list' %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <span class="material-icons-outlined text-lg mr-2">receipt_long</span>
+                Expenditures
+            </a>
+            <a href="{% url 'core:mission_remittance_tracking' %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <span class="material-icons-outlined text-lg mr-2">sync_alt</span>
+                Remittances
             </a>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Year</label>
-                    <select name="year" class="form-select" onchange="this.form.submit()">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                    <select name="year" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
                         {% for y in available_years %}
                         <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Month (Optional)</label>
-                    <select name="month" class="form-select" onchange="this.form.submit()">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Month (Optional)</label>
+                    <select name="month" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500" onchange="this.form.submit()">
                         <option value="">All Months</option>
                         {% for m_num, m_name in months %}
                         <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-filter"></i> Filter
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">filter_alt</span>
+                        Filter
                     </button>
-                    <a href="{% url 'core:mission_financial_dashboard' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-redo"></i> Reset
+                    <a href="{% url 'core:mission_financial_dashboard' %}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">refresh</span>
+                        Reset
                     </a>
                 </div>
             </form>
@@ -97,96 +104,96 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Income Card -->
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="stat-icon income-icon">
-                        <i class="fas fa-arrow-down"></i>
+        <div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-green-600 text-2xl">arrow_downward</span>
                     </div>
-                    <span class="badge bg-success">{{ remittances_count }} remittances</span>
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">{{ remittances_count }} remittances</span>
                 </div>
-                <div class="stat-label">Total Income (Remittances)</div>
-                <div class="stat-value text-success">{{ total_remittances_received|currency }}</div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Income (Remittances)</p>
+                <p class="text-3xl font-bold text-green-600 mt-2">{{ total_remittances_received|currency }}</p>
             </div>
         </div>
 
         <!-- Expenditure Card -->
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="stat-icon expense-icon">
-                        <i class="fas fa-arrow-up"></i>
+        <div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-red-600 text-2xl">arrow_upward</span>
                     </div>
-                    <span class="badge bg-danger">{{ expenditures_count }} expenses</span>
+                    <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">{{ expenditures_count }} expenses</span>
                 </div>
-                <div class="stat-label">Total Expenditures</div>
-                <div class="stat-value text-danger">{{ total_mission_expenditures|currency }}</div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Expenditures</p>
+                <p class="text-3xl font-bold text-red-600 mt-2">{{ total_mission_expenditures|currency }}</p>
             </div>
         </div>
 
         <!-- Balance Card -->
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="stat-icon balance-icon">
-                        <i class="fas fa-wallet"></i>
+        <div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-blue-600 text-2xl">account_balance_wallet</span>
                     </div>
                 </div>
-                <div class="stat-label">Mission Balance</div>
-                <div class="stat-value {% if mission_balance >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Mission Balance</p>
+                <p class="text-3xl font-bold {% if mission_balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %} mt-2">
                     {{ mission_balance|currency }}
-                </div>
+                </p>
             </div>
         </div>
 
         <!-- Pending Card -->
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="stat-icon pending-icon">
-                        <i class="fas fa-clock"></i>
+        <div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-amber-600 text-2xl">schedule</span>
                     </div>
-                    <span class="badge bg-warning text-dark">{{ pending_count }} pending</span>
+                    <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">{{ pending_count }} pending</span>
                 </div>
-                <div class="stat-label">Pending Remittances</div>
-                <div class="stat-value text-warning">{{ total_pending|currency }}</div>
+                <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Pending Remittances</p>
+                <p class="text-3xl font-bold text-amber-600 mt-2">{{ total_pending|currency }}</p>
             </div>
         </div>
     </div>
 
     <!-- Charts and Details -->
-    <div class="row g-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Top Contributing Branches -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Top Contributing Branches</h5>
+        <div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Top Contributing Branches</h2>
                 </div>
-                <div class="card-body">
+                <div class="p-6">
                     {% if branch_remittances %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <th>Branch</th>
-                                    <th class="text-end">Amount</th>
-                                    <th class="text-center">Count</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="bg-white divide-y divide-gray-200">
                                 {% for item in branch_remittances %}
-                                <tr>
-                                    <td>
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <a href="{% url 'core:branch_financial_statistics' %}?branch={{ item.branch__id }}"
-                                           class="text-decoration-none">
+                                           class="text-blue-600 hover:text-blue-800 font-medium">
                                             {{ item.branch__name }}
                                         </a>
                                     </td>
-                                    <td class="text-end fw-bold">{{ item.total|currency }}</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-primary">{{ item.count }}</span>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right font-semibold text-gray-900">{{ item.total|currency }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ item.count }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -204,38 +211,38 @@
         </div>
 
         <!-- Expenditure by Category -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Expenditure by Category</h5>
+        <div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Expenditure by Category</h2>
                 </div>
-                <div class="card-body">
+                <div class="p-6">
                     {% if expenditures_by_category %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <th>Category</th>
-                                    <th class="text-end">Amount</th>
-                                    <th class="text-end">%</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="bg-white divide-y divide-gray-200">
                                 {% for item in expenditures_by_category %}
-                                <tr>
-                                    <td>{{ item.category__name }}</td>
-                                    <td class="text-end fw-bold">{{ item.total|currency }}</td>
-                                    <td class="text-end">
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-gray-900">{{ item.category__name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right font-semibold text-gray-900">{{ item.total|currency }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-gray-600">
                                         {% widthratio item.total total_mission_expenditures 100 %}%
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                            <tfoot>
-                                <tr class="fw-bold">
-                                    <td>Total</td>
-                                    <td class="text-end">{{ total_mission_expenditures|currency }}</td>
-                                    <td class="text-end">100%</td>
+                            <tfoot class="bg-gray-50">
+                                <tr class="font-bold">
+                                    <td class="px-6 py-4 whitespace-nowrap text-gray-900">Total</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-gray-900">{{ total_mission_expenditures|currency }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-gray-900">100%</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -252,30 +259,34 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="card mt-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Quick Actions</h5>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
         </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <a href="{% url 'expenditure:expenditure_add' %}?level=mission" class="btn btn-outline-primary w-100">
-                        <i class="fas fa-plus-circle"></i> Add Mission Expenditure
+        <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <a href="{% url 'expenditure:add_mission' %}" class="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-icons-outlined mr-2">add_circle</span>
+                        Add Expenditure
                     </a>
                 </div>
-                <div class="col-md-3">
-                    <a href="{% url 'core:mission_expenditure_list' %}" class="btn btn-outline-primary w-100">
-                        <i class="fas fa-list"></i> View All Expenditures
+                <div>
+                    <a href="{% url 'core:mission_expenditure_list' %}" class="flex items-center justify-center px-4 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                        <span class="material-icons-outlined mr-2">list</span>
+                        View Expenditures
                     </a>
                 </div>
-                <div class="col-md-3">
-                    <a href="{% url 'core:mission_remittance_tracking' %}" class="btn btn-outline-primary w-100">
-                        <i class="fas fa-exchange-alt"></i> Track Remittances
+                <div>
+                    <a href="{% url 'core:mission_remittance_tracking' %}" class="flex items-center justify-center px-4 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                        <span class="material-icons-outlined mr-2">sync_alt</span>
+                        Track Remittances
                     </a>
                 </div>
-                <div class="col-md-3">
-                    <a href="#" class="btn btn-outline-success w-100" onclick="window.print(); return false;">
-                        <i class="fas fa-print"></i> Print Report
+                <div>
+                    <a href="#" class="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" onclick="window.print(); return false;">
+                        <span class="material-icons-outlined mr-2">print</span>
+                        Print Report
                     </a>
                 </div>
             </div>

@@ -51,7 +51,7 @@ class Expenditure(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     category = models.ForeignKey(ExpenditureCategory, on_delete=models.PROTECT, related_name='expenditures')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='expenditures')
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='expenditures', null=True, blank=True)
     
     # Level - Branch or Mission
     class Level(models.TextChoices):
@@ -78,6 +78,16 @@ class Expenditure(TimeStampedModel):
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    
+    # Fund/Contribution Type this expenditure is charged against
+    contribution_type = models.ForeignKey(
+        'contributions.ContributionType', 
+        on_delete=models.PROTECT, 
+        null=True, 
+        blank=True,
+        related_name='expenditures',
+        help_text='Fund/contribution type this expenditure is charged against'
+    )
     
     # Vendor / Recipient info
     vendor = models.CharField(max_length=200, blank=True)
@@ -137,7 +147,8 @@ class UtilityBill(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='utility_bills')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='utility_bills')
+    # DEPRECATED: Year-as-state architecture - fiscal_year is now optional
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='utility_bills', null=True, blank=True)
     
     class UtilityType(models.TextChoices):
         ELECTRICITY = 'electricity', 'Electricity'
@@ -184,7 +195,8 @@ class WelfarePayment(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='welfare_payments')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='welfare_payments')
+    # DEPRECATED: Year-as-state architecture - fiscal_year is now optional
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='welfare_payments', null=True, blank=True)
     
     # Recipient
     recipient = models.ForeignKey(

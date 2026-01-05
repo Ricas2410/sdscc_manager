@@ -689,6 +689,42 @@ function exportToPDF() {
         button.disabled = false;
     }, 3000);
 }
+
+// Delete Area Report
+function deleteAreaReport(reportId) {
+    if (confirm('Are you sure you want to delete this Area Financial Report? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/reports/area-financial-reports/${reportId}/delete/`;
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Delete District Report
+function deleteDistrictReport(reportId) {
+    if (confirm('Are you sure you want to delete this District Financial Report? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/reports/district-financial-reports/${reportId}/delete/`;
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 {% endblock %}
 

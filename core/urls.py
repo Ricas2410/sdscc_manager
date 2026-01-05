@@ -7,6 +7,7 @@ from . import views, financial_views, mission_financial_views
 from . import views_assets
 from . import monthly_closing_views
 from . import archive_views
+from . import ledger_views
 
 app_name = 'core'
 
@@ -54,8 +55,12 @@ urlpatterns = [
     # Prayer Requests
     path('prayer-requests/', views.prayer_requests, name='prayer_requests'),
     path('prayer-requests/add/', views.prayer_request_add, name='prayer_request_add'),
+    path('prayer-requests/<uuid:pk>/', views.prayer_request_detail, name='prayer_request_detail'),
     path('prayer-requests/<uuid:pk>/edit/', views.prayer_request_edit, name='prayer_request_edit'),
+    path('prayer-requests/<uuid:pk>/delete/', views.prayer_request_delete, name='prayer_request_delete'),
+    path('prayer-requests/<uuid:pk>/detail-ajax/', views.prayer_request_detail_ajax, name='prayer_request_detail_ajax'),
     path('prayer-requests/<uuid:pk>/pray/', views.prayer_request_pray, name='prayer_request_pray'),
+    path('prayer-requests/<uuid:pk>/approve/', views.prayer_request_approve, name='prayer_request_approve'),
     
     # Visitors & Follow-up
     path('visitors/', views.visitors_list, name='visitors'),
@@ -102,9 +107,18 @@ urlpatterns = [
     
     # Year-based Archive System
     path('archive/', archive_views.archive_dashboard, name='archive_dashboard'),
-    path('archive/year/<uuid:year_id>/', archive_views.year_detail, name='year_detail'),
+    path('archive/year/<int:year_id>/', archive_views.year_detail, name='year_detail'),
     path('archive/create-year/', archive_views.create_fiscal_year, name='create_fiscal_year'),
     path('archive/archive-year/<uuid:year_id>/', archive_views.archive_fiscal_year_view, name='archive_fiscal_year'),
+
+    # Ledger System - Financial Truth
+    path('ledger/', ledger_views.ledger_dashboard, name='ledger_dashboard'),
+    path('ledger/mission-position/', ledger_views.mission_financial_position, name='mission_financial_position'),
+    path('ledger/branch/<uuid:branch_id>/', ledger_views.branch_financial_position, name='branch_financial_position'),
+    path('ledger/outstanding/', ledger_views.outstanding_remittances, name='outstanding_remittances'),
+    path('ledger/audit-trail/', ledger_views.ledger_audit_trail, name='ledger_audit_trail'),
+    path('ledger/branch/<uuid:branch_id>/contributions/', ledger_views.branch_contributions_readonly, name='branch_contributions_readonly'),
+    path('api/ledger/balance/', ledger_views.api_ledger_balance, name='api_ledger_balance'),
 
     # PWA
     path('manifest.json', views.manifest_json, name='manifest'),

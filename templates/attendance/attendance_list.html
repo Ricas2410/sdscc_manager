@@ -18,7 +18,8 @@
     <div class="card">
         <div class="card-body p-4">
             <form method="get" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
-                {% if branches %}
+                    <input type="hidden" name="sort" value="{{ sort }}">
+                    {% if branches %}
                 <div class="form-group mb-0">
                     <label class="form-label">Branch</label>
                     <select name="branch" class="form-input form-select">
@@ -60,10 +61,26 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th>
+                            <a href="?sort={% if sort == 'date' %}-date{% else %}date{% endif %}" class="flex items-center gap-1 hover:text-blue-600">
+                                Date
+                                {% if sort == 'date' %}<span class="material-icons-outlined text-sm">arrow_upward</span>{% elif sort == '-date' %}<span class="material-icons-outlined text-sm">arrow_downward</span>{% endif %}
+                            </a>
+                        </th>
                         <th>Service Type</th>
-                        <th>Branch</th>
-                        <th class="text-center">Present</th>
+                        <th>
+                            <a href="?sort={% if sort == 'branch__name' %}-branch__name{% else %}branch__name{% endif %}" class="flex items-center gap-1 hover:text-blue-600">
+                                Branch
+                                {% if sort == 'branch__name' %}<span class="material-icons-outlined text-sm">arrow_upward</span>{% elif sort == '-branch__name' %}<span class="material-icons-outlined text-sm">arrow_downward</span>{% endif %}
+                            </a>
+                        </th>
+                        <th class="text-center">
+                            <a href="?sort={% if sort == 'total_attendance' %}-total_attendance{% else %}total_attendance{% endif %}" class="flex items-center justify-center gap-1 hover:text-blue-600">
+                                Present
+                                {% if sort == 'total_attendance' %}<span class="material-icons-outlined text-sm">arrow_upward</span>{% elif sort == '-total_attendance' %}<span class="material-icons-outlined text-sm">arrow_downward</span>{% endif %}
+                            </a>
+                        </th>
+                        <th class="text-center">Children</th>
                         <th class="text-center">Visitors</th>
                         <th class="text-right">Actions</th>
                     </tr>
@@ -83,7 +100,10 @@
                             <span class="font-semibold text-gray-900">{{ session.total_attendance }}</span>
                         </td>
                         <td class="text-center">
-                            <span class="text-gray-500">{{ session.visitors_count }}</span>
+                            <span class="text-purple-600 font-medium">{{ session.children_count }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="text-gray-500">{{ session.visitor_records.count }}</span>
                         </td>
                         <td class="text-right">
                             <a href="{% url 'attendance:session_detail' session.id %}" class="btn btn-sm btn-secondary">
@@ -93,7 +113,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-12">
+                        <td colspan="7" class="text-center py-12">
                             <span class="material-icons-outlined text-5xl text-gray-300">fact_check</span>
                             <p class="mt-2 text-gray-500">No attendance sessions recorded</p>
                             <a href="{% url 'attendance:take' %}" class="mt-4 btn btn-primary">Take First Attendance</a>
@@ -112,10 +132,10 @@
                 </p>
                 <nav class="flex items-center gap-1">
                     {% if sessions.has_previous %}
-                    <a href="?page={{ sessions.previous_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Previous</a>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ sessions.previous_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Previous</a>
                     {% endif %}
                     {% if sessions.has_next %}
-                    <a href="?page={{ sessions.next_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Next</a>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ sessions.next_page_number }}" class="px-3 py-1 rounded-lg border hover:bg-gray-50">Next</a>
                     {% endif %}
                 </nav>
             </div>

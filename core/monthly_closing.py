@@ -22,7 +22,8 @@ class MonthlyClosingService:
         self.branch = branch
         self.month = month
         self.year = year
-        self.fiscal_year = FiscalYear.get_current()
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer assigned
+        # Monthly closing now uses date filtering only
         
     def can_close_month(self):
         """Check if month can be closed."""
@@ -63,7 +64,14 @@ class MonthlyClosingService:
             branch=self.branch,
             date__gte=start_date,
             date__lte=end_date,
-            fiscal_year=self.fiscal_year,
+            status='verified'
+        )
+        
+        # Get verified remittances - DEPRECATED: Use month/year filtering instead of date
+        verified_remittances = Remittance.objects.filter(
+            branch=self.branch,
+            month=self.month,
+            year=self.year,
             status='verified'
         )
         
@@ -88,23 +96,34 @@ class MonthlyClosingService:
         )['total'] or Decimal('0')
         
         # Calculate expenditures
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         expenditures = Expenditure.objects.filter(
             branch=self.branch,
             date__gte=start_date,
             date__lte=end_date,
-            fiscal_year=self.fiscal_year,
             status__in=['approved', 'paid']
         )
         
         total_expenditure = expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0')
         
         # Get or create monthly close record
+        # DEPRECATED: Year-as-state architecture - Create/get fiscal year for compatibility
+        fiscal_year, _ = FiscalYear.objects.get_or_create(
+            year=self.year,
+            defaults={
+                'start_date': date(self.year, 1, 1),
+                'end_date': date(self.year, 12, 31),
+                'is_current': False,  # DEPRECATED: Not used
+                'is_closed': False
+            }
+        )
+        
         monthly_close, created = MonthlyClose.objects.get_or_create(
             branch=self.branch,
             month=self.month,
             year=self.year,
             defaults={
-                'fiscal_year': self.fiscal_year,
+                'fiscal_year': fiscal_year,  # DEPRECATED: For compatibility only
                 'total_tithe': total_tithe,
                 'total_contributions': total_contributions,
                 'total_expenditure': total_expenditure,
@@ -129,13 +148,14 @@ class MonthlyClosingService:
             monthly_close.save()
         
         # Create or update remittance record for mission allocation
+        # DEPRECATED: Year-as-state architecture - Use fiscal year for compatibility
         if mission_allocation > 0:
             remittance, _ = Remittance.objects.get_or_create(
                 branch=self.branch,
                 month=self.month,
                 year=self.year,
                 defaults={
-                    'fiscal_year': self.fiscal_year,
+                    'fiscal_year': fiscal_year,  # DEPRECATED: For compatibility only
                     'amount_due': mission_allocation,
                     'amount_sent': Decimal('0'),
                     'status': 'pending'
@@ -145,6 +165,16 @@ class MonthlyClosingService:
             if remittance.amount_due != mission_allocation:
                 remittance.amount_due = mission_allocation
                 remittance.save()
+        
+        # Lock ledger entries for this month
+        try:
+            from core.ledger_service import LedgerService
+            LedgerService.lock_entries_for_month(self.month, self.year, self.branch)
+        except Exception as e:
+            # Log but don't fail the close
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to lock ledger entries: {e}")
         
         return monthly_close
     
@@ -232,11 +262,11 @@ class MonthlyClosingService:
             end_date = date(self.year, self.month + 1, 1) - timedelta(days=1)
         
         # Get contributions
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         contributions = Contribution.objects.filter(
             branch=self.branch,
             date__gte=start_date,
-            date__lte=end_date,
-            fiscal_year=self.fiscal_year
+            date__lte=end_date
         )
         
         # Group by contribution type
@@ -256,11 +286,11 @@ class MonthlyClosingService:
             contributions_by_type[type_name]['count'] += 1
         
         # Get expenditures
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         expenditures = Expenditure.objects.filter(
             branch=self.branch,
             date__gte=start_date,
-            date__lte=end_date,
-            fiscal_year=self.fiscal_year
+            date__lte=end_date
         )
         
         # Group by category

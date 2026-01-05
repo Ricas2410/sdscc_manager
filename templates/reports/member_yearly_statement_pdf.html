@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Contribution Statement - {{ member.user.get_full_name }} {{ year }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #2563eb;
+            font-size: 18pt;
+            margin: 0 0 5px 0;
+        }
+        .header h2 {
+            color: #333;
+            font-size: 14pt;
+            margin: 0 0 5px 0;
+            font-weight: normal;
+        }
+        .header p {
+            color: #666;
+            font-size: 10pt;
+            margin: 0;
+        }
+        .member-info {
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .member-info h3 {
+            margin: 0 0 10px 0;
+            color: #1e40af;
+            font-size: 14pt;
+        }
+        .member-info-grid {
+            display: table;
+            width: 100%;
+        }
+        .member-info-item {
+            display: table-cell;
+            width: 50%;
+            padding: 5px 0;
+        }
+        .member-info-item .label {
+            font-size: 9pt;
+            color: #666;
+        }
+        .member-info-item .value {
+            font-weight: bold;
+        }
+        .total-box {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .total-box .label {
+            font-size: 11pt;
+            margin-bottom: 5px;
+        }
+        .total-box .amount {
+            font-size: 24pt;
+            font-weight: bold;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            background-color: #2563eb;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .total-row {
+            background-color: #dbeafe;
+            font-weight: bold;
+        }
+        .declaration {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .declaration h3 {
+            margin: 0 0 15px 0;
+            font-size: 12pt;
+            color: #333;
+        }
+        .declaration p {
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        .signature-area {
+            margin-top: 30px;
+            display: table;
+            width: 100%;
+        }
+        .signature-box {
+            display: table-cell;
+            width: 50%;
+            padding: 10px;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 40px;
+            padding-top: 5px;
+            font-size: 9pt;
+            color: #666;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 9pt;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ site_settings.site_name }}</h1>
+        <h2>Yearly Contribution Statement</h2>
+        <p>For the Year Ended December 31, {{ year }}</p>
+    </div>
+
+    <div class="member-info">
+        <h3>Member Information</h3>
+        <div class="member-info-grid">
+            <div class="member-info-item">
+                <div class="label">Full Name</div>
+                <div class="value">{{ member.user.get_full_name }}</div>
+            </div>
+            <div class="member-info-item">
+                <div class="label">Member ID</div>
+                <div class="value">{{ member.user.member_id|default:"N/A" }}</div>
+            </div>
+        </div>
+        <div class="member-info-grid">
+            <div class="member-info-item">
+                <div class="label">Branch</div>
+                <div class="value">{{ member.user.branch.name|default:"N/A" }}</div>
+            </div>
+            <div class="member-info-item">
+                <div class="label">District</div>
+                <div class="value">{{ member.user.branch.district.name|default:"N/A" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="total-box">
+        <div class="label">Total Contributions for {{ year }}</div>
+        <div class="amount">{{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Contribution Breakdown by Type</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Contribution Type</th>
+                    <th class="text-right">Count</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in contributions_by_type %}
+                <tr>
+                    <td>{{ item.contribution_type__name }}</td>
+                    <td class="text-right">{{ item.count }}</td>
+                    <td class="text-right">{{ site_settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center" style="color: #666;">No contributions recorded for {{ year }}</td>
+                </tr>
+                {% endfor %}
+                {% if contributions_by_type %}
+                <tr class="total-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"><strong>{{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</strong></td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Monthly Summary</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in monthly_totals %}
+                <tr>
+                    <td>{{ item.month_name }}</td>
+                    <td class="text-right">{{ site_settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td><strong>Total</strong></td>
+                    <td class="text-right"><strong>{{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="declaration">
+        <h3>Official Declaration</h3>
+        <p>
+            This is to certify that <strong>{{ member.user.get_full_name }}</strong> 
+            (Member ID: <strong>{{ member.user.member_id|default:"N/A" }}</strong>) 
+            has contributed a total of <strong>{{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</strong> 
+            to <strong>{{ site_settings.site_name }}</strong> during the year <strong>{{ year }}</strong>.
+        </p>
+        <p>
+            This statement is generated from official church records and is provided for the member's personal records.
+        </p>
+        <div class="signature-area">
+            <div class="signature-box">
+                <div class="signature-line">Church Administrator</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">Date: {{ generated_date|date:"F d, Y" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>This is a computer-generated statement from {{ site_settings.site_name }}.</p>
+        <p>All figures are in {{ site_settings.currency_code }}.</p>
+    </div>
+</body>
+</html>

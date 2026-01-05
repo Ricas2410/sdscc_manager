@@ -16,14 +16,16 @@
             </p>
             {% endif %}
         </div>
-        <div class="mt-4 flex md:ml-4 md:mt-0 gap-2">
-            <a href="{% url 'contributions:add' %}" class="btn-primary">
-                <span class="material-icons-outlined mr-1 text-lg">add</span>
-                Record Contribution
+        <div class="mt-4 flex flex-col sm:flex-row md:ml-4 md:mt-0 gap-2">
+            <a href="{% url 'contributions:add' %}" class="btn btn-primary inline-flex items-center justify-center">
+                <span class="material-icons-outlined mr-2">add</span>
+                <span class="hidden sm:inline">Record Contribution</span>
+                <span class="sm:hidden">Add</span>
             </a>
-            <a href="{% url 'core:monthly_closing' %}" class="btn-secondary">
-                <span class="material-icons-outlined mr-1 text-lg">lock_clock</span>
-                Close Month
+            <a href="{% url 'core:monthly_closing' %}" class="btn btn-secondary inline-flex items-center justify-center">
+                <span class="material-icons-outlined mr-2">lock_clock</span>
+                <span class="hidden sm:inline">Close Month</span>
+                <span class="sm:hidden">Close</span>
             </a>
         </div>
     </div>
@@ -107,7 +109,10 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Last Sabbath</dt>
-                            <dd class="text-2xl font-semibold text-gray-900">{{ last_attendance|default:"0" }}</dd>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ last_attendance.total_attendance|default:"0" }}</dd>
+                            <dd class="text-xs text-gray-500 mt-1">
+                                Present: {{ last_attendance.total_attendance|default:"0" }} | Absent: {{ absentees_count|default:"0" }}
+                            </dd>
                         </dl>
                     </div>
                 </div>

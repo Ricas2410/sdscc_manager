@@ -52,10 +52,10 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for remittance in remittances %}
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.payment_date|date:"M d, Y"|default:"Not paid" }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ remittance.branch.name }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ remittance.period_month }}/{{ remittance.period_year }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">{{ remittance.amount|currency }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ remittance.month }}/{{ remittance.year }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">{{ remittance.amount_sent|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
                                 {% if remittance.status == 'approved' %}bg-green-100 text-green-800
@@ -72,7 +72,7 @@
                                 <button type="submit" name="approve" class="text-green-600 hover:text-green-900 mr-2">Approve</button>
                             </form>
                             {% endif %}
-                            <a href="#" class="text-primary-600 hover:text-primary-900">View</a>
+                            <a href="{% url 'contributions:remittance_detail' remittance.id %}" class="text-primary-600 hover:text-primary-900">View</a>
                         </td>
                     </tr>
                     {% empty %}
@@ -85,6 +85,21 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+    
+    <!-- Quick Links -->
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-blue-800 mb-3">Quick Links</h3>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'contributions:hierarchy_remittances' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="material-icons-outlined text-lg mr-2">payments</span>
+                Hierarchy Remittances
+            </a>
+            <a href="{% url 'contributions:opening_balances' %}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                <span class="material-icons-outlined text-lg mr-2">account_balance_wallet</span>
+                Opening Balances
+            </a>
         </div>
     </div>
 </div>
@@ -139,11 +154,7 @@
                 
                 <div class="form-group">
                     <label class="form-label required">Amount ({{ site_settings.currency_symbol }})</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm">{{ site_settings.currency_symbol }}</span>
-                        <input type="number" name="amount" step="0.01" min="0.01" required
-                               class="form-input pl-16" placeholder="0.00" id="remittanceAmount">
-                    </div>
+                    <input type="number" name="amount" step="0.01" min="0.01" required class="form-input" placeholder="0.00" id="remittanceAmount">
                 </div>
                 
                 <div class="form-group">

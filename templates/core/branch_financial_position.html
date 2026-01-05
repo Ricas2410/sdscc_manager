@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ branch.name }} - Financial Position{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="text-sm text-gray-500 mb-2">
+                <a href="{% url 'core:ledger_dashboard' %}" class="hover:text-blue-600">Ledger Dashboard</a>
+                <span class="mx-2">/</span>
+                <span>{{ branch.name }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">{{ branch.name }} Financial Position</h1>
+            <p class="text-gray-600">{{ branch.district.area.name }} / {{ branch.district.name }}</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'core:branch_contributions_readonly' branch.id %}" class="btn-secondary">
+                <span class="material-icons-outlined text-lg mr-1">payments</span>
+                View Contributions
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Year</label>
+                <select name="year" class="form-select rounded-lg border-gray-300 text-sm">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Month</label>
+                <select name="month" class="form-select rounded-lg border-gray-300 text-sm">
+                    {% for m, name in months %}
+                    <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="pt-5">
+                <button type="submit" class="btn-primary">Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Financial Position Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Cash Held -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Cash Held</p>
+                    <p class="text-xs text-gray-400 mt-1">Money in branch coffer</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-blue-600">account_balance_wallet</span>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-blue-600 mt-4">GH₵{{ cash_balance|floatformat:2|intcomma }}</p>
+        </div>
+
+        <!-- Owed to Mission -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Owed to Mission</p>
+                    <p class="text-xs text-gray-400 mt-1">Pending remittance</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-amber-600">pending</span>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-amber-600 mt-4">GH₵{{ payables_balance|floatformat:2|intcomma }}</p>
+        </div>
+
+        <!-- Spendable -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Spendable Amount</p>
+                    <p class="text-xs text-gray-400 mt-1">Available for branch use</p>
+                </div>
+                <div class="h-12 w-12 rounded-full {% if spendable >= 0 %}bg-green-100{% else %}bg-red-100{% endif %} flex items-center justify-center">
+                    <span class="material-icons-outlined {% if spendable >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        {% if spendable >= 0 %}check_circle{% else %}warning{% endif %}
+                    </span>
+                </div>
+            </div>
+            <p class="text-3xl font-bold {% if spendable >= 0 %}text-green-600{% else %}text-red-600{% endif %} mt-4">
+                GH₵{{ spendable|floatformat:2|intcomma }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ month_name }} {{ selected_year }} Activity</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <p class="text-sm text-gray-600">Cash In</p>
+                <p class="text-xl font-bold text-green-600">GH₵{{ monthly_summary.cash_in|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded-lg">
+                <p class="text-sm text-gray-600">Cash Out</p>
+                <p class="text-xl font-bold text-red-600">GH₵{{ monthly_summary.cash_out|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-gray-600">Net Cash Flow</p>
+                <p class="text-xl font-bold text-blue-600">GH₵{{ monthly_summary.net_cash|floatformat:2|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cash Entries -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Cash Transactions</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for entry in cash_entries %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ entry.entry_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ entry.description }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ entry.get_source_type_display }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            {% if entry.amount >= 0 %}
+                            <span class="text-green-600 font-medium">+GH₵{{ entry.amount|floatformat:2|intcomma }}</span>
+                            {% else %}
+                            <span class="text-red-600 font-medium">GH₵{{ entry.amount|floatformat:2|intcomma }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            No cash transactions for this period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payable Entries -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Payable Transactions (Owed to Mission)</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for entry in payable_entries %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ entry.entry_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ entry.description }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ entry.get_source_type_display }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            {% if entry.amount >= 0 %}
+                            <span class="text-amber-600 font-medium">+GH₵{{ entry.amount|floatformat:2|intcomma }}</span>
+                            {% else %}
+                            <span class="text-green-600 font-medium">GH₵{{ entry.amount|floatformat:2|intcomma }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                            No payable transactions for this period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

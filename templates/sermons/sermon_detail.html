@@ -2,64 +2,294 @@
 {% block title %}{{ sermon.title }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
-    <div class="flex items-center">
-        <a href="{% url 'sermons:list' %}" class="mr-4 text-gray-400 hover:text-gray-600">
-            <span class="material-icons-outlined">arrow_back</span>
-        </a>
-        <h1 class="text-2xl font-bold text-gray-900">Sermon</h1>
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-4">
+            <a href="{% url 'sermons:list' %}" class="btn btn-secondary btn-sm">
+                <span class="material-icons-outlined mr-2">arrow_back</span>Back to Sermons
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Sermon Details</h1>
+                <p class="text-sm text-gray-500">{{ sermon.sermon_date|date:"F d, Y" }}</p>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2">
+            {% if user.is_any_admin or user == sermon.preacher or user.is_branch_executive and sermon.branch == user.branch %}
+            <a href="{% url 'sermons:edit' sermon.id %}" class="btn btn-secondary btn-sm">
+                <span class="material-icons-outlined mr-2">edit</span>Edit
+            </a>
+            {% endif %}
+            
+            <!-- Download/Share Actions -->
+            <div class="flex items-center space-x-2">
+                {% if sermon.audio_file %}
+                <a href="{{ sermon.audio_file.url }}" download class="btn btn-secondary btn-sm" title="Download Audio">
+                    <span class="material-icons-outlined">download</span>
+                </a>
+                {% endif %}
+                {% if sermon.pdf_file %}
+                <a href="{{ sermon.pdf_file.url }}" download class="btn btn-secondary btn-sm" title="Download PDF">
+                    <span class="material-icons-outlined">picture_as_pdf</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <article class="bg-white shadow rounded-lg overflow-hidden">
-        {% if sermon.video_url %}
-        <div class="aspect-video bg-black">
-            <iframe src="{{ sermon.video_url }}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+    <!-- Main Sermon Card -->
+    <div class="card card-overflow-hidden">
+        <!-- Media Section -->
+        {% if sermon.video_url or sermon.thumbnail %}
+        <div class="relative">
+            {% if sermon.video_url %}
+            <div class="aspect-video bg-black">
+                <iframe src="{{ sermon.video_url }}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+            </div>
+            {% elif sermon.thumbnail %}
+            <img src="{{ sermon.thumbnail.url }}" class="w-full h-64 sm:h-96 object-cover" alt="{{ sermon.title }}">
+            {% endif %}
+            
+            <!-- Overlay badges for video/audio -->
+            <div class="absolute top-4 right-4 flex flex-col space-y-2">
+                {% if sermon.video_url %}
+                <span class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">play_circle</span>Video
+                </span>
+                {% endif %}
+                {% if sermon.audio_file %}
+                <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">headphones</span>Audio
+                </span>
+                {% endif %}
+                {% if sermon.is_featured %}
+                <span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                    <span class="material-icons-outlined text-sm mr-1">star</span>Featured
+                </span>
+                {% endif %}
+            </div>
         </div>
-        {% elif sermon.thumbnail %}
-        <img src="{{ sermon.thumbnail.url }}" class="w-full h-64 object-cover">
         {% endif %}
 
-        <div class="p-6">
-            <div class="flex items-center space-x-2 mb-4">
-                {% if sermon.category %}
-                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800">{{ sermon.category.name }}</span>
-                {% endif %}
-                {% if sermon.scripture %}
-                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">{{ sermon.scripture }}</span>
-                {% endif %}
-            </div>
-            
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ sermon.title }}</h1>
-            
-            <div class="flex items-center text-sm text-gray-500 mb-6">
-                <span class="material-icons-outlined text-base mr-1">person</span>
-                {{ sermon.preacher }}
-                <span class="mx-2">•</span>
-                <span class="material-icons-outlined text-base mr-1">calendar_today</span>
-                {{ sermon.sermon_date|date:"F d, Y" }}
+        <div class="card-body">
+            <!-- Title and Meta Information -->
+            <div class="mb-6">
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                    {% if sermon.category %}
+                    <span class="status-pill bg-primary-100 text-primary-800">
+                        <span class="material-icons-outlined text-sm">bookmark</span>
+                        {{ sermon.category.name }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if sermon.scripture_reference %}
+                    <span class="status-pill bg-purple-100 text-purple-800">
+                        <span class="material-icons-outlined text-sm">menu_book</span>
+                        {{ sermon.scripture_reference }}
+                    </span>
+                    {% endif %}
+                    
+                    <span class="status-pill bg-gray-100 text-gray-800">
+                        <span class="material-icons-outlined text-sm">visibility</span>
+                        {{ sermon.view_count }} views
+                    </span>
+                    
+                    {% if sermon.duration_minutes %}
+                    <span class="status-pill bg-green-100 text-green-800">
+                        <span class="material-icons-outlined text-sm">schedule</span>
+                        {{ sermon.duration_minutes }} min
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ sermon.title }}</h1>
+                
+                <!-- Preacher and Location Info -->
+                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-base mr-2 text-gray-400">person</span>
+                        <span class="font-medium">{{ sermon.preacher_name|default:sermon.preacher.get_full_name|default:"Guest Preacher" }}</span>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-base mr-2 text-gray-400">calendar_today</span>
+                        <span>{{ sermon.sermon_date|date:"F d, Y" }}</span>
+                    </div>
+                    
+                    {% if sermon.branch %}
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-base mr-2 text-gray-400">location_on</span>
+                        <span>{{ sermon.branch.name }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-base mr-2 text-gray-400">public</span>
+                        <span class="capitalize">{{ sermon.get_scope_display }}</span>
+                    </div>
+                </div>
             </div>
 
+            <!-- Audio Player -->
             {% if sermon.audio_file %}
-            <div class="mb-6 bg-gray-100 rounded-lg p-4">
-                <p class="text-sm font-medium text-gray-700 mb-2">Audio</p>
-                <audio controls class="w-full">
+            <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <span class="material-icons-outlined text-blue-600 mr-2">headphones</span>
+                        Audio Recording
+                    </h3>
+                    <a href="{{ sermon.audio_file.url }}" download class="btn btn-secondary btn-sm">
+                        <span class="material-icons-outlined mr-1">download</span>Download
+                    </a>
+                </div>
+                <audio controls class="w-full h-12 bg-white rounded-lg">
                     <source src="{{ sermon.audio_file.url }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
                 </audio>
+                {% if sermon.duration_minutes %}
+                <p class="text-sm text-gray-600 mt-2">Duration: {{ sermon.duration_minutes }} minutes</p>
+                {% endif %}
             </div>
             {% endif %}
 
+            <!-- PDF Download -->
+            {% if sermon.pdf_file %}
+            <div class="mb-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="material-icons-outlined text-red-600 text-2xl mr-3">picture_as_pdf</span>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Sermon Notes</h3>
+                            <p class="text-sm text-gray-600">Download the full sermon notes in PDF format</p>
+                        </div>
+                    </div>
+                    <a href="{{ sermon.pdf_file.url }}" download class="btn btn-secondary">
+                        <span class="material-icons-outlined mr-2">download</span>Download PDF
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Summary Section -->
             {% if sermon.summary %}
-            <div class="mb-6 p-4 bg-primary-50 border-l-4 border-primary-500 rounded-r-lg">
-                <p class="text-gray-700">{{ sermon.summary }}</p>
+            <div class="mb-6 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-6 border-l-4 border-amber-500">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                    <span class="material-icons-outlined text-amber-600 mr-2">summarize</span>
+                    Summary
+                </h3>
+                <p class="text-gray-700 leading-relaxed">{{ sermon.summary }}</p>
             </div>
             {% endif %}
-            
+
+            <!-- Full Content -->
             {% if sermon.content %}
-            <div class="prose max-w-none text-gray-700">
-                {{ sermon.content|linebreaks }}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <span class="material-icons-outlined text-primary-600 mr-2">description</span>
+                    Full Sermon Content
+                </h3>
+                <div class="prose prose-lg max-w-none bg-gray-50 rounded-xl p-6 border border-gray-200">
+                    {{ sermon.content|linebreaks }}
+                </div>
             </div>
             {% endif %}
+
+            <!-- Tags Section -->
+            {% if sermon.tags %}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                    <span class="material-icons-outlined text-primary-600 mr-2">local_offer</span>
+                    Tags
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for tag in sermon.tags|split:"," %}
+                    <span class="status-pill bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                        #{{ tag|title }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Statistics and Metadata -->
+            <div class="border-t pt-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl font-bold text-primary-600">{{ sermon.view_count }}</div>
+                        <div class="text-sm text-gray-600">Views</div>
+                    </div>
+                    {% if sermon.download_count > 0 %}
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600">{{ sermon.download_count }}</div>
+                        <div class="text-sm text-gray-600">Downloads</div>
+                    </div>
+                    {% endif %}
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600">{{ sermon.get_media_type_display }}</div>
+                        <div class="text-sm text-gray-600">Media Type</div>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600">{{ sermon.created_at|date:"M d, Y" }}</div>
+                        <div class="text-sm text-gray-600">Added</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </article>
+    </div>
+
+    <!-- Related Information -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Preacher Information Card -->
+        {% if sermon.preacher %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900 flex items-center">
+                    <span class="material-icons-outlined text-primary-600 mr-2">person</span>
+                    About the Preacher
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
+                        <span class="material-icons-outlined text-primary-600 text-2xl">person</span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-900">{{ sermon.preacher.get_full_name }}</h4>
+                        <p class="text-sm text-gray-600">{{ sermon.preacher.get_role_display|default:"Member" }}</p>
+                        {% if sermon.preacher.branch %}
+                        <p class="text-sm text-gray-500">{{ sermon.preacher.branch.name }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Branch Information Card -->
+        {% if sermon.branch %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-gray-900 flex items-center">
+                    <span class="material-icons-outlined text-primary-600 mr-2">location_on</span>
+                    Service Location
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-2">
+                    <h4 class="font-semibold text-gray-900">{{ sermon.branch.name }}</h4>
+                    {% if sermon.branch.address %}
+                    <p class="text-sm text-gray-600">{{ sermon.branch.address }}</p>
+                    {% endif %}
+                    <div class="flex items-center text-sm text-gray-500">
+                        <span class="material-icons-outlined text-base mr-1">groups</span>
+                        {{ sermon.branch.district.name }} District
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

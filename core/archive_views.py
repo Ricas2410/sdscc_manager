@@ -1,11 +1,13 @@
 """
-Archive Views - Year-based data archiving and retrieval for SDSCC
+Archive Views - Date-based historical summaries for SDSCC
+REINTERPRETED: Archive views now provide date-based summaries, not year-as-state management.
+Historical data is accessed via date filtering from core tables - no data movement or state changes.
 """
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
-from django.db.models import Sum, Count, Avg, Q, F, Max
+from django.db.models import Sum, Count, Avg, Q, F, Max, Min
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
@@ -21,126 +23,263 @@ from members.models import Member
 from attendance.models import AttendanceRecord, AttendanceSession
 
 @login_required
-@permission_required('core.view_archives')
 def archive_dashboard(request):
-    """Main archive dashboard showing all fiscal years"""
-    active_year = FiscalYear.get_current()
-    archived_years = FiscalYear.objects.filter(is_closed=True).order_by('-year')
+    """
+    Archive dashboard showing available years as date-based historical summaries.
+    REINTERPRETED: Years are derived from actual data dates, not fiscal year state.
+    Archive views are date-based summaries, not stateful archives.
     
-    # Get quick stats for active year if available
-    active_stats = {}
-    if active_year:
-        active_stats = get_active_year_stats(active_year)
+    ACCESS: Mission admins see all data, branch executives see their branch only,
+    members see their personal data only.
+    """
+    # Check access permissions
+    if not (request.user.is_mission_admin or request.user.is_branch_executive or 
+            request.user.is_district_executive or request.user.is_area_executive or
+            request.user.is_auditor or request.user.is_pastor or request.user.is_regular_member):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    # Get available years from actual data (date-based, not fiscal year based)
+    contribution_years = Contribution.objects.dates('date', 'year')
+    expenditure_years = Expenditure.objects.dates('date', 'year')
+    
+    # Combine and get unique years
+    all_years = set()
+    for year in contribution_years:
+        all_years.add(year.year)
+    for year in expenditure_years:
+        all_years.add(year.year)
+    
+    # Sort years descending
+    available_years = sorted(all_years, reverse=True)
+    
+    # Generate summary stats for each year
+    year_summaries = []
+    for year in available_years:
+        start_date = date(year, 1, 1)
+        end_date = date(year, 12, 31)
+        
+        # Apply role-based filtering
+        contrib_filter = {'date__gte': start_date, 'date__lte': end_date}
+        expend_filter = {'date__gte': start_date, 'date__lte': end_date}
+        
+        if request.user.is_branch_executive and request.user.branch:
+            contrib_filter['branch'] = request.user.branch
+            expend_filter['branch'] = request.user.branch
+        elif request.user.is_regular_member:
+            # Members see only their personal contributions
+            contrib_filter['member'] = request.user
+            # Members don't see expenditures
+        elif request.user.is_pastor and request.user.branch:
+            # Pastors see their branch data
+            contrib_filter['branch'] = request.user.branch
+            expend_filter['branch'] = request.user.branch
+        
+        # Calculate year summary using date filtering
+        contributions_total = Contribution.objects.filter(**contrib_filter).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        # Only show expenditures to users who can see them
+        if not request.user.is_regular_member:
+            expenditures_total = Expenditure.objects.filter(**expend_filter).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        else:
+            expenditures_total = Decimal('0.00')
+        
+        contributions_count = Contribution.objects.filter(**contrib_filter).count()
+        
+        expenditures_count = Expenditure.objects.filter(**expend_filter).count() if not request.user.is_regular_member else 0
+        
+        # Check if archive tables have cached data (optional, not authoritative)
+        has_archive_data = FinancialArchive.objects.filter(fiscal_year__year=year).exists()
+        
+        year_summaries.append({
+            'year': year,
+            'start_date': start_date,
+            'end_date': end_date,
+            'contributions_total': contributions_total,
+            'expenditures_total': expenditures_total,
+            'net_balance': contributions_total - expenditures_total,
+            'contributions_count': contributions_count,
+            'expenditures_count': expenditures_count,
+            'has_archive_data': has_archive_data,
+        })
     
     context = {
-        'active_year': active_year,
-        'archived_years': archived_years,
-        'active_stats': active_stats,
-        'page_title': 'Archive Dashboard'
+        'year_summaries': year_summaries,
+        'page_title': 'Historical Archives - Date-Based Summaries',
+        'total_years': len(available_years),
+        'current_year': timezone.now().year,
     }
+    
     return render(request, 'core/archive_dashboard.html', context)
 
 @login_required
-@permission_required('core.view_archives')
 def year_detail(request, year_id):
-    """Detailed view of a specific fiscal year"""
-    fiscal_year = get_object_or_404(FiscalYear, id=year_id)
+    """
+    Year detail view showing comprehensive date-based summary for a specific year.
+    REINTERPRETED: Uses date filtering (Jan 1 - Dec 31) instead of fiscal year state.
     
-    # Get archived data for this year
-    financial_archive = FinancialArchive.objects.filter(fiscal_year=fiscal_year).first()
-    member_archive = MemberArchive.objects.filter(fiscal_year=fiscal_year).first()
-    branch_archives = BranchArchive.objects.filter(fiscal_year=fiscal_year).select_related('branch')
+    ACCESS: Mission admins see all data, branch executives see their branch only,
+    members see their personal data only.
+    """
+    # Check access permissions
+    if not (request.user.is_mission_admin or request.user.is_branch_executive or 
+            request.user.is_district_executive or request.user.is_area_executive or
+            request.user.is_auditor or request.user.is_pastor or request.user.is_regular_member):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
     
-    # Group branches by area/district
-    branches_by_area = {}
-    for archive in branch_archives:
-        area_name = archive.branch.area.name if archive.branch.area else 'Unassigned'
-        if area_name not in branches_by_area:
-            branches_by_area[area_name] = []
-        branches_by_area[area_name].append(archive)
+    year = int(year_id)
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+    
+    # Apply role-based filtering
+    contrib_filter = {'date__gte': start_date, 'date__lte': end_date}
+    expend_filter = {'date__gte': start_date, 'date__lte': end_date}
+    
+    if request.user.is_branch_executive and request.user.branch:
+        contrib_filter['branch'] = request.user.branch
+        expend_filter['branch'] = request.user.branch
+    elif request.user.is_regular_member:
+        # Members see only their personal contributions
+        contrib_filter['member'] = request.user
+        # Members don't see expenditures
+    elif request.user.is_pastor and request.user.branch:
+        # Pastors see their branch data
+        contrib_filter['branch'] = request.user.branch
+        expend_filter['branch'] = request.user.branch
+    
+    # Verify year has data
+    has_data = Contribution.objects.filter(**contrib_filter).exists() or \
+               (not request.user.is_regular_member and Expenditure.objects.filter(**expend_filter).exists())
+    
+    if not has_data:
+        messages.warning(request, f'No data found for year {year}.')
+        return redirect('core:archive_dashboard')
+    
+    # Calculate comprehensive year statistics using date filtering
+    # Contributions
+    contributions = Contribution.objects.filter(**contrib_filter)
+    contributions_total = contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    contributions_count = contributions.count()
+    
+    # Contribution breakdown by type
+    contribution_types = contributions.values('contribution_type__name').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    # Expenditures (only for non-members)
+    if not request.user.is_regular_member:
+        expenditures = Expenditure.objects.filter(**expend_filter)
+        expenditures_total = expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        expenditures_count = expenditures.count()
+        
+        # Expenditure breakdown by category
+        expenditure_categories = expenditures.values('category__name').annotate(
+            total=Sum('amount'),
+            count=Count('id')
+        ).order_by('-total')
+    else:
+        expenditures = Expenditure.objects.none()
+        expenditures_total = Decimal('0.00')
+        expenditures_count = 0
+        expenditure_categories = []
+    
+    # Branch-level summaries (filtered by user role)
+    branch_summaries = []
+    if request.user.is_branch_executive and request.user.branch:
+        branches = Branch.objects.filter(id=request.user.branch.id)
+    elif request.user.is_pastor and request.user.branch:
+        branches = Branch.objects.filter(id=request.user.branch.id)
+    elif request.user.is_regular_member:
+        # Members don't see branch summaries
+        branches = Branch.objects.none()
+    else:
+        branches = Branch.objects.filter(is_active=True)
+    
+    for branch in branches:
+        branch_contributions = contributions.filter(branch=branch)
+        branch_expenditures = expenditures.filter(branch=branch)
+        
+        if branch_contributions.exists() or branch_expenditures.exists():
+            branch_contrib_total = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            branch_expend_total = branch_expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            
+            branch_summaries.append({
+                'branch': branch,
+                'contributions_total': branch_contrib_total,
+                'expenditures_total': branch_expend_total,
+                'net_balance': branch_contrib_total - branch_expend_total,
+                'contributions_count': branch_contributions.count(),
+                'expenditures_count': branch_expenditures.count(),
+            })
+    
+    # Member statistics
+    active_members = Member.objects.filter(
+        Q(user__contributions__date__gte=start_date, user__contributions__date__lte=end_date) |
+        Q(user__attendance_records__session__date__gte=start_date, user__attendance_records__session__date__lte=end_date)
+    ).distinct().count()
+    
+    # Attendance statistics
+    attendance_sessions = AttendanceSession.objects.filter(date__gte=start_date, date__lte=end_date)
+    attendance_records = AttendanceRecord.objects.filter(session__date__gte=start_date, session__date__lte=end_date)
+    total_attendance = attendance_records.filter(status='present').count()
+    
+    # Check for cached archive data (optional, not authoritative)
+    cached_archive = FinancialArchive.objects.filter(fiscal_year__year=year).first()
+    has_cached_data = cached_archive is not None
     
     context = {
-        'fiscal_year': fiscal_year,
-        'financial_archive': financial_archive,
-        'member_archive': member_archive,
-        'branch_archives': branch_archives,
-        'branches_by_area': branches_by_area,
-        'page_title': f'Archive - {fiscal_year.name}'
+        'year': year,
+        'start_date': start_date,
+        'end_date': end_date,
+        
+        # Summary data
+        'contributions_total': contributions_total,
+        'expenditures_total': expenditures_total,
+        'net_balance': contributions_total - expenditures_total,
+        'contributions_count': contributions_count,
+        'expenditures_count': expenditures_count,
+        
+        # Breakdowns
+        'contribution_types': contribution_types,
+        'expenditure_categories': expenditure_categories,
+        'branch_summaries': branch_summaries,
+        
+        # Statistics
+        'active_members': active_members,
+        'attendance_sessions_count': attendance_sessions.count(),
+        'total_attendance': total_attendance,
+        
+        # Archive info
+        'has_cached_data': has_cached_data,
+        'cached_archive': cached_archive,
+        
+        'page_title': f'Historical Summary - {year}',
     }
+    
     return render(request, 'core/year_detail.html', context)
 
 @login_required
 @permission_required('core.manage_archives')
 def create_fiscal_year(request):
-    """Create a new fiscal year"""
-    if request.method == 'POST':
-        year = int(request.POST.get('year'))
-        start_date = datetime.strptime(request.POST.get('start_date'), '%Y-%m-%d').date()
-        end_date = datetime.strptime(request.POST.get('end_date'), '%Y-%m-%d').date()
-        
-        # Archive previous year if exists
-        previous_year = FiscalYear.get_current()
-        if previous_year:
-            archive_fiscal_year(previous_year)
-            previous_year.is_current = False
-            previous_year.is_closed = True
-            previous_year.closed_at = timezone.now()
-            previous_year.save()
-        
-        # Create new fiscal year
-        new_year = FiscalYear.objects.create(
-            year=year,
-            start_date=start_date,
-            end_date=end_date,
-            is_current=True
-        )
-        
-        # Update site settings
-        site_settings = SiteSettings.objects.first()
-        if site_settings:
-            site_settings.current_fiscal_year = year
-            site_settings.save()
-        
-        messages.success(request, f'New fiscal year "{year}" created successfully!')
-        return redirect('core:archive_dashboard')
-    
-    # Get current year as default
-    current_year = datetime.now().year
-    default_start = date(current_year, 1, 1)
-    default_end = date(current_year, 12, 31)
-    
-    context = {
-        'current_year': current_year,
-        'default_start': default_start,
-        'default_end': default_end,
-        'page_title': 'Create Fiscal Year'
-    }
-    return render(request, 'core/create_fiscal_year.html', context)
+    """
+    Fiscal year creation is permanently disabled.
+    The system now uses continuous date-based reporting without year state management.
+    Archive views provide date-based summaries instead of stateful year management.
+    """
+    messages.info(request, 'Fiscal year creation is not needed. The system now uses continuous date-based reporting. Historical data is available through date-based archive views.')
+    return redirect('core:archive_dashboard')
 
 @login_required
 @permission_required('core.manage_archives')
 def archive_fiscal_year_view(request, year_id):
-    """Archive a specific fiscal year"""
-    fiscal_year = get_object_or_404(FiscalYear, id=year_id)
-    
-    if request.method == 'POST':
-        try:
-            archive_fiscal_year(fiscal_year)
-            fiscal_year.is_current = False
-            fiscal_year.is_closed = True
-            fiscal_year.closed_at = timezone.now()
-            fiscal_year.save()
-            
-            messages.success(request, f'Fiscal year "{fiscal_year}" has been archived successfully!')
-            return redirect('core:year_detail', year_id=fiscal_year.id)
-        except Exception as e:
-            messages.error(request, f'Error archiving fiscal year: {str(e)}')
-    
-    context = {
-        'fiscal_year': fiscal_year,
-        'page_title': f'Archive {fiscal_year}'
-    }
-    return render(request, 'core/archive_fiscal_year.html', context)
+    """
+    Fiscal year archiving is permanently disabled.
+    No data movement occurs - all historical data remains in core tables.
+    Archive views provide date-based summaries without state changes.
+    """
+    messages.info(request, 'Data archiving is not required. All historical data remains accessible through date-based archive views without data movement.')
+    return redirect('core:archive_dashboard')
 
 def archive_fiscal_year(fiscal_year):
     """Archive all data for a fiscal year"""

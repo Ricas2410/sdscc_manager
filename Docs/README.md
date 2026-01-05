@@ -59,13 +59,13 @@ This directory contains comprehensive guides and documentation for the SDSCC Chu
 ## Support Resources
 
 ### 📚 Documentation
-- **Online Version:** docs.sdscc.org
+- **Online Version:** docs.7dscc.org
 - **PDF Downloads:** Available for each guide
 - **Video Tutorials:** youtube.com/sdscc
-- **FAQ Section:** help.sdscc.org/faq
+- **FAQ Section:** help.7dscc.org/faq
 
 ### 🆘 Help & Support
-- **Email Support:** support@sdscc.org
+- **Email Support:** support@7dscc.org
 - **Phone Support:** +233-XXX-XXXX
 - **Live Chat:** Available on website
 - **Training Sessions:** Monthly schedule
@@ -74,7 +74,7 @@ This directory contains comprehensive guides and documentation for the SDSCC Chu
 - **Download:** App Store / Google Play
 - **Features:** Offline mode, push notifications
 - **Requirements:** iOS 12+, Android 8+
-- **Support:** mobile@sdscc.org
+- **Support:** mobile@7dscc.org
 
 ## Document Conventions
 
@@ -106,13 +106,13 @@ This directory contains comprehensive guides and documentation for the SDSCC Chu
 ## Contributing to Documentation
 
 ### Feedback
-- **Report Errors:** docs@sdscc.org
-- **Suggest Improvements:** feedback@sdscc.org
-- **Request Topics:** requests@sdscc.org
+- **Report Errors:** docs@7dscc.org
+- **Suggest Improvements:** feedback@7dscc.org
+- **Request Topics:** requests@7dscc.org
 
 ### Translation
 - **Available Languages:** English, Twi, Ewe
-- **Request Translation:** translate@sdscc.org
+- **Request Translation:** translate@7dscc.org
 - **Volunteer Translators:** Welcome to apply
 
 ## Best Practices
@@ -164,7 +164,7 @@ Seventh Day Sabbath Church of Christ, 2024
 
 ### Documentation Team
 - **Lead:** Doc Team Lead
-- **Email:** docs@sdscc.org
+- **Email:** docs@7dscc.org
 - **Phone:** +233-XXX-XXXX
 - **Office:** National Headquarters
 

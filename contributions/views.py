@@ -5,8 +5,8 @@ Contributions Views
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.paginator import Paginator
-from django.utils import timezone
+from django.http import HttpResponse, JsonResponse
+from django.db.models import Sum, Count, Q
 
 from .models import Contribution, ContributionType, Remittance, TitheCommission, MissionReturnsPeriod
 
@@ -18,6 +18,10 @@ def contribution_list(request):
     from django.db.models import Sum, Count
     from django.utils import timezone
     from datetime import date
+    
+    if not request.user.can_view_finances:
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
     
     base_qs = Contribution.objects.select_related('branch', 'branch__district', 'branch__district__area')
     
@@ -38,9 +42,28 @@ def contribution_list(request):
     district_id = request.GET.get('district')
     branch_id = request.GET.get('branch')
     
-    # Initialize filter options
-    districts = District.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True).select_related('district')
+    # Initialize filter options based on user hierarchy
+    user_scope = 'mission'  # Default for mission admin
+    if request.user.is_branch_executive and request.user.branch:
+        user_scope = 'branch'
+    elif request.user.is_district_executive and request.user.managed_district:
+        user_scope = 'district'
+    elif request.user.is_area_executive and request.user.managed_area:
+        user_scope = 'area'
+    
+    # Set filter options based on user scope
+    if user_scope == 'area':
+        districts = District.objects.filter(area=request.user.managed_area, is_active=True)
+        branches = Branch.objects.filter(district__area=request.user.managed_area, is_active=True)
+    elif user_scope == 'district':
+        districts = District.objects.filter(pk=request.user.managed_district.pk, is_active=True)
+        branches = Branch.objects.filter(district=request.user.managed_district, is_active=True)
+    elif user_scope == 'branch':
+        districts = District.objects.none()
+        branches = Branch.objects.filter(pk=request.user.branch.pk, is_active=True)
+    else:
+        districts = District.objects.filter(is_active=True)
+        branches = Branch.objects.filter(is_active=True).select_related('district')
     
     if from_date:
         contributions = contributions.filter(date__gte=from_date)
@@ -97,7 +120,7 @@ def contribution_list(request):
     context = {
         'branch_totals': branch_totals,
         'contribution_types': ContributionType.objects.filter(is_active=True),
-        'areas': Area.objects.filter(is_active=True),
+        'areas': Area.objects.filter(pk=request.user.managed_area.pk, is_active=True) if user_scope == 'area' else Area.objects.filter(is_active=True),
         'districts': districts,
         'branches': branches,
         'today_total': today_total,
@@ -113,24 +136,24 @@ def contribution_list(request):
 @login_required
 def my_contributions(request):
     """Member view - shows only their own contributions."""
-    from core.models import FiscalYear
     from django.db.models import Sum
+    from datetime import date
     
     user = request.user
-    fiscal_year = FiscalYear.get_current()
+    current_year = date.today().year
     
     # Get only the current user's contributions
     contributions = Contribution.objects.filter(
         member=user
     ).select_related('contribution_type', 'branch').order_by('-date')
     
-    # Calculate statistics
-    year_total = contributions.filter(fiscal_year=fiscal_year).aggregate(
+    # Calculate statistics for current year using date filtering
+    year_total = contributions.filter(date__year=current_year).aggregate(
         total=Sum('amount')
     )['total'] or 0
     
-    # By contribution type
-    by_type = contributions.filter(fiscal_year=fiscal_year).values(
+    # By contribution type for current year
+    by_type = contributions.filter(date__year=current_year).values(
         'contribution_type__name', 'contribution_type__category'
     ).annotate(total=Sum('amount')).order_by('-total')
     
@@ -143,7 +166,7 @@ def my_contributions(request):
         'contributions': contributions,
         'year_total': year_total,
         'by_type': by_type,
-        'fiscal_year': fiscal_year,
+        'current_year': current_year,  # DEPRECATED: Use date filtering instead of fiscal_year
     }
     
     return render(request, 'contributions/my_contributions.html', context)
@@ -151,15 +174,14 @@ def my_contributions(request):
 
 @login_required
 def my_contribution_history(request):
-    """Member view - shows contribution history by year (archived years)."""
-    from core.models import FiscalYear
+    """Member view - shows contribution history by year using date filtering."""
     from django.db.models import Sum, Count
     from datetime import date
     
     user = request.user
     selected_year = request.GET.get('year')
     
-    # Get all years where member has contributions
+    # Get all years where member has contributions using date filtering
     years_with_contributions = Contribution.objects.filter(
         member=user
     ).values('date__year').annotate(
@@ -215,6 +237,19 @@ def contribution_add(request):
     from accounts.models import User
     from core.models import Branch, FiscalYear
     
+    def _get_accessible_contribution_types(*, user, branch, is_individual):
+        base_qs = ContributionType.objects.filter(is_active=True, is_closed=False, is_individual=is_individual)
+        if user.is_mission_admin or user.is_auditor:
+            return base_qs
+        if not branch:
+            return base_qs.none()
+        return base_qs.filter(
+            Q(scope=ContributionType.Scope.MISSION) |
+            Q(scope=ContributionType.Scope.AREA, area=branch.district.area) |
+            Q(scope=ContributionType.Scope.DISTRICT, district=branch.district) |
+            Q(scope=ContributionType.Scope.BRANCH, branch=branch)
+        )
+    
     if not request.user.can_manage_finances:
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
@@ -232,7 +267,8 @@ def contribution_add(request):
             contribution_type = ContributionType.objects.get(pk=ct_id)
             branch = Branch.objects.get(pk=branch_id)
             member = User.objects.get(pk=member_id) if member_id else None
-            fiscal_year = FiscalYear.get_current()
+            # DEPRECATED: Year-as-state architecture - fiscal_year no longer assigned
+            # Contributions now use date-based filtering only
             
             contribution = Contribution.objects.create(
                 contribution_type=contribution_type,
@@ -241,7 +277,7 @@ def contribution_add(request):
                 member=member,
                 branch=branch,
                 description=description,
-                fiscal_year=fiscal_year,
+                # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                 created_by=request.user
             )
             messages.success(request, f'Contribution of GH₵{amount} recorded successfully.')
@@ -249,11 +285,17 @@ def contribution_add(request):
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
     
-    contribution_types = ContributionType.objects.filter(is_active=True, is_closed=False)
+    branch_for_types = request.user.branch
+    contribution_types = _get_accessible_contribution_types(
+        user=request.user,
+        branch=branch_for_types,
+        is_individual=False,
+    )
     branches = Branch.objects.filter(is_active=True)
     members = User.objects.filter(is_active=True)
     
-    if request.user.branch and not request.user.is_mission_admin:
+    # Filter branches and members for non-mission admins (but allow auditors to see all)
+    if request.user.branch and not (request.user.is_mission_admin or request.user.is_auditor):
         members = members.filter(branch=request.user.branch)
         branches = branches.filter(pk=request.user.branch_id)
     
@@ -277,6 +319,10 @@ def contribution_detail(request, contribution_id):
 @login_required
 def contribution_types(request):
     """Manage contribution types (Mission Admin can add/edit)."""
+    if not (request.user.is_mission_admin or request.user.is_area_executive or request.user.is_district_executive):
+        messages.error(request, 'Access denied.')
+        return redirect('core:dashboard')
+    
     if request.method == 'POST' and request.user.is_mission_admin:
         action = request.POST.get('action')
         
@@ -392,6 +438,19 @@ def weekly_entry(request):
     from core.models import Branch
     from datetime import date
     
+    def _get_accessible_contribution_types(*, user, branch, is_individual):
+        base_qs = ContributionType.objects.filter(is_active=True, is_closed=False, is_individual=is_individual)
+        if user.is_mission_admin or user.is_auditor:
+            return base_qs
+        if not branch:
+            return base_qs.none()
+        return base_qs.filter(
+            Q(scope=ContributionType.Scope.MISSION) |
+            Q(scope=ContributionType.Scope.AREA, area=branch.district.area) |
+            Q(scope=ContributionType.Scope.DISTRICT, district=branch.district) |
+            Q(scope=ContributionType.Scope.BRANCH, branch=branch)
+        )
+    
     if not request.user.can_manage_finances:
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
@@ -409,11 +468,12 @@ def weekly_entry(request):
             return redirect('contributions:weekly_entry')
 
         entry_date = request.POST.get('date')
-        # Get general contribution types
-        general_types = ContributionType.objects.filter(is_individual=False, is_closed=False)
-
-        from core.models import FiscalYear
-        fiscal_year = FiscalYear.get_current()
+        # Get general contribution types (scope-aware)
+        general_types = _get_accessible_contribution_types(
+            user=request.user,
+            branch=branch,
+            is_individual=False,
+        )
 
         for ct in general_types:
             amount = request.POST.get(f'amount_{ct.id}')
@@ -424,7 +484,6 @@ def weekly_entry(request):
                     amount=amount,
                     date=entry_date,
                     branch=branch,
-                    fiscal_year=fiscal_year,
                     description=notes,
                     created_by=request.user
                 )
@@ -435,7 +494,11 @@ def weekly_entry(request):
     context = {
         'branch': branch,
         'branches': Branch.objects.filter(is_active=True) if request.user.is_mission_admin else None,
-        'contribution_types': ContributionType.objects.filter(is_individual=False, is_closed=False),
+        'contribution_types': _get_accessible_contribution_types(
+            user=request.user,
+            branch=branch,
+            is_individual=False,
+        ),
         'today': date.today(),
     }
     return render(request, 'contributions/weekly_entry.html', context)
@@ -447,6 +510,19 @@ def individual_entry(request):
     from core.models import Branch
     from accounts.models import User
     from datetime import date
+    
+    def _get_accessible_contribution_types(*, user, branch, is_individual):
+        base_qs = ContributionType.objects.filter(is_active=True, is_closed=False, is_individual=is_individual)
+        if user.is_mission_admin or user.is_auditor:
+            return base_qs
+        if not branch:
+            return base_qs.none()
+        return base_qs.filter(
+            Q(scope=ContributionType.Scope.MISSION) |
+            Q(scope=ContributionType.Scope.AREA, area=branch.district.area) |
+            Q(scope=ContributionType.Scope.DISTRICT, district=branch.district) |
+            Q(scope=ContributionType.Scope.BRANCH, branch=branch)
+        )
     
     if not request.user.can_manage_finances:
         messages.error(request, 'Access denied.')
@@ -464,9 +540,6 @@ def individual_entry(request):
         ct_id = request.POST.get('contribution_type')
         contribution_type = ContributionType.objects.get(pk=ct_id)
 
-        from core.models import FiscalYear
-        fiscal_year = FiscalYear.get_current()
-
         # Get all members and their amounts
         members = User.objects.filter(branch=branch, is_active=True)
         for member in members:
@@ -479,7 +552,6 @@ def individual_entry(request):
                     date=entry_date,
                     member=member,
                     branch=branch,
-                    fiscal_year=fiscal_year,
                     description=notes,
                     created_by=request.user
                 )
@@ -491,7 +563,11 @@ def individual_entry(request):
     
     context = {
         'branch': branch,
-        'contribution_types': ContributionType.objects.filter(is_individual=True, is_closed=False),
+        'contribution_types': _get_accessible_contribution_types(
+            user=request.user,
+            branch=branch,
+            is_individual=True,
+        ),
         'selected_type': contribution_type,
         'members': members,
         'today': date.today(),
@@ -532,18 +608,17 @@ def remittance_add(request):
         period_year = request.POST.get('period_year')
         
         try:
-            fiscal_year = FiscalYear.get_current()
+            # Use correct field names from Remittance model
             Remittance.objects.create(
                 branch=branch,
-                amount=amount,
+                amount_sent=amount,
                 payment_date=payment_date,
                 payment_method=payment_method,
-                reference=reference,
+                payment_reference=reference,
                 notes=notes,
-                period_month=period_month,
-                period_year=period_year,
-                fiscal_year=fiscal_year,
-                submitted_by=request.user
+                month=period_month,
+                year=period_year,
+                status='sent'
             )
             messages.success(request, f'Remittance of GH₵{amount} submitted successfully.')
             return redirect('contributions:remittances')
@@ -801,18 +876,13 @@ def mark_return_paid(request, branch_id):
         payment_reference = request.POST.get('payment_reference', '')
         notes = request.POST.get('notes', '')
         
-        # Get fiscal year for the given month/year
-        from core.models import FiscalYear
-        fiscal_year = FiscalYear.objects.get(year=year)
-        
-        # Get or create remittance
+        # DEPRECATED: FiscalYear architecture - Use date filtering instead
+        # Get or create remittance without fiscal_year dependency
         remittance, created = Remittance.objects.get_or_create(
             branch=branch,
             month=month,
             year=year,
-            defaults={
-                'fiscal_year': fiscal_year
-            }
+            defaults={}  # No fiscal_year needed
         )
         
         remittance.amount_sent = amount
@@ -945,7 +1015,7 @@ def contribution_import(request):
                         date=date,
                         description=description,
                         branch=member.branch or branch,
-                        fiscal_year=fiscal_year,
+                        # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                         created_by=request.user,
                     )
                     success_count += 1

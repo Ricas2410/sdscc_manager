@@ -80,12 +80,25 @@ def auditor_contributions(request):
     to_date = request.GET.get('to_date')
     contribution_type_id = request.GET.get('contribution_type')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date() if from_date else None
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date() if to_date else None
     
-    # Base queryset
+    # Base queryset - use date filtering instead of fiscal year filtering
     contributions = Contribution.objects.filter(
-        fiscal_year=fiscal_year
     ).select_related('branch__district__area', 'contribution_type', 'member', 'created_by')
+    
+    # Apply date filtering
+    if from_date:
+        contributions = contributions.filter(date__gte=from_date)
+    if to_date:
+        contributions = contributions.filter(date__lte=to_date)
     
     # Apply hierarchical filters
     districts = District.objects.filter(is_active=True)
@@ -161,12 +174,25 @@ def auditor_expenditures(request):
     category_id = request.GET.get('category')
     level = request.GET.get('level')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date() if from_date else None
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date() if to_date else None
     
-    # Base queryset
+    # Base queryset - use date filtering instead of fiscal year filtering
     expenditures = Expenditure.objects.filter(
-        fiscal_year=fiscal_year
     ).select_related('branch__district__area', 'category', 'created_by', 'approved_by')
+    
+    # Apply date filtering
+    if from_date:
+        expenditures = expenditures.filter(date__gte=from_date)
+    if to_date:
+        expenditures = expenditures.filter(date__lte=to_date)
     
     # Apply hierarchical filters
     districts = District.objects.filter(is_active=True)
@@ -258,7 +284,8 @@ def auditor_financial_reports(request):
     month = request.GET.get('month')
     quarter = request.GET.get('quarter')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Removed fiscal_year usage
+    # Reports now use date filtering only
     current_year = timezone.now().year
     current_month = timezone.now().month
     
@@ -312,15 +339,15 @@ def auditor_financial_reports(request):
                     total_contrib = Contribution.objects.filter(
                         branch=branch,
                         date__year=year,
-                        date__month__in=months_in_quarter,
-                        fiscal_year=fiscal_year
+                        date__month__in=months_in_quarter
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     total_expend = Expenditure.objects.filter(
                         branch=branch,
                         date__year=year,
-                        date__month__in=months_in_quarter,
-                        fiscal_year=fiscal_year
+                        date__month__in=months_in_quarter
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     if total_contrib > 0 or total_expend > 0:
@@ -339,14 +366,14 @@ def auditor_financial_reports(request):
             for branch in branches:
                 total_contrib = Contribution.objects.filter(
                     branch=branch,
-                    date__year=year,
-                    fiscal_year=fiscal_year
+                    date__year=year
+                    # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                 ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 
                 total_expend = Expenditure.objects.filter(
                     branch=branch,
-                    date__year=year,
-                    fiscal_year=fiscal_year
+                    date__year=year
+                    # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                 ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 
                 if total_contrib > 0 or total_expend > 0:
@@ -371,15 +398,15 @@ def auditor_financial_reports(request):
                     total_contrib = Contribution.objects.filter(
                         branch__district=district,
                         date__year=year,
-                        date__month=month,
-                        fiscal_year=fiscal_year
+                        date__month=month
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     total_expend = Expenditure.objects.filter(
                         branch__district=district,
                         date__year=year,
-                        date__month=month,
-                        fiscal_year=fiscal_year
+                        date__month=month
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     if total_contrib > 0 or total_expend > 0:
@@ -402,15 +429,15 @@ def auditor_financial_reports(request):
                     total_contrib = Contribution.objects.filter(
                         branch__district=district,
                         date__year=year,
-                        date__month__in=months_in_quarter,
-                        fiscal_year=fiscal_year
+                        date__month__in=months_in_quarter
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     total_expend = Expenditure.objects.filter(
                         branch__district=district,
                         date__year=year,
-                        date__month__in=months_in_quarter,
-                        fiscal_year=fiscal_year
+                        date__month__in=months_in_quarter
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     if total_contrib > 0 or total_expend > 0:
@@ -429,14 +456,14 @@ def auditor_financial_reports(request):
             for district in districts:
                 total_contrib = Contribution.objects.filter(
                     branch__district=district,
-                    date__year=year,
-                    fiscal_year=fiscal_year
+                    date__year=year
+                    # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                 ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 
                 total_expend = Expenditure.objects.filter(
                     branch__district=district,
-                    date__year=year,
-                    fiscal_year=fiscal_year
+                    date__year=year
+                    # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                 ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 
                 if total_contrib > 0 or total_expend > 0:
@@ -461,15 +488,15 @@ def auditor_financial_reports(request):
                     total_contrib = Contribution.objects.filter(
                         branch__district__area=area,
                         date__year=year,
-                        date__month=month,
-                        fiscal_year=fiscal_year
+                        date__month=month
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     total_expend = Expenditure.objects.filter(
                         branch__district__area=area,
                         date__year=year,
-                        date__month=month,
-                        fiscal_year=fiscal_year
+                        date__month=month
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     if total_contrib > 0 or total_expend > 0:
@@ -492,15 +519,15 @@ def auditor_financial_reports(request):
                     total_contrib = Contribution.objects.filter(
                         branch__district__area=area,
                         date__year=year,
-                        date__month__in=months_in_quarter,
-                        fiscal_year=fiscal_year
+                        date__month__in=months_in_quarter
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     total_expend = Expenditure.objects.filter(
                         branch__district__area=area,
                         date__year=year,
-                        date__month__in=months_in_quarter,
-                        fiscal_year=fiscal_year
+                        date__month__in=months_in_quarter
+                        # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                     
                     if total_contrib > 0 or total_expend > 0:
@@ -519,14 +546,14 @@ def auditor_financial_reports(request):
             for area in areas:
                 total_contrib = Contribution.objects.filter(
                     branch__district__area=area,
-                    date__year=year,
-                    fiscal_year=fiscal_year
+                    date__year=year
+                    # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                 ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 
                 total_expend = Expenditure.objects.filter(
                     branch__district__area=area,
-                    date__year=year,
-                    fiscal_year=fiscal_year
+                    date__year=year
+                    # fiscal_year=fiscal_year  # REMOVED: Use date filtering instead
                 ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
                 
                 if total_contrib > 0 or total_expend > 0:
@@ -637,9 +664,13 @@ def auditor_financial_reports(request):
         'total_contributions': total_all_contributions,
         'total_expenditure': total_all_expenditure,
         'total_balance': total_all_balance,
-        'fiscal_year': fiscal_year,
         'current_year': current_year,
         'current_month': current_month,
+        'month_options': [
+            (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
+            (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
+            (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')
+        ],
     }
     
     return render(request, 'auditing/financial_reports.html', context)

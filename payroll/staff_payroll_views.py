@@ -249,13 +249,14 @@ def payroll_processing(request):
                     messages.warning(request, f'Payroll for {calendar.month_name[month]} {year} already exists.')
                     return redirect('payroll:payroll_processing')
                 
-                fiscal_year = FiscalYear.get_current()
+                # DEPRECATED: Year-as-state architecture - fiscal_year no longer assigned
+                # Payroll runs now use date-based filtering only
                 
                 # Create payroll run
                 payroll_run = PayrollRun.objects.create(
                     month=month,
                     year=year,
-                    fiscal_year=fiscal_year,
+                    # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                     status='draft',
                     created_by=request.user
                 )
@@ -333,13 +334,14 @@ def payroll_processing(request):
                     }
                 )
                 
-                fiscal_year = FiscalYear.get_current()
+                # DEPRECATED: Year-as-state architecture - fiscal_year no longer assigned
+                # Payroll expenditures now use date-based filtering only
                 
                 for payslip in payslips:
                     # Create expenditure record for audit trail
                     Expenditure.objects.create(
                         branch=payslip.staff.user.branch if payslip.staff.user.branch else None,
-                        fiscal_year=fiscal_year,
+                        # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                         category=category,
                         level='mission',
                         amount=payslip.net_pay,
@@ -364,7 +366,7 @@ def payroll_processing(request):
             except Exception as e:
                 messages.error(request, f'Error processing batch payment: {str(e)}')
         
-        elif action == 'mark_paid':
+        elif action == 'mark_selected_paid':
             payslip_id = request.POST.get('payslip_id')
             payment_date = date.today()
             payment_ref = f'PAY-{date.today().strftime("%Y%m%d")}-{payslip_id[:8]}' if payslip_id else f'PAY-{date.today().strftime("%Y%m%d")}'
@@ -388,13 +390,10 @@ def payroll_processing(request):
                     }
                 )
                 
-                fiscal_year = FiscalYear.get_current()
-                
                 for payslip in payslips:
                     # Create expenditure record for audit trail
                     Expenditure.objects.create(
                         branch=payslip.staff.user.branch if payslip.staff.user.branch else None,
-                        fiscal_year=fiscal_year,
                         category=category,
                         level='mission',
                         amount=payslip.net_pay,

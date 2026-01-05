@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Yearly Reports{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Yearly Financial Reports</h1>
+        <p class="mt-2 text-gray-600">Professional, printable, audit-safe yearly financial reports derived from closed months.</p>
+    </div>
+
+    <!-- Report Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {% if user.is_mission_admin or user.is_auditor %}
+        <!-- Mission Yearly Report -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4">
+                    <span class="material-icons-outlined text-indigo-600 text-2xl">account_balance</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Mission Yearly Report</h2>
+                <p class="text-gray-600 text-sm mb-4">
+                    Comprehensive mission-level financial report including remittances received, 
+                    mission expenditures, and net financial position.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded">Mission Admin</span>
+                    <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded">Auditors</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'reports:mission_yearly_report' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                        <span class="material-icons-outlined text-lg mr-2">arrow_forward</span>
+                        Generate Report
+                    </a>
+                    <a href="{% url 'reports:export_mission_yearly_excel' %}?year={{ current_year }}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-icons-outlined text-lg mr-2">table_chart</span>
+                        Export Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.is_mission_admin or user.is_auditor or user.is_area_executive %}
+        <!-- Area Financial Report -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4">
+                    <span class="material-icons-outlined text-teal-600 text-2xl">location_city</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Area Financial Reports</h2>
+                <p class="text-gray-600 text-sm mb-4">
+                    Area-level financial reports including contributions, remittances, 
+                    and transfers for all districts in the area.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="px-2 py-1 bg-teal-50 text-teal-700 text-xs font-medium rounded">Area Executive</span>
+                    <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded">Mission Admin</span>
+                    <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded">Auditors</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'reports:area_financial_reports' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors">
+                        <span class="material-icons-outlined text-lg mr-2">arrow_forward</span>
+                        View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.is_mission_admin or user.is_auditor or user.is_area_executive or user.is_district_executive %}
+        <!-- District Financial Report -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
+                    <span class="material-icons-outlined text-orange-600 text-2xl">domain</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">District Financial Reports</h2>
+                <p class="text-gray-600 text-sm mb-4">
+                    District-level financial reports including contributions, remittances, 
+                    and transfers for all branches in the district.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="px-2 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded">District Executive</span>
+                    <span class="px-2 py-1 bg-teal-50 text-teal-700 text-xs font-medium rounded">Area Executive</span>
+                    <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded">Mission Admin</span>
+                    <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded">Auditors</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'reports:district_financial_reports' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors">
+                        <span class="material-icons-outlined text-lg mr-2">arrow_forward</span>
+                        View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.is_mission_admin or user.is_auditor or user.is_branch_executive or user.is_pastor %}
+        <!-- Branch Yearly Report -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
+                    <span class="material-icons-outlined text-emerald-600 text-2xl">church</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Branch Yearly Report</h2>
+                <p class="text-gray-600 text-sm mb-4">
+                    Branch-level financial summary including contributions, expenditures, 
+                    mission share collected and remitted, and outstanding balances.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded">Branch Admin</span>
+                    <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded">Mission Admin</span>
+                    <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded">Auditors</span>
+                </div>
+                <a href="{% url 'reports:branch_yearly_report' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600 transition-colors">
+                    <span class="material-icons-outlined text-lg mr-2">arrow_forward</span>
+                    Generate Report
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Member Yearly Statement -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="p-6">
+                <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                    <span class="material-icons-outlined text-blue-600 text-2xl">person</span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Member Contribution Statement</h2>
+                <p class="text-gray-600 text-sm mb-4">
+                    Individual member yearly contribution statement with breakdown by type, 
+                    monthly totals, and official declaration.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded">Members</span>
+                    {% if user.is_mission_admin or user.is_auditor %}
+                    <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded">Mission Admin</span>
+                    <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded">Auditors</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'reports:member_yearly_statement' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-icons-outlined text-lg mr-2">arrow_forward</span>
+                        {% if user.is_mission_admin or user.is_auditor %}
+                        Generate Statement
+                        {% else %}
+                        View My Statement
+                        {% endif %}
+                    </a>
+                    {% if user.is_mission_admin or user.is_auditor %}
+                    <a href="{% url 'reports:export_member_yearly_excel' %}?year={{ current_year }}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-icons-outlined text-lg mr-2">table_chart</span>
+                        Export Excel
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Section -->
+    <div class="mt-10 bg-amber-50 border border-amber-200 rounded-xl p-6">
+        <div class="flex items-start">
+            <span class="material-icons-outlined text-amber-600 text-xl mr-3 mt-0.5">info</span>
+            <div>
+                <h3 class="font-semibold text-amber-800 mb-2">About Yearly Reports</h3>
+                <ul class="text-sm text-amber-700 space-y-1">
+                    <li>• Reports are <strong>read-only</strong> and do not modify any data</li>
+                    <li>• Data is aggregated from <strong>closed months only</strong> for accuracy</li>
+                    <li>• If some months are not closed, you will be notified before generating</li>
+                    <li>• All reports can be exported as <strong>PDF</strong> for printing and records</li>
+                    <li>• Reports follow the church's ledger-based accounting model</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="mt-8 flex flex-wrap gap-4">
+        <a href="{% url 'reports:index' %}" class="inline-flex items-center text-gray-600 hover:text-gray-900">
+            <span class="material-icons-outlined text-lg mr-1">arrow_back</span>
+            Back to Reports Dashboard
+        </a>
+        {% if user.is_mission_admin or user.is_branch_executive %}
+        <a href="{% url 'core:monthly_closing' %}" class="inline-flex items-center text-indigo-600 hover:text-indigo-800">
+            <span class="material-icons-outlined text-lg mr-1">lock</span>
+            Monthly Closing
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -89,10 +89,7 @@
                                 <span class="font-mono text-sm text-gray-500">{{ member.member_id }}</span>
                             </td>
                             <td>
-                                <div class="relative">
-                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{{ site_settings.currency_symbol }}</span>
-                                    <input type="number" name="amount_{{ member.id }}" step="0.01" min="0" class="form-input pl-10 py-1" placeholder="0.00">
-                                </div>
+                                <input type="number" name="amount_{{ member.id }}" step="0.01" min="0" class="form-input py-1" placeholder="0.00">
                             </td>
                             <td class="hidden md:table-cell">
                                 <input type="text" name="notes_{{ member.id }}" class="form-input py-1 text-sm" placeholder="Optional">

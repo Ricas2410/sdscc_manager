@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}Area Dashboard - {{ area.name }}{% endblock %}
 
 {% block content %}
@@ -29,7 +30,7 @@
                     </div>
                     <div class="ml-4">
                         <p class="text-sm text-gray-500">Districts</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ area.districts.count }}</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ districts.count }}</p>
                     </div>
                 </div>
             </div>
@@ -43,11 +44,7 @@
                     </div>
                     <div class="ml-4">
                         <p class="text-sm text-gray-500">Branches</p>
-                        <p class="text-2xl font-bold text-gray-900">
-                            {% for district in area.districts.all %}
-                                {% if forloop.first %}{{ district.branches.count }}{% endif %}
-                            {% endfor %}
-                        </p>
+                        <p class="text-2xl font-bold text-gray-900">{{ branch_count }}</p>
                     </div>
                 </div>
             </div>
@@ -61,13 +58,7 @@
                     </div>
                     <div class="ml-4">
                         <p class="text-sm text-gray-500">Total Members</p>
-                        <p class="text-2xl font-bold text-gray-900">
-                            {% for district in area.districts.all %}
-                                {% for branch in district.branches.all %}
-                                    {% if forloop.parentloop.first and forloop.first %}{{ branch.member_count|default:0 }}{% endif %}
-                                {% endfor %}
-                            {% endfor %}
-                        </p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_members }}</p>
                     </div>
                 </div>
             </div>
@@ -80,8 +71,8 @@
                         <span class="material-icons-outlined text-amber-600">trending_up</span>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-500">This Month</p>
-                        <p class="text-2xl font-bold text-gray-900">Active</p>
+                        <p class="text-sm text-gray-500">Pending Remittances</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ pending_remittances }}</p>
                     </div>
                 </div>
             </div>
@@ -95,11 +86,11 @@
                 <span class="material-icons-outlined text-primary-600 align-middle mr-2">location_city</span>
                 Districts in {{ area.name }}
             </h2>
-            <p class="text-sm text-gray-500 mt-1">{{ area.districts.count }} districts</p>
+            <p class="text-sm text-gray-500 mt-1">{{ districts.count }} districts</p>
         </div>
         <div class="card-body">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {% for district in area.districts.all %}
+                {% for district in districts %}
                 <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div class="flex items-start justify-between">
                         <div>
@@ -140,6 +131,113 @@
                 <div class="col-span-full text-center py-12">
                     <span class="material-icons-outlined text-4xl text-gray-400">location_city</span>
                     <p class="mt-2 text-gray-500">No districts found in this area</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">payments</span>
+                    Financial Summary
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">This month's performance</p>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Monthly Contributions</span>
+                        <span class="font-semibold text-green-600">{{ monthly_contributions|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Monthly Expenditure</span>
+                        <span class="font-semibold text-red-600">{{ monthly_expenditure|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Net Position</span>
+                        <span class="font-semibold {% if monthly_contributions > monthly_expenditure %}text-green-600{% else %}text-red-600{% endif %}">
+                            {{ monthly_contributions|add:"-"|add:monthly_expenditure|floatformat:2|intcomma }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <span class="text-gray-600">Yearly Contributions</span>
+                        <span class="font-semibold text-blue-600">{{ yearly_contributions|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="font-semibold text-gray-900">
+                    <span class="material-icons-outlined text-primary-600 align-middle mr-2">trending_up</span>
+                    Top Performing Branches
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">This month's contributions</p>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    {% for perf in branch_performance %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm mr-3">
+                                {{ forloop.counter }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">{{ perf.branch.name }}</p>
+                                <p class="text-sm text-gray-500">{{ perf.member_count }} members</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-gray-900">{{ perf.monthly_total|floatformat:0|intcomma }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <span class="material-icons-outlined text-4xl text-gray-400">church</span>
+                        <p class="mt-2 text-gray-500">No branch data available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="font-semibold text-gray-900">
+                <span class="material-icons-outlined text-primary-600 align-middle mr-2">history</span>
+                Recent Activities
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">Latest contributions in your area</p>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for contribution in recent_contributions %}
+                <div class="flex items-center justify-between py-2 border-b last:border-b-0">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 mr-3">
+                            <span class="material-icons-outlined text-sm">payments</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ contribution.member.get_full_name }}</p>
+                            <p class="text-sm text-gray-500">{{ contribution.branch.name }} • {{ contribution.contribution_type.name }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold text-gray-900">{{ contribution.amount|floatformat:2 }}</p>
+                        <p class="text-sm text-gray-500">{{ contribution.created_at|date:"M d, H:i" }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <span class="material-icons-outlined text-4xl text-gray-400">history</span>
+                    <p class="mt-2 text-gray-500">No recent activities</p>
                 </div>
                 {% endfor %}
             </div>

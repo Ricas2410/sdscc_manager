@@ -17,7 +17,7 @@
     <!-- Session Info -->
     <div class="card">
         <div class="card-body">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
                 <div>
                     <p class="text-sm text-gray-500">Branch</p>
                     <p class="font-semibold text-gray-900">{{ session.branch.name }}</p>
@@ -33,6 +33,10 @@
                 <div>
                     <p class="text-sm text-gray-500">Total Absent</p>
                     <p class="text-2xl font-bold text-red-600">{{ absent.count }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Children</p>
+                    <p class="text-2xl font-bold text-purple-600">{{ session.children_count }}</p>
                 </div>
             </div>
         </div>
@@ -109,7 +113,7 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="material-icons-outlined text-purple-600">person_add</span>
-                    <h2 class="font-semibold text-purple-900">Visitors ({{ session.visitor_records.count }})</h2>
+                    <h2 class="font-semibold text-purple-900">Visitors ({{ visitors.count }})</h2>
                 </div>
                 {% if user.is_any_admin or user.is_pastor or user.is_branch_executive %}
                 <a href="{% url 'attendance:add_visitor' session.id %}" class="btn btn-primary btn-sm">
@@ -119,9 +123,9 @@
             </div>
         </div>
         <div class="card-body">
-            {% if session.visitor_records.all %}
+            {% if visitors %}
             <div class="space-y-3">
-                {% for visitor in session.visitor_records.all %}
+                {% for visitor in visitors %}
                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                         <p class="font-medium text-gray-900">{{ visitor.name }}</p>

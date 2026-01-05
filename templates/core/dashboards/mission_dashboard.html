@@ -178,8 +178,8 @@
                         {% for remittance in pending_remittances_list %}
                         <tr>
                             <td class="font-medium">{{ remittance.branch.name }}</td>
-                            <td class="text-gray-500">{{ remittance.period_start|date:"M Y" }}</td>
-                            <td class="text-right font-semibold">{{ remittance.total_amount|currency }}</td>
+                            <td class="text-gray-500">{{ remittance.month }}/{{ remittance.year }}</td>
+                            <td class="text-right font-semibold">{{ remittance.amount_due|currency }}</td>
                             <td>
                                 <span class="badge {% if remittance.status == 'pending' %}badge-warning{% elif remittance.status == 'sent' %}badge-info{% endif %}">
                                     {{ remittance.get_status_display }}

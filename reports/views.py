@@ -8,9 +8,17 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Count, Q, Avg
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+import calendar
 from decimal import Decimal
 import json
+
+# Import correct financial calculation helpers
+from core.financial_helpers import (
+    get_branch_balance, get_expected_mission_due, get_mission_income,
+    get_mission_obligations, get_local_only_contributions, get_mission_shared_contributions,
+    get_financial_summary
+)
 
 
 @login_required
@@ -25,27 +33,60 @@ def reports_index(request):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use current year date range instead of fiscal year
+    current_year = timezone.now().year
+    from_date = datetime(current_year, 1, 1).date()
+    to_date = datetime(current_year, 12, 31).date()
     
-    # Quick stats
+    # Apply user hierarchy filtering for stats
+    user_scope = 'mission'  # Default for mission admin
+    branch_filter = {}
+    if request.user.is_branch_executive and request.user.branch:
+        branch_filter = {'branch': request.user.branch}
+        user_scope = 'branch'
+    elif request.user.is_district_executive and request.user.managed_district:
+        branch_filter = {'branch__district': request.user.managed_district}
+        user_scope = 'district'
+    elif request.user.is_area_executive and request.user.managed_area:
+        branch_filter = {'branch__district__area': request.user.managed_area}
+        user_scope = 'area'
+    
+    # Quick stats - use date filtering instead of fiscal year filtering
     total_contributions = Contribution.objects.filter(
-        fiscal_year=fiscal_year
+        date__gte=from_date,
+        date__lte=to_date,
+        **branch_filter
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     
     total_expenditure = Expenditure.objects.filter(
-        fiscal_year=fiscal_year
+        date__gte=from_date,
+        date__lte=to_date,
+        **branch_filter if user_scope != 'area' and user_scope != 'district' else {}  # Mission-level expenses for area/district execs
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     
-    total_branches = Branch.objects.filter(is_active=True).count()
+    total_branches = Branch.objects.filter(is_active=True).count() if user_scope == 'mission' else (
+        Branch.objects.filter(district__area=request.user.managed_area, is_active=True).count() if user_scope == 'area' else
+        Branch.objects.filter(district=request.user.managed_district, is_active=True).count() if user_scope == 'district' else
+        1 if user_scope == 'branch' else 0
+    )
     total_sessions = AttendanceSession.objects.filter(
-        date__year=timezone.now().year
+        date__year=current_year,
+        **branch_filter
     ).count()
     
     context = {
-        'areas': Area.objects.filter(is_active=True),
-        'districts': District.objects.filter(is_active=True),
-        'branches': Branch.objects.filter(is_active=True),
-        'fiscal_year': fiscal_year,
+        'areas': Area.objects.filter(pk=request.user.managed_area.pk, is_active=True) if user_scope == 'area' else Area.objects.filter(is_active=True),
+        'districts': District.objects.filter(area=request.user.managed_area, is_active=True) if user_scope == 'area' else (
+            District.objects.filter(pk=request.user.managed_district.pk, is_active=True) if user_scope == 'district' else (
+                District.objects.none() if user_scope == 'branch' else District.objects.filter(is_active=True)
+            )
+        ),
+        'branches': Branch.objects.filter(district__area=request.user.managed_area, is_active=True) if user_scope == 'area' else (
+            Branch.objects.filter(district=request.user.managed_district, is_active=True) if user_scope == 'district' else (
+                Branch.objects.filter(pk=request.user.branch.pk, is_active=True) if user_scope == 'branch' else Branch.objects.filter(is_active=True)
+            )
+        ),
+        'current_year': current_year,  # Use current year instead of fiscal year object
         'total_contributions': total_contributions,
         'total_expenditure': total_expenditure,
         'total_branches': total_branches,
@@ -71,14 +112,47 @@ def contribution_report(request):
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     
-    # Base queryset
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year)
+    # Base queryset - use date filtering instead of fiscal year filtering
+    contributions = Contribution.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
     
-    # Apply filters
-    districts = District.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True)
+    # Apply user hierarchy filtering
+    user_scope = 'mission'  # Default for mission admin
+    if request.user.is_branch_executive and request.user.branch:
+        contributions = contributions.filter(branch=request.user.branch)
+        user_scope = 'branch'
+    elif request.user.is_district_executive and request.user.managed_district:
+        contributions = contributions.filter(branch__district=request.user.managed_district)
+        user_scope = 'district'
+    elif request.user.is_area_executive and request.user.managed_area:
+        contributions = contributions.filter(branch__district__area=request.user.managed_area)
+        user_scope = 'area'
+    
+    # Apply filters - respect user hierarchy
+    if user_scope == 'area':
+        districts = District.objects.filter(area=request.user.managed_area, is_active=True)
+        branches = Branch.objects.filter(district__area=request.user.managed_area, is_active=True)
+    elif user_scope == 'district':
+        districts = District.objects.filter(pk=request.user.managed_district.pk, is_active=True)
+        branches = Branch.objects.filter(district=request.user.managed_district, is_active=True)
+    elif user_scope == 'branch':
+        districts = District.objects.none()
+        branches = Branch.objects.filter(pk=request.user.branch.pk, is_active=True)
+    else:
+        districts = District.objects.filter(is_active=True)
+        branches = Branch.objects.filter(is_active=True)
     
     if area_id:
         contributions = contributions.filter(branch__district__area_id=area_id)
@@ -91,11 +165,6 @@ def contribution_report(request):
     
     if branch_id:
         contributions = contributions.filter(branch_id=branch_id)
-    
-    if from_date:
-        contributions = contributions.filter(date__gte=from_date)
-    if to_date:
-        contributions = contributions.filter(date__lte=to_date)
     
     # Calculate statistics
     total_amount = contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
@@ -123,7 +192,7 @@ def contribution_report(request):
     ).order_by('month')
     
     context = {
-        'areas': Area.objects.filter(is_active=True),
+        'areas': Area.objects.filter(pk=request.user.managed_area.pk, is_active=True) if user_scope == 'area' else Area.objects.filter(is_active=True),
         'districts': districts,
         'branches': branches,
         'contribution_types': ContributionType.objects.filter(is_active=True),
@@ -133,7 +202,7 @@ def contribution_report(request):
         'by_type': by_type,
         'by_branch': by_branch,
         'monthly_data': list(monthly_data),
-        'fiscal_year': fiscal_year,
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer used
         'site_settings': SiteSettings.get_settings(),
     }
     
@@ -157,14 +226,47 @@ def expenditure_report(request):
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     
-    # Base queryset
-    expenditures = Expenditure.objects.filter(fiscal_year=fiscal_year)
+    # Base queryset - use date filtering instead of fiscal year filtering
+    expenditures = Expenditure.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
     
-    # Apply filters
-    districts = District.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True)
+    # Apply user hierarchy filtering
+    user_scope = 'mission'  # Default for mission admin
+    if request.user.is_branch_executive and request.user.branch:
+        expenditures = expenditures.filter(branch=request.user.branch)
+        user_scope = 'branch'
+    elif request.user.is_district_executive and request.user.managed_district:
+        expenditures = expenditures.filter(Q(branch__district=request.user.managed_district) | Q(level='mission'))
+        user_scope = 'district'
+    elif request.user.is_area_executive and request.user.managed_area:
+        expenditures = expenditures.filter(Q(branch__district__area=request.user.managed_area) | Q(level='mission'))
+        user_scope = 'area'
+    
+    # Apply filters - respect user hierarchy
+    if user_scope == 'area':
+        districts = District.objects.filter(area=request.user.managed_area, is_active=True)
+        branches = Branch.objects.filter(district__area=request.user.managed_area, is_active=True)
+    elif user_scope == 'district':
+        districts = District.objects.filter(pk=request.user.managed_district.pk, is_active=True)
+        branches = Branch.objects.filter(district=request.user.managed_district, is_active=True)
+    elif user_scope == 'branch':
+        districts = District.objects.none()
+        branches = Branch.objects.filter(pk=request.user.branch.pk, is_active=True)
+    else:
+        districts = District.objects.filter(is_active=True)
+        branches = Branch.objects.filter(is_active=True)
     
     if area_id:
         expenditures = expenditures.filter(Q(branch__district__area_id=area_id) | Q(level='mission'))
@@ -210,7 +312,7 @@ def expenditure_report(request):
     ).order_by('-total')[:10]
     
     context = {
-        'areas': Area.objects.filter(is_active=True),
+        'areas': Area.objects.filter(pk=request.user.managed_area.pk, is_active=True) if user_scope == 'area' else Area.objects.filter(is_active=True),
         'districts': districts,
         'branches': branches,
         'categories': ExpenditureCategory.objects.filter(is_active=True),
@@ -221,7 +323,7 @@ def expenditure_report(request):
         'by_category': by_category,
         'by_level': by_level,
         'by_branch': by_branch,
-        'fiscal_year': fiscal_year,
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer used
     }
     
     return render(request, 'reports/expenditure_report.html', context)
@@ -231,7 +333,7 @@ def expenditure_report(request):
 def attendance_report(request):
     """Attendance reports with filtering and statistics."""
     from core.models import Area, District, Branch
-    from attendance.models import AttendanceSession, AttendanceRecord
+    from attendance.models import AttendanceSession, AttendanceRecord, VisitorRecord
     from accounts.models import User
     from django.db.models.functions import Extract
     import json
@@ -284,9 +386,8 @@ def attendance_report(request):
     ).count()
     
     # Visitors count
-    total_visitors = AttendanceRecord.objects.filter(
-        session__in=sessions,
-        is_visitor=True
+    total_visitors = VisitorRecord.objects.filter(
+        session__in=sessions
     ).count() if total_sessions > 0 else 0
     
     # Peak attendance
@@ -342,6 +443,7 @@ def financial_report(request):
     from core.models import Area, District, Branch, FiscalYear
     from contributions.models import Contribution, ContributionType
     from expenditure.models import Expenditure, ExpenditureCategory
+    from .models_hierarchy import AreaFinancialReport, DistrictFinancialReport
     
     if not (request.user.is_any_admin or request.user.is_auditor):
         messages.error(request, 'Access denied.')
@@ -354,11 +456,25 @@ def financial_report(request):
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     
-    # Base querysets
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year)
-    expenditures = Expenditure.objects.filter(fiscal_year=fiscal_year)
+    # Base querysets - use date filtering instead of fiscal year filtering
+    contributions = Contribution.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
+    expenditures = Expenditure.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
     
     # Apply filters
     districts = District.objects.filter(is_active=True)
@@ -416,7 +532,7 @@ def financial_report(request):
         'areas': Area.objects.filter(is_active=True),
         'districts': districts,
         'branches': branches,
-        'fiscal_year': fiscal_year,
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer used
         'total_income': total_income,
         'total_expense': total_expense,
         'net_balance': net_balance,
@@ -424,6 +540,9 @@ def financial_report(request):
         'expense_by_category': expense_by_category,
         'income_chart_data': json.dumps(income_chart_data),
         'expense_chart_data': json.dumps(expense_chart_data),
+        # Add generated reports
+        'area_reports': AreaFinancialReport.objects.all().order_by('-year', '-month')[:10] if request.user.is_mission_admin or request.user.is_auditor or request.user.is_area_executive else AreaFinancialReport.objects.none(),
+        'district_reports': DistrictFinancialReport.objects.all().order_by('-year', '-month')[:10] if request.user.is_mission_admin or request.user.is_auditor or request.user.is_area_executive or request.user.is_district_executive else DistrictFinancialReport.objects.none(),
     }
     
     return render(request, 'reports/financial_report.html', context)
@@ -449,12 +568,25 @@ def financial_report_print(request):
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
     
-    fiscal_year = FiscalYear.get_current()
-    site_settings = SiteSettings.objects.first()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date() if from_date else None
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date() if to_date else None
     
-    # Base querysets
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year)
-    expenditures = Expenditure.objects.filter(fiscal_year=fiscal_year)
+    # Base querysets - use date filtering instead of fiscal year filtering
+    contributions = Contribution.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
+    expenditures = Expenditure.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
     
     # Apply filters
     districts = District.objects.filter(is_active=True)
@@ -529,13 +661,14 @@ def financial_report_print(request):
         attendance_rate = (total_attendance / (total_members * total_sessions)) * 100
     
     # Set date range for report
-    start_date = from_date or (fiscal_year.start_date if fiscal_year else timezone.now().date())
-    end_date = to_date or (fiscal_year.end_date if fiscal_year else timezone.now().date())
+    # DEPRECATED: Year-as-state architecture - Use date filtering only
+    start_date = from_date or timezone.now().date()
+    end_date = to_date or timezone.now().date()
     current_date = timezone.now()
     
     context = {
         'site_settings': site_settings,
-        'fiscal_year': fiscal_year,
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer used
         'total_income': total_income,
         'total_expenditure': total_expenditure,
         'net_amount': net_amount,
@@ -566,10 +699,21 @@ def monthly_reports(request):
         return redirect('core:dashboard')
     
     # Get filters
-    selected_month = request.GET.get('month', timezone.now().month)
-    selected_year = request.GET.get('year', timezone.now().year)
+    selected_month = request.GET.get('month', str(timezone.now().month))
+    selected_year = request.GET.get('year', str(timezone.now().year))
     selected_branch = request.GET.get('branch', '')
     selected_status = request.GET.get('status', '')
+    
+    # Convert to int safely
+    try:
+        selected_month = int(selected_month) if selected_month else timezone.now().month
+    except (ValueError, TypeError):
+        selected_month = timezone.now().month
+    
+    try:
+        selected_year = int(selected_year) if selected_year else timezone.now().year
+    except (ValueError, TypeError):
+        selected_year = timezone.now().year
     
     # Build queryset
     reports = MonthlyReport.objects.select_related(
@@ -599,8 +743,8 @@ def monthly_reports(request):
         'months': [(i, timezone.now().replace(day=1, month=i).strftime('%B')) for i in range(1, 13)],
         'years': range(timezone.now().year - 2, timezone.now().year + 1),
         'status_choices': MonthlyReport.Status.choices,
-        'selected_month': int(selected_month),
-        'selected_year': int(selected_year),
+        'selected_month': selected_month,
+        'selected_year': selected_year,
         'selected_branch': selected_branch,
         'selected_status': selected_status,
         'total_due': total_due,
@@ -684,7 +828,16 @@ def monthly_report_generate(request):
     if request.method == 'POST':
         month = int(request.POST.get('month'))
         year = int(request.POST.get('year'))
-        fiscal_year = FiscalYear.objects.get(year=year)
+        # DEPRECATED: Year-as-state architecture - Create/get fiscal year for compatibility
+        fiscal_year, _ = FiscalYear.objects.get_or_create(
+            year=year,
+            defaults={
+                'start_date': date(year, 1, 1),
+                'end_date': date(year, 12, 31),
+                'is_current': False,  # DEPRECATED: Not used
+                'is_closed': False
+            }
+        )
         
         # Check if report already exists
         if MonthlyReport.objects.filter(branch=branch, month=month, year=year).exists():
@@ -699,11 +852,11 @@ def monthly_report_generate(request):
             month_end = timezone.now().replace(year=year, month=month+1, day=1) - timedelta(days=1)
         
         # Get contributions
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         contributions = Contribution.objects.filter(
             branch=branch,
             date__gte=month_start,
-            date__lte=month_end,
-            fiscal_year=fiscal_year
+            date__lte=month_end
         )
         
         tithe_total = contributions.filter(contribution_type__category='tithe').aggregate(
@@ -719,11 +872,11 @@ def monthly_report_generate(request):
         )['total'] or Decimal('0.00')
         
         # Get expenditures
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         expenditures = Expenditure.objects.filter(
             branch=branch,
             date__gte=month_start,
-            date__lte=month_end,
-            fiscal_year=fiscal_year
+            date__lte=month_end
         )
         
         # Get attendance
@@ -819,11 +972,28 @@ def comprehensive_statistics(request):
     year = request.GET.get('year', str(timezone.now().year))
     month = request.GET.get('month')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not month or not year:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime(int(year), 1, 1).date()
+        to_date = datetime(int(year), 12, 31).date()
+        if month:
+            from_date = datetime(int(year), int(month), 1).date()
+            to_date = datetime(int(year), int(month), calendar.monthrange(int(year), int(month))[1]).date()
     
-    # Base querysets
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year)
-    expenditures = Expenditure.objects.filter(fiscal_year=fiscal_year)
+    # Base querysets - use date filtering instead of fiscal year filtering
+    contributions = Contribution.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
+    expenditures = Expenditure.objects.filter(
+        date__gte=from_date,
+        date__lte=to_date
+    )
     
     # Apply filters
     if area_id:
@@ -852,32 +1022,46 @@ def comprehensive_statistics(request):
         contributions = contributions.filter(date__month=month)
         expenditures = expenditures.filter(date__month=month)
     
-    # Calculate overall statistics
+    # Calculate overall statistics using CORRECT financial logic
     total_contributions = contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     total_expenditures = expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     net_balance = total_contributions - total_expenditures
     
-    # Mission remittance calculations
-    total_tithe = contributions.filter(contribution_type__category='tithe').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-    mission_remittance_due = total_tithe * Decimal('0.10')
+    # CORRECT: Mission income comes ONLY from verified remittances, not contributions
+    mission_income_data = get_mission_income(from_date, to_date)
+    actual_mission_income = mission_income_data['total_income']
     
-    # Calculate total kept at branches
-    total_kept_at_branches = total_contributions - mission_remittance_due
+    # CORRECT: Mission obligations are calculated from contribution allocations, not just tithe
+    mission_obligations = get_mission_obligations(from_date, to_date)
     
-    # Branch-level statistics
+    # CORRECT: Local-only contributions are tracked separately
+    local_contributions = get_local_only_contributions(start_date=from_date, end_date=to_date)
+    mission_shared_contributions = get_mission_shared_contributions(start_date=from_date, end_date=to_date)
+    
+    # Calculate total kept at branches (actual cash, not expected)
+    # This is total contributions - actual remittances (not expected)
+    total_kept_at_branches = total_contributions - actual_mission_income
+    
+    # Branch-level statistics using CORRECT financial logic
     branch_stats = []
     for branch in branches:
+        # Use helper functions for correct calculations
+        branch_balance_data = get_branch_balance(branch, from_date, to_date)
+        expected_due = get_expected_mission_due(branch, from_date, to_date)
+        
+        # Get contribution breakdown
         branch_contributions = contributions.filter(branch=branch)
         branch_expenditures = expenditures.filter(branch=branch)
         
         branch_total_contrib = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         branch_total_exp = branch_expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-        branch_tithe = branch_contributions.filter(contribution_type__category='tithe').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-        branch_remittance = branch_tithe * Decimal('0.10')
-        branch_balance = branch_total_contrib - branch_total_exp - branch_remittance
         
-        # Calculate amount kept at branch (total - mission remittance)
-        branch_kept_at_branch = branch_total_contrib - branch_remittance
+        # CORRECT: Branch balance excludes expected mission amounts, includes actual remittances only
+        branch_balance = branch_balance_data['branch_balance']
+        branch_actual_remitted = branch_balance_data['total_remitted']
+        
+        # Calculate amount kept at branch (actual cash position)
+        branch_kept_at_branch = branch_balance  # This is the actual cash remaining
         
         member_count = Member.objects.filter(user__branch=branch, user__is_active=True).count()
         
@@ -885,12 +1069,16 @@ def comprehensive_statistics(request):
             'branch': branch,
             'total_contributions': branch_total_contrib,
             'total_expenditures': branch_total_exp,
-            'tithe_amount': branch_tithe,
-            'mission_remittance': branch_remittance,
+            'expected_mission_due': expected_due,  # Obligation, not cash
+            'actual_mission_remitted': branch_actual_remitted,  # Actual cash sent
             'branch_kept_at_branch': branch_kept_at_branch,
-            'branch_balance': branch_balance,
+            'branch_balance': branch_balance,  # CORRECT: Actual cash position
             'member_count': member_count,
-            'avg_contribution_per_member': branch_total_contrib / member_count if member_count > 0 else Decimal('0.00')
+            'avg_contribution_per_member': branch_total_contrib / member_count if member_count > 0 else Decimal('0.00'),
+            'financial_health': {
+                'remittance_rate': (branch_actual_remitted / expected_due * 100) if expected_due > 0 else Decimal('0.00'),
+                'cash_position': branch_balance
+            }
         })
     
     # District-level statistics (if not filtered to specific branch)
@@ -951,20 +1139,28 @@ def comprehensive_statistics(request):
         'selected_month': month,
         'years': range(timezone.now().year - 3, timezone.now().year + 2),  # Last 3 years + next year
         
-        # Overall stats
+        # CORRECT: Overall stats using proper financial logic
         'total_contributions': total_contributions,
         'total_expenditures': total_expenditures,
         'net_balance': net_balance,
-        'total_tithe': total_tithe,
-        'mission_remittance_due': mission_remittance_due,
-        'total_kept_at_branches': total_kept_at_branches,
+        
+        # CORRECT: Mission financials - separate obligations from actual income
+        'actual_mission_income': actual_mission_income,  # From verified remittances only
+        'total_mission_obligations': mission_obligations,  # Expected amounts from contributions
+        'mission_income_gap': mission_obligations - actual_mission_income,  # Underpaid amount
+        'remittance_count': mission_income_data['remittance_count'],
+        
+        # CORRECT: Contribution breakdowns
+        'local_only_contributions': local_contributions['total_amount'],
+        'mission_shared_contributions': mission_shared_contributions['total_amount'],
+        'total_kept_at_branches': total_kept_at_branches,  # Actual cash at branches
         
         # Hierarchical stats
         'branch_stats': branch_stats,
         'district_stats': district_stats,
         'area_stats': area_stats,
         
-        'fiscal_year': fiscal_year,
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer used
         'site_settings': SiteSettings.get_settings(),
     }
     
@@ -989,10 +1185,22 @@ def member_contributions_report(request):
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set default date range to current year if no dates provided
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = datetime(current_year, 1, 1).date()
+        to_date = datetime(current_year, 12, 31).date()
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date() if from_date else None
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date() if to_date else None
     
-    # Base queryset
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year, contribution_type__is_individual=True)
+    # Base queryset - use date filtering instead of fiscal year filtering
+    contributions = Contribution.objects.filter(
+        contribution_type__is_individual=True,
+        date__gte=from_date,
+        date__lte=to_date
+    )
     
     # Apply filters
     districts = District.objects.filter(is_active=True)
@@ -1043,7 +1251,7 @@ def member_contributions_report(request):
         'member_stats': member_stats,
         'total_amount': total_amount,
         'total_members': total_members,
-        'fiscal_year': fiscal_year,
+        'current_year': timezone.now().year,  # Use current year instead of fiscal year
         'site_settings': SiteSettings.get_settings(),
     }
     
@@ -1069,7 +1277,13 @@ def export_statistics_excel(request):
     year = request.GET.get('year', str(timezone.now().year))
     month = request.GET.get('month')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set date range for export
+    from_date = date(int(year), 1, 1)
+    to_date = date(int(year), 12, 31)
+    if month:
+        from_date = date(int(year), int(month), 1)
+        to_date = date(int(year), int(month), calendar.monthrange(int(year), int(month))[1])
     
     try:
         import openpyxl
@@ -1085,10 +1299,8 @@ def export_statistics_excel(request):
     # Remove default sheet
     wb.remove(wb.active)
     
-    # Summary Sheet
-    ws_summary = wb.create_sheet("Summary", 0)
-    
-    # Headers styling
+    # Summary sheet
+    ws_summary = wb.create_sheet("Summary")
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center")
@@ -1101,9 +1313,9 @@ def export_statistics_excel(request):
         cell.fill = header_fill
         cell.alignment = header_alignment
     
-    # Get data
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year)
-    expenditures = Expenditure.objects.filter(fiscal_year=fiscal_year)
+    # Get data - use date filtering
+    contributions = Contribution.objects.filter(date__gte=from_date, date__lte=to_date)
+    expenditures = Expenditure.objects.filter(date__gte=from_date, date__lte=to_date)
     
     # Apply filters
     if area_id:
@@ -1241,7 +1453,8 @@ def final_financial_report(request):
     # Get filters
     month = request.GET.get('month', str(timezone.now().month))
     year = request.GET.get('year', str(timezone.now().year))
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Removed fiscal_year usage
+    # Monthly reports now use date filtering only
     site_settings = SiteSettings.get_settings()
     
     # Calculate date range
@@ -1254,19 +1467,18 @@ def final_financial_report(request):
         month_end = timezone.now().replace(year=year_int, month=month_int+1, day=1) - timedelta(days=1)
     
     # ============ MISSION-LEVEL INCOME ============
-    # Remittances from branches
-    total_remittances = Remittance.objects.filter(
-        date__gte=month_start,
-        date__lte=month_end,
-        status='approved'
-    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    # CORRECT: Mission income comes ONLY from verified remittances, not contributions
+    start_date = month_start.date()
+    end_date = month_end.date()
     
-    # Other mission income (if any)
+    mission_income_data = get_mission_income(start_date, end_date)
+    total_remittances = mission_income_data['total_income']
+    
+    # Other mission income (if any) - mission-level contributions only
     mission_other_income = Contribution.objects.filter(
-        date__gte=month_start,
-        date__lte=month_end,
-        branch__isnull=True,  # Mission-level contributions
-        fiscal_year=fiscal_year
+        date__gte=start_date,
+        date__lte=end_date,
+        branch__isnull=True,  # Mission-level contributions only
     ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     
     total_mission_income = total_remittances + mission_other_income
@@ -1302,21 +1514,22 @@ def final_financial_report(request):
     
     branch_data = []
     total_branch_income = Decimal('0.00')
-    total_branch_expenditure = Decimal('0.00')
     total_branch_tithe = Decimal('0.00')
     total_branch_offerings = Decimal('0.00')
     total_branch_other = Decimal('0.00')
     total_branch_expenses = Decimal('0.00')
     total_branch_remitted = Decimal('0.00')
     total_branch_commission = Decimal('0.00')
+    total_branch_actual_remitted = Decimal('0.00')
+    total_branch_expenditure = Decimal('0.00')
     
     for branch in branches:
         # Income
+        # DEPRECATED: Year-as-state architecture - Use date filtering only
         branch_contributions = Contribution.objects.filter(
             branch=branch,
             date__gte=month_start,
-            date__lte=month_end,
-            fiscal_year=fiscal_year
+            date__lte=month_end
         )
         
         branch_tithe = branch_contributions.filter(
@@ -1343,17 +1556,22 @@ def final_financial_report(request):
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         
         # Remittance
+        # DEPRECATED: Year-as-state architecture - Use month/year filtering for remittances
         branch_remittance = Remittance.objects.filter(
             branch=branch,
-            date__gte=month_start,
-            date__lte=month_end,
+            month=month_int,
+            year=year_int,
             status='approved'
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        ).aggregate(total=Sum('amount_sent'))['total'] or Decimal('0.00')
+        
+        # CORRECT: Use actual remittances, not expected amounts
+        branch_balance_data = get_branch_balance(branch, start_date, end_date)
+        branch_actual_remitted = branch_balance_data['total_remitted']
         
         # Commission (if tracked)
         branch_commission = Decimal('0.00')  # Future: get from commission model
         
-        branch_total_exp = branch_expenditures + branch_remittance + branch_commission
+        branch_total_exp = branch_expenditures + branch_actual_remitted + branch_commission
         branch_balance = branch_total_income - branch_total_exp
         
         branch_data.append({
@@ -1363,7 +1581,8 @@ def final_financial_report(request):
             'other_income': branch_other_contrib,
             'total_income': branch_total_income,
             'expenses': branch_expenditures,
-            'remittance': branch_remittance,
+            'remittance': branch_actual_remitted,  # For template compatibility
+            'expected_due': get_expected_mission_due(branch, start_date, end_date),  # Obligation
             'commission': branch_commission,
             'total_expenditure': branch_total_exp,
             'balance': branch_balance
@@ -1375,7 +1594,7 @@ def final_financial_report(request):
         total_branch_offerings += branch_offerings
         total_branch_other += branch_other_contrib
         total_branch_expenses += branch_expenditures
-        total_branch_remitted += branch_remittance
+        total_branch_actual_remitted += branch_actual_remitted
         total_branch_commission += branch_commission
         total_branch_expenditure += branch_total_exp
     
@@ -1422,7 +1641,7 @@ def final_financial_report(request):
         'month': month_int,
         'year': year_int,
         'month_name': month_start.strftime('%B'),
-        'fiscal_year': fiscal_year,
+        # DEPRECATED: Year-as-state architecture - fiscal_year no longer used
         'site_settings': site_settings,
         'months': [(i, timezone.now().replace(day=1, month=i).strftime('%B')) for i in range(1, 13)],
         'years': range(timezone.now().year - 2, timezone.now().year + 1),
@@ -1443,7 +1662,7 @@ def final_financial_report(request):
         'total_branch_offerings': total_branch_offerings,
         'total_branch_other': total_branch_other,
         'total_branch_expenses': total_branch_expenses,
-        'total_branch_remitted': total_branch_remitted,
+        'total_branch_remitted': total_branch_actual_remitted,  # Use actual remitted
         'total_branch_commission': total_branch_commission,
         'total_branch_expenditure': total_branch_expenditure,
         'total_branch_balance': total_branch_balance,
@@ -1455,6 +1674,20 @@ def final_financial_report(request):
         
         # Branch Details
         'branch_data': branch_data,
+        'branch_data_json': json.dumps([
+            {
+                'branch': {'name': item['branch'].name},
+                'tithe': str(item['tithe']),
+                'offerings': str(item['offerings']),
+                'other_income': str(item['other_income']),
+                'total_income': str(item['total_income']),
+                'expenses': str(item['expenses']),
+                'remittance': str(item['remittance']),
+                'commission': str(item['commission']),
+                'total_expenditure': str(item['total_expenditure']),
+                'balance': str(item['balance'])
+            } for item in branch_data
+        ]),
         
         # Charts
         'mission_income_chart': json.dumps(mission_income_chart),
@@ -1485,7 +1718,15 @@ def export_member_contributions_excel(request):
     from_date = request.GET.get('from_date')
     to_date = request.GET.get('to_date')
     
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use date filtering instead of fiscal year
+    # Set date range for export
+    if not from_date or not to_date:
+        current_year = timezone.now().year
+        from_date = date(current_year, 1, 1)
+        to_date = date(current_year, 12, 31)
+    else:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d').date()
+        to_date = datetime.strptime(to_date, '%Y-%m-%d').date()
     
     try:
         import openpyxl
@@ -1497,9 +1738,6 @@ def export_member_contributions_excel(request):
     
     # Create workbook
     wb = openpyxl.Workbook()
-    
-    # Remove default sheet
-    wb.remove(wb.active)
     
     # Member Contributions Sheet
     ws_members = wb.create_sheet("Member Contributions", 0)
@@ -1519,8 +1757,12 @@ def export_member_contributions_excel(request):
         cell.fill = header_fill
         cell.alignment = header_alignment
     
-    # Get data
-    contributions = Contribution.objects.filter(fiscal_year=fiscal_year, contribution_type__is_individual=True)
+    # Get data - use date filtering
+    contributions = Contribution.objects.filter(
+        date__gte=from_date, 
+        date__lte=to_date, 
+        contribution_type__is_individual=True
+    )
     
     # Apply filters
     if area_id:

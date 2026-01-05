@@ -38,7 +38,7 @@
                 <div class="flex items-center gap-6">
                     <div class="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {% if user.profile_picture %}
-                        <img src="{{ user.profile_picture.url }}" class="h-24 w-24 object-cover">
+                        <img src="{{ user.profile_picture.url }}" class="h-24 w-24 object-cover" id="current_photo">
                         {% else %}
                         <span class="text-4xl text-primary-600 font-bold">{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
                         {% endif %}
@@ -46,8 +46,31 @@
                     <div class="flex-1">
                         {% if can_edit %}
                         <label class="form-label">Profile Picture</label>
-                        <input type="file" name="profile_picture" accept="image/*" class="form-input">
-                        <p class="text-xs text-gray-500 mt-1">JPG, PNG or GIF. Max 2MB.</p>
+                        <div class="space-y-3">
+                            <div class="flex gap-3">
+                                <button type="button" onclick="openCamera()" class="btn btn-secondary btn-sm">
+                                    <span class="material-icons-outlined mr-2">camera_alt</span>Take Photo
+                                </button>
+                                <button type="button" onclick="document.getElementById('photo_input').click()" class="btn btn-secondary btn-sm">
+                                    <span class="material-icons-outlined mr-2">upload</span>Upload Photo
+                                </button>
+                                {% if user.profile_picture %}
+                                <button type="button" onclick="removePhoto()" class="btn btn-danger btn-sm">
+                                    <span class="material-icons-outlined mr-2">delete</span>Remove
+                                </button>
+                                {% endif %}
+                            </div>
+                            <input type="file" id="photo_input" name="profile_picture" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" onchange="handlePictureUpload(this)">
+                            <input type="file" id="camera_input" accept="image/jpeg,image/png,image/gif,image/webp" capture="environment" style="display: none;" onchange="handlePictureUpload(this)">
+                            <input type="hidden" id="photo_data" name="photo_data">
+                            <p class="text-xs text-gray-500">JPG, PNG or GIF. Max 5MB. You can take a photo directly or upload from your device.</p>
+                            <div id="upload_progress" class="hidden">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Uploading...</p>
+                            </div>
+                        </div>
                         {% else %}
                         <p class="text-sm font-medium text-gray-700">Profile Picture</p>
                         <p class="text-sm text-gray-500">Contact administrator to change profile picture</p>
@@ -268,4 +291,171 @@
         </div>
         {% endif %}
 </div>
+
+<!-- Photo Upload JavaScript -->
+{% if can_edit %}
+<script>
+function openCamera() {
+    const cameraInput = document.getElementById('camera_input');
+    cameraInput.click();
+}
+
+function handlePictureUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Client-side validation
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (file.size > maxSize) {
+        showUploadStatus('File is too large! Please choose an image smaller than 5MB.', 'error');
+        input.value = '';
+        return;
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+        showUploadStatus('Invalid file type! Please choose a JPG, PNG, GIF, or WebP image.', 'error');
+        input.value = '';
+        return;
+    }
+    
+    // Show loading status
+    showUploadStatus('Uploading...', 'loading');
+    
+    // Create FormData for AJAX upload
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // AJAX upload
+    fetch('{% url "accounts:upload_photo" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showUploadStatus('Profile picture updated successfully!', 'success');
+            // Update preview
+            const preview = document.getElementById('current_photo');
+            if (preview) {
+                preview.src = data.photo_url;
+            } else {
+                const container = document.querySelector('.h-24.w-24');
+                container.innerHTML = `<img src="${data.photo_url}" class="h-24 w-24 object-cover" id="current_photo">`;
+            }
+            // Show remove button if it doesn't exist
+            updateRemoveButton(true);
+        } else {
+            showUploadStatus(data.message || 'Upload failed. Please try again.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        showUploadStatus('Upload failed. Please check your connection and try again.', 'error');
+    })
+    .finally(() => {
+        // Clear the input
+        input.value = '';
+    });
+}
+
+function removePhoto() {
+    if (!confirm('Are you sure you want to remove your profile picture?')) {
+        return;
+    }
+    
+    showUploadStatus('Removing...', 'loading');
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // AJAX removal
+    fetch('{% url "accounts:delete_photo" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showUploadStatus('Profile picture removed successfully!', 'success');
+            // Update preview
+            const container = document.querySelector('.h-24.w-24');
+            const firstName = '{{ user.first_name|slice:":1" }}';
+            const lastName = '{{ user.last_name|slice:":1" }}';
+            container.innerHTML = `<span class="text-4xl text-primary-600 font-bold">${firstName}${lastName}</span>`;
+            // Hide remove button
+            updateRemoveButton(false);
+        } else {
+            showUploadStatus(data.message || 'Failed to remove picture. Please try again.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Remove error:', error);
+        showUploadStatus('Failed to remove picture. Please check your connection and try again.', 'error');
+    });
+}
+
+function showUploadStatus(message, type) {
+    const progressDiv = document.getElementById('upload_progress');
+    if (!progressDiv) return;
+    
+    progressDiv.classList.remove('hidden');
+    const textElement = progressDiv.querySelector('p');
+    
+    if (textElement) {
+        textElement.textContent = message;
+        textElement.className = 'text-xs mt-1';
+        
+        if (type === 'success') {
+            textElement.classList.add('text-green-600');
+        } else if (type === 'error') {
+            textElement.classList.add('text-red-600');
+        } else if (type === 'loading') {
+            textElement.classList.add('text-blue-600');
+        }
+    }
+    
+    // Hide progress bar for non-loading states
+    const progressBar = progressDiv.querySelector('.w-full.bg-gray-200');
+    if (progressBar) {
+        progressBar.style.display = type === 'loading' ? 'block' : 'none';
+    }
+    
+    // Clear status after 5 seconds for success/error messages
+    if (type !== 'loading') {
+        setTimeout(() => {
+            progressDiv.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+function updateRemoveButton(show) {
+    const container = document.querySelector('.flex.gap-3');
+    if (!container) return;
+    
+    const existingRemoveBtn = container.querySelector('button[onclick*="removePhoto"]');
+    
+    if (show && !existingRemoveBtn) {
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.onclick = removePhoto;
+        removeBtn.className = 'btn btn-danger btn-sm';
+        removeBtn.innerHTML = '<span class="material-icons-outlined mr-2">delete</span>Remove';
+        container.appendChild(removeBtn);
+    } else if (!show && existingRemoveBtn) {
+        existingRemoveBtn.remove();
+    }
+}
+</script>
+{% endif %}
 {% endblock %}

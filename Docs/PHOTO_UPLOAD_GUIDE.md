@@ -117,4 +117,4 @@ The photo upload feature allows users to upload profile pictures using both came
 - Smile for friendly appearance
 
 ## Support
-For technical issues with photo upload, contact IT support at support@sdscc.org
+For technical issues with photo upload, contact IT support at support@7dscc.org

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+
+{% block title %}Mission Fund Report{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Mission Oversight Fund Report</h1>
+            <p class="text-gray-600">Fund totals across all branches</p>
+        </div>
+        <div class="flex space-x-4 mt-4 md:mt-0">
+            <a href="{% url 'contributions:fund_assessment' %}" class="btn btn-secondary">
+                <span class="material-icons-outlined mr-2">arrow_back</span>Back to Fund Assessment
+            </a>
+            <button onclick="window.print()" class="btn btn-primary">
+                <span class="material-icons-outlined mr-2">print</span>Print Report
+            </button>
+        </div>
+    </div>
+    
+    <!-- Date Range Filter -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input type="date" name="from_date" value="{{ from_date }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input type="date" name="to_date" value="{{ to_date }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Apply Filter
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Report Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Total Opening Balance</h3>
+            <p class="text-2xl font-bold text-gray-900">{{ total_opening|currency }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Total Contributions</h3>
+            <p class="text-2xl font-bold text-green-600">{{ total_contributions|currency }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Total Expenditures</h3>
+            <p class="text-2xl font-bold text-red-600">{{ total_expenditures|currency }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-sm font-medium text-gray-500 mb-2">Total Closing Balance</h3>
+            <p class="text-2xl font-bold text-blue-600">{{ total_closing|currency }}</p>
+        </div>
+    </div>
+    
+    <!-- Fund Details Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800">Fund Details</h2>
+        </div>
+        
+        {% if report_data %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fund Name</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Opening Balance</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Contributions</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Expenditures</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Closing Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for fund in report_data %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ fund.fund_name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                            {{ fund.opening_balance|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                            {{ fund.contributions|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                            {{ fund.expenditures|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                            {{ fund.closing_balance|currency }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    <!-- Totals Row -->
+                    <tr class="bg-gray-50 font-semibold">
+                        <td class="px-6 py-4 text-sm text-gray-900">TOTALS</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">
+                            {{ total_opening|currency }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">
+                            {{ total_contributions|currency }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">
+                            {{ total_expenditures|currency }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900 text-right">
+                            {{ total_closing|currency }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-6 text-center">
+            <p class="text-gray-500">No fund data found for the selected period.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Branch Breakdown -->
+    {% if report_data %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800">Branch Breakdown by Fund</h2>
+        </div>
+        
+        <div class="p-6">
+            {% for fund in report_data %}
+            {% if fund.branch_breakdown %}
+            <div class="mb-8">
+                <h3 class="text-md font-semibold text-gray-800 mb-4">{{ fund.fund_name }} - Branch Balances</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for branch in fund.branch_breakdown %}
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">{{ branch.branch_name }}</span>
+                            <span class="text-sm font-semibold text-gray-900">{{ branch.balance|currency }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Report Footer -->
+    <div class="mt-6 text-sm text-gray-500 text-center">
+        <p>Report generated on {% now "d F Y, H:i" %}</p>
+        {% if from_date or to_date %}
+        <p>Period: {% if from_date %}{{ from_date }}{% else %}Beginning{% endif %} to {% if to_date %}{{ to_date }}{% else %}Today{% endif %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

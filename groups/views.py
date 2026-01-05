@@ -17,8 +17,13 @@ def group_list(request):
     groups = Group.objects.filter(is_active=True).select_related('category', 'branch', 'leader')
     categories = GroupCategory.objects.filter(is_active=True)
     
-    if request.user.branch and not request.user.is_mission_admin:
+    # Apply hierarchy filtering
+    if request.user.is_branch_executive and request.user.branch:
         groups = groups.filter(branch=request.user.branch)
+    elif request.user.is_district_executive and request.user.managed_district:
+        groups = groups.filter(branch__district=request.user.managed_district)
+    elif request.user.is_area_executive and request.user.managed_area:
+        groups = groups.filter(branch__district__area=request.user.managed_area)
     
     # Filter by category
     category_id = request.GET.get('category')
@@ -42,8 +47,33 @@ def group_add(request):
         return redirect('core:dashboard')
     
     categories = GroupCategory.objects.filter(is_active=True)
-    areas = Area.objects.filter(is_active=True)
-    branches = Branch.objects.filter(is_active=True).select_related('district__area')
+    
+    # Initialize hierarchy-based filtering
+    user_scope = 'mission'  # Default for mission admin
+    if request.user.is_branch_executive and request.user.branch:
+        user_scope = 'branch'
+    elif request.user.is_district_executive and request.user.managed_district:
+        user_scope = 'district'
+    elif request.user.is_area_executive and request.user.managed_area:
+        user_scope = 'area'
+    
+    # Filter areas, districts, and branches based on user hierarchy
+    if user_scope == 'area':
+        areas = Area.objects.filter(pk=request.user.managed_area.pk, is_active=True)
+        districts = District.objects.filter(area=request.user.managed_area, is_active=True)
+        branches = Branch.objects.filter(district__area=request.user.managed_area, is_active=True)
+    elif user_scope == 'district':
+        areas = Area.objects.filter(pk=request.user.managed_district.area.pk, is_active=True)
+        districts = District.objects.filter(pk=request.user.managed_district.pk, is_active=True)
+        branches = Branch.objects.filter(district=request.user.managed_district, is_active=True)
+    elif user_scope == 'branch':
+        areas = Area.objects.filter(pk=request.user.branch.district.area.pk, is_active=True)
+        districts = District.objects.filter(pk=request.user.branch.district.pk, is_active=True)
+        branches = Branch.objects.filter(pk=request.user.branch.pk, is_active=True)
+    else:
+        areas = Area.objects.filter(is_active=True)
+        districts = District.objects.filter(is_active=True)
+        branches = Branch.objects.filter(is_active=True).select_related('district__area')
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -76,6 +106,24 @@ def group_add(request):
         meeting_time = request.POST.get('meeting_time') or None
         meeting_location = request.POST.get('meeting_location', '')
         
+        # Validate branch access based on user hierarchy
+        if branch_id and user_scope != 'mission':
+            try:
+                selected_branch = Branch.objects.get(pk=branch_id, is_active=True)
+                
+                if user_scope == 'area' and selected_branch.district.area != request.user.managed_area:
+                    messages.error(request, 'You can only create groups for branches in your area.')
+                    return redirect('groups:add')
+                elif user_scope == 'district' and selected_branch.district != request.user.managed_district:
+                    messages.error(request, 'You can only create groups for branches in your district.')
+                    return redirect('groups:add')
+                elif user_scope == 'branch' and selected_branch != request.user.branch:
+                    messages.error(request, 'You can only create groups for your branch.')
+                    return redirect('groups:add')
+            except Branch.DoesNotExist:
+                messages.error(request, 'Invalid branch selected.')
+                return redirect('groups:add')
+        
         if name and code:
             try:
                 group = Group.objects.create(
@@ -104,12 +152,14 @@ def group_add(request):
     context = {
         'categories': categories,
         'areas': areas,
+        'districts': districts,
         'branches': branches,
         'scopes': Group.Scope.choices,
         'category_types': GroupCategory.CategoryType.choices,
         'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
         'is_branch_admin': is_branch_admin,
         'user_branch': request.user.branch,
+        'user_scope': user_scope,
     }
     return render(request, 'groups/group_form.html', context)
 
@@ -129,15 +179,34 @@ def group_members(request, group_id):
     from accounts.models import User
     
     group = get_object_or_404(Group, pk=group_id)
+    
+    # Check if user has access to this group based on hierarchy
+    if request.user.is_branch_executive and request.user.branch:
+        if group.branch != request.user.branch:
+            messages.error(request, 'Access denied. You can only manage groups in your branch.')
+            return redirect('groups:list')
+    elif request.user.is_district_executive and request.user.managed_district:
+        if group.branch and group.branch.district != request.user.managed_district:
+            messages.error(request, 'Access denied. You can only manage groups in your district.')
+            return redirect('groups:list')
+    elif request.user.is_area_executive and request.user.managed_area:
+        if group.branch and group.branch.district.area != request.user.managed_area:
+            messages.error(request, 'Access denied. You can only manage groups in your area.')
+            return redirect('groups:list')
+    
     memberships = GroupMembership.objects.filter(group=group).select_related('member')
     
     # Get available members (not already in group)
     existing_member_ids = memberships.values_list('member_id', flat=True)
     available_members = User.objects.filter(is_active=True).exclude(id__in=existing_member_ids)
     
-    # Filter by branch if not mission admin
-    if request.user.branch and not request.user.is_mission_admin:
+    # Apply hierarchy filtering to available members
+    if request.user.is_branch_executive and request.user.branch:
         available_members = available_members.filter(branch=request.user.branch)
+    elif request.user.is_district_executive and request.user.managed_district:
+        available_members = available_members.filter(branch__district=request.user.managed_district)
+    elif request.user.is_area_executive and request.user.managed_area:
+        available_members = available_members.filter(branch__district__area=request.user.managed_area)
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -147,6 +216,21 @@ def group_members(request, group_id):
             role = request.POST.get('role', 'member')
             if member_id:
                 member = get_object_or_404(User, pk=member_id)
+                
+                # Validate member access based on hierarchy
+                if request.user.is_branch_executive and request.user.branch:
+                    if member.branch != request.user.branch:
+                        messages.error(request, 'You can only add members from your branch.')
+                        return redirect('groups:members', group_id=group.id)
+                elif request.user.is_district_executive and request.user.managed_district:
+                    if member.branch and member.branch.district != request.user.managed_district:
+                        messages.error(request, 'You can only add members from your district.')
+                        return redirect('groups:members', group_id=group.id)
+                elif request.user.is_area_executive and request.user.managed_area:
+                    if member.branch and member.branch.district.area != request.user.managed_area:
+                        messages.error(request, 'You can only add members from your area.')
+                        return redirect('groups:members', group_id=group.id)
+                
                 membership, created = GroupMembership.objects.get_or_create(
                     group=group,
                     member=member,
@@ -189,11 +273,33 @@ def search_members(request):
     
     members = User.objects.filter(is_active=True)
     
-    # Filter by branch if specified
-    if branch_id:
-        members = members.filter(branch_id=branch_id)
-    elif request.user.branch and not request.user.is_mission_admin:
+    # Apply hierarchy filtering
+    if request.user.is_branch_executive and request.user.branch:
         members = members.filter(branch=request.user.branch)
+    elif request.user.is_district_executive and request.user.managed_district:
+        members = members.filter(branch__district=request.user.managed_district)
+    elif request.user.is_area_executive and request.user.managed_area:
+        members = members.filter(branch__district__area=request.user.managed_area)
+    
+    # Filter by branch if specified (only if user has access to that branch)
+    if branch_id:
+        try:
+            selected_branch = Branch.objects.get(pk=branch_id, is_active=True)
+            
+            # Validate branch access based on hierarchy
+            if request.user.is_branch_executive and request.user.branch:
+                if selected_branch != request.user.branch:
+                    return JsonResponse({'members': []})  # No access
+            elif request.user.is_district_executive and request.user.managed_district:
+                if selected_branch.district != request.user.managed_district:
+                    return JsonResponse({'members': []})  # No access
+            elif request.user.is_area_executive and request.user.managed_area:
+                if selected_branch.district.area != request.user.managed_area:
+                    return JsonResponse({'members': []})  # No access
+            
+            members = members.filter(branch_id=branch_id)
+        except Branch.DoesNotExist:
+            return JsonResponse({'members': []})
     
     # Search
     if q:
@@ -220,13 +326,31 @@ def search_members(request):
 def get_branch_members(request, branch_id):
     """Get members of a specific branch for AJAX."""
     from accounts.models import User
+    from core.models import Branch
     
-    members = User.objects.filter(branch_id=branch_id, is_active=True).order_by('first_name')[:50]
-    
-    data = [{
-        'id': str(m.id),
-        'name': m.get_full_name(),
-        'member_id': m.member_id,
-    } for m in members]
-    
-    return JsonResponse({'members': data})
+    try:
+        branch = Branch.objects.get(pk=branch_id, is_active=True)
+        
+        # Validate branch access based on hierarchy
+        if request.user.is_branch_executive and request.user.branch:
+            if branch != request.user.branch:
+                return JsonResponse({'members': []})  # No access
+        elif request.user.is_district_executive and request.user.managed_district:
+            if branch.district != request.user.managed_district:
+                return JsonResponse({'members': []})  # No access
+        elif request.user.is_area_executive and request.user.managed_area:
+            if branch.district.area != request.user.managed_area:
+                return JsonResponse({'members': []})  # No access
+        
+        members = User.objects.filter(branch=branch, is_active=True).order_by('first_name')[:50]
+        
+        data = [{
+            'id': str(m.id),
+            'name': m.get_full_name(),
+            'member_id': m.member_id,
+        } for m in members]
+        
+        return JsonResponse({'members': data})
+        
+    except Branch.DoesNotExist:
+        return JsonResponse({'members': []})

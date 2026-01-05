@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Branch Yearly Financial Report - {{ branch.name }} {{ year }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #059669;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #059669;
+            font-size: 18pt;
+            margin: 0 0 5px 0;
+        }
+        .header h2 {
+            color: #333;
+            font-size: 14pt;
+            margin: 0 0 5px 0;
+            font-weight: normal;
+        }
+        .header p {
+            color: #666;
+            font-size: 10pt;
+            margin: 0;
+        }
+        .branch-info {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+        .branch-info p {
+            margin: 3px 0;
+            font-size: 10pt;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            background-color: #059669;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .total-row {
+            background-color: #d1fae5;
+            font-weight: bold;
+        }
+        .summary-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .summary-item {
+            display: table-cell;
+            width: 25%;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        .summary-item .label {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .summary-item .value {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #333;
+        }
+        .amount-positive {
+            color: #059669;
+        }
+        .amount-negative {
+            color: #dc2626;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 9pt;
+            color: #666;
+        }
+        .financial-position {
+            background-color: #1f2937;
+            color: white;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .financial-position h3 {
+            margin: 0 0 10px 0;
+            font-size: 12pt;
+        }
+        .financial-position table {
+            color: white;
+        }
+        .financial-position td {
+            border-bottom: 1px solid #374151;
+            padding: 6px 0;
+        }
+        .closing-balance {
+            background-color: #374151;
+            padding: 10px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .closing-balance .label {
+            font-size: 10pt;
+            color: #9ca3af;
+        }
+        .closing-balance .amount {
+            font-size: 18pt;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ site_settings.site_name }}</h1>
+        <h2>Branch Yearly Financial Report</h2>
+        <p>For the Year Ended December 31, {{ year }}</p>
+        <p>Generated: {{ generated_date|date:"F d, Y" }}</p>
+    </div>
+
+    <div class="branch-info">
+        <p><strong>Branch:</strong> {{ branch.name }} ({{ branch.code }})</p>
+        <p><strong>District:</strong> {{ branch.district.name }}</p>
+        <p><strong>Area:</strong> {{ branch.district.area.name }}</p>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-item">
+            <div class="label">Total Contributions</div>
+            <div class="value">{{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Total Expenditure</div>
+            <div class="value">{{ site_settings.currency_symbol }}{{ total_expenditures|floatformat:2 }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Sent to Mission</div>
+            <div class="value">{{ site_settings.currency_symbol }}{{ total_remitted|floatformat:2 }}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Branch Balance</div>
+            <div class="value {% if closing_balance >= 0 %}amount-positive{% else %}amount-negative{% endif %}">
+                {{ site_settings.currency_symbol }}{{ closing_balance|floatformat:2 }}
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Contributions by Type</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Contribution Type</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in contributions_by_type %}
+                <tr>
+                    <td>{{ item.contribution_type__name }}</td>
+                    <td class="text-right">{{ site_settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center" style="color: #666;">No contributions recorded</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td><strong>Total Contributions</strong></td>
+                    <td class="text-right"><strong>{{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Mission Share Summary</div>
+        <table>
+            <tr>
+                <td>Mission Share Due (Expected)</td>
+                <td class="text-right">{{ site_settings.currency_symbol }}{{ expected_mission_due|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Amount Remitted to Mission</td>
+                <td class="text-right amount-positive">{{ site_settings.currency_symbol }}{{ total_remitted|floatformat:2 }}</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>Outstanding Balance</strong></td>
+                <td class="text-right {% if outstanding_to_mission > 0 %}amount-negative{% endif %}">
+                    <strong>{{ site_settings.currency_symbol }}{{ outstanding_to_mission|floatformat:2 }}</strong>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="financial-position">
+        <h3>Financial Position Summary</h3>
+        <table>
+            <tr>
+                <td>Opening Balance</td>
+                <td class="text-right">{{ site_settings.currency_symbol }}0.00</td>
+            </tr>
+            <tr>
+                <td>Add: Total Contributions</td>
+                <td class="text-right" style="color: #34d399;">+ {{ site_settings.currency_symbol }}{{ total_contributions|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Less: Total Expenditure</td>
+                <td class="text-right" style="color: #f87171;">- {{ site_settings.currency_symbol }}{{ total_expenditures|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>Less: Remittances Sent</td>
+                <td class="text-right" style="color: #818cf8;">- {{ site_settings.currency_symbol }}{{ total_remitted|floatformat:2 }}</td>
+            </tr>
+        </table>
+        <div class="closing-balance">
+            <div class="label">Closing Balance (Money Held by Branch)</div>
+            <div class="amount {% if closing_balance >= 0 %}amount-positive{% else %}amount-negative{% endif %}">
+                {{ site_settings.currency_symbol }}{{ closing_balance|floatformat:2 }}
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Notes:</strong></p>
+        <ul>
+            <li>This report reflects data from closed months only.</li>
+            <li>Branch Balance = Total Contributions - Total Expenditure - Remittances Sent</li>
+            <li>All figures are in {{ site_settings.currency_code }}.</li>
+        </ul>
+        <p style="margin-top: 15px; text-align: center;">
+            This is a computer-generated report. No signature required.
+        </p>
+    </div>
+</body>
+</html>

@@ -73,12 +73,13 @@ def payroll_runs(request):
                     messages.warning(request, f'Payroll for {month_name[month]} {year} already exists.')
                     return redirect('payroll:runs')
                 
-                fiscal_year = FiscalYear.get_current()
+                # DEPRECATED: Year-as-state architecture - fiscal_year no longer assigned
+                # Payroll runs now use date-based filtering only
                 
                 payroll_run = PayrollRun.objects.create(
                     month=month,
                     year=year,
-                    fiscal_year=fiscal_year,
+                    # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                     status=PayrollRun.Status.DRAFT,
                     processed_by=request.user,
                     processed_at=timezone.now()

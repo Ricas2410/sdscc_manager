@@ -37,6 +37,13 @@
                 Church Calendar
             </a>
             
+            {% if user.is_pastor or user.is_staff and not user.is_mission_admin and not user.is_superuser %}
+            <a href="{% url 'attendance:my_meetings' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">event_available</span>
+                My Meetings
+            </a>
+            {% endif %}
+            
             {% if user.is_mission_admin %}
             <!-- ============ MISSION ADMIN NAVIGATION ============ -->
             <div class="sidebar-section">Church Structure</div>
@@ -54,9 +61,17 @@
             </a>
             
             <div class="sidebar-section">Mission Finance</div>
+            <a href="{% url 'core:ledger_dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+                Financial Ledger
+            </a>
             <a href="{% url 'core:mission_financial_dashboard' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
                 Mission Dashboard
+            </a>
+            <a href="{% url 'core:outstanding_remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">pending_actions</span>
+                Money Owed to Mission
             </a>
             <a href="{% url 'core:mission_expenditure_list' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
@@ -64,7 +79,7 @@
             </a>
             <a href="{% url 'core:mission_remittance_tracking' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
-                Remittance Tracking
+                Remittances & Outstanding
             </a>
 
             <div class="sidebar-section">Financial Setup</div>
@@ -110,27 +125,31 @@
                 <span class="material-icons-outlined text-xl mr-3">paid</span>
                 Commission Management
             </a>
-            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
-                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
-                Remittances
-            </a>
             <a href="{% url 'contributions:mission_returns' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">account_balance</span>
                 Mission Returns
+            </a>
+            <a href="{% url 'contributions:opening_balances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+                Opening Balances
+            </a>
+            <a href="{% url 'contributions:fund_assessment' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Fund Assessment
+            </a>
+            <a href="{% url 'contributions:hierarchy_transfers' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">swap_vert</span>
+                Hierarchy Transfers
+            </a>
+            <a href="{% url 'contributions:hierarchy_remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                Hierarchy Remittances
             </a>
             
             <div class="sidebar-section">Expenditures</div>
             <a href="{% url 'expenditure:list' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
                 All Expenditures
-            </a>
-            <a href="{% url 'expenditure:mission_list' %}" class="sidebar-link">
-                <span class="material-icons-outlined text-xl mr-3">account_balance</span>
-                Mission Expenditures
-            </a>
-            <a href="{% url 'expenditure:branch_list' %}" class="sidebar-link">
-                <span class="material-icons-outlined text-xl mr-3">store</span>
-                Branch Expenditures
             </a>
             <a href="{% url 'expenditure:add' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">add_circle</span>
@@ -169,6 +188,12 @@
             <a href="{% url 'payroll:commissions' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">paid</span>
                 Tithe Commission
+            </a>
+            
+            <div class="sidebar-section">Meetings</div>
+            <a href="{% url 'attendance:mission_staff_register' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">fact_check</span>
+                Meeting Attendance
             </a>
             
             <div class="sidebar-section">Users & Members</div>
@@ -230,6 +255,15 @@
             <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
                 <span class="material-icons-outlined mr-3">calendar_month</span>Monthly Reports
             </a>
+            <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">date_range</span>Yearly Reports
+            </a>
+            <a href="{% url 'reports:area_financial_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">location_city</span>Area Financial Reports
+            </a>
+            <a href="{% url 'reports:district_financial_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined mr-3">domain</span>District Financial Reports
+            </a>
             <a href="{% url 'reports:final_financial_report' %}" class="sidebar-link">
                 <span class="material-icons-outlined mr-3">summarize</span>Final Financial Report
             </a>
@@ -289,8 +323,163 @@
                 System Settings
             </a>
             
-            {% elif user.is_branch_executive or user.is_district_executive or user.is_area_executive %}
-            <!-- ============ BRANCH/DISTRICT/AREA EXECUTIVE ============ -->
+            {% elif user.is_area_executive %}
+            <!-- ============ AREA EXECUTIVE ============ -->
+            <div class="sidebar-section">Area Overview</div>
+            <a href="{% url 'members:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                Members in Area
+            </a>
+            <a href="{% url 'attendance:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Attendance Overview
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                Groups
+            </a>
+            
+            <div class="sidebar-section">Financial Monitoring</div>
+            <a href="{% url 'contributions:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                View Contributions
+            </a>
+            <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">analytics</span>
+                Area Performance
+            </a>
+            <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                View Expenditures
+            </a>
+            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittance Status
+            </a>
+            
+            <div class="sidebar-section">Financial Management</div>
+            <a href="{% url 'contributions:branch_types' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">category</span>
+                Branch Contribution Types
+            </a>
+            <a href="{% url 'contributions:opening_balances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+                Opening Balances
+            </a>
+            <a href="{% url 'contributions:fund_assessment' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Fund Assessment
+            </a>
+            
+            <div class="sidebar-section">Reports</div>
+            <a href="{% url 'reports:area_financial_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">location_city</span>
+                Area Financial Reports
+            </a>
+            <a href="{% url 'reports:district_financial_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">domain</span>
+                District Financial Reports
+            </a>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+                Monthly Reports
+            </a>
+            <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">date_range</span>
+                Yearly Reports
+            </a>
+            
+            <div class="sidebar-section">Communication</div>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Prayer Requests
+            </a>
+
+            {% elif user.is_district_executive %}
+            <!-- ============ DISTRICT EXECUTIVE ============ -->
+            <div class="sidebar-section">District Overview</div>
+            <a href="{% url 'members:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                Members in District
+            </a>
+            <a href="{% url 'attendance:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Attendance Overview
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                Groups
+            </a>
+            
+            <div class="sidebar-section">Financial Monitoring</div>
+            <a href="{% url 'contributions:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                View Contributions
+            </a>
+            <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">analytics</span>
+                District Performance
+            </a>
+            <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                View Expenditures
+            </a>
+            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittance Status
+            </a>
+            
+            <div class="sidebar-section">Financial Management</div>
+            <a href="{% url 'contributions:branch_types' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">category</span>
+                Branch Contribution Types
+            </a>
+            <a href="{% url 'contributions:opening_balances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
+                Opening Balances
+            </a>
+            <a href="{% url 'contributions:fund_assessment' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Fund Assessment
+            </a>
+            
+            <div class="sidebar-section">Reports</div>
+            <a href="{% url 'reports:district_financial_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">domain</span>
+                District Financial Reports
+            </a>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+                Monthly Reports
+            </a>
+            <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">date_range</span>
+                Yearly Reports
+            </a>
+            
+            <div class="sidebar-section">Communication</div>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Prayer Requests
+            </a>
+
+            {% elif user.is_branch_executive %}
             <div class="sidebar-section">Branch Operations</div>
             <a href="{% url 'members:list' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">groups</span>
@@ -343,6 +532,10 @@
             <a href="{% url 'contributions:branch_types' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">category</span>
                 Branch Contribution Types
+            </a>
+            <a href="{% url 'contributions:fund_assessment' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Fund Assessment
             </a>
             
             <div class="sidebar-section">Expenditures</div>
@@ -410,11 +603,77 @@
                 <span class="material-icons-outlined text-xl mr-3">assessment</span>
                 Monthly Reports
             </a>
+            <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">date_range</span>
+                Yearly Reports
+            </a>
             <a href="{% url 'reports:index' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
                 Other Reports
             </a>
+            <a href="{% url 'core:archive_dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">archive</span>
+                Archive & History
+            </a>
             
+            {% elif user.is_pastor and user.pastoral_rank == 'area' %}
+            <!-- ============ AREA PASTOR ============ -->
+            <div class="sidebar-section">Area Ministry</div>
+            <a href="{% url 'members:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">groups</span>
+                Members in Area
+            </a>
+            <a href="{% url 'attendance:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Attendance Overview
+            </a>
+            <a href="{% url 'groups:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+                Groups
+            </a>
+            
+            <div class="sidebar-section">Financial Monitoring</div>
+            <a href="{% url 'contributions:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">payments</span>
+                View Contributions
+            </a>
+            <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">analytics</span>
+                Area Performance
+            </a>
+            <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+                View Expenditures
+            </a>
+            <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+                Remittance Status
+            </a>
+            
+            <div class="sidebar-section">Ministry</div>
+            <a href="{% url 'sermons:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+                Sermons
+            </a>
+            <a href="{% url 'announcements:list' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">campaign</span>
+                Announcements
+            </a>
+            <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+                Prayer Requests
+            </a>
+            
+            <div class="sidebar-section">Reports</div>
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+                Monthly Reports
+            </a>
+            <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">date_range</span>
+                Yearly Reports
+            </a>
+
             {% elif user.is_pastor %}
             <!-- ============ PASTOR ============ -->
             <div class="sidebar-section">My Church</div>
@@ -471,6 +730,20 @@
             
             {% elif user.is_auditor %}
             <!-- ============ AUDITOR ============ -->
+            <div class="sidebar-section">Financial Ledger</div>
+            <a href="{% url 'core:ledger_dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+                Ledger Dashboard
+            </a>
+            <a href="{% url 'core:outstanding_remittances' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">pending_actions</span>
+                Money Owed to Mission
+            </a>
+            <a href="{% url 'core:ledger_audit_trail' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">history</span>
+                Ledger Audit Trail
+            </a>
+            
             <div class="sidebar-section">Financial Management</div>
             <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">assessment</span>
@@ -518,6 +791,10 @@
                 <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
                 Financial Reports
             </a>
+            <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">date_range</span>
+                Yearly Reports
+            </a>
             <a href="{% url 'reports:contributions' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">trending_up</span>
                 Contribution Analysis
@@ -530,9 +807,9 @@
                 <span class="material-icons-outlined text-xl mr-3">group_work</span>
                 Attendance Reports
             </a>
-            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
-                <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
-                Monthly Reports
+            <a href="{% url 'core:archive_dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">archive</span>
+                Archive & History
             </a>
             
             {% else %}
@@ -549,6 +826,10 @@
             <a href="{% url 'core:my_statement' %}" class="sidebar-link">
                 <span class="material-icons-outlined text-xl mr-3">description</span>
                 Get Statement
+            </a>
+            <a href="{% url 'reports:member_yearly_statement' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">date_range</span>
+                Yearly Statement
             </a>
             
             <div class="sidebar-section">My Church</div>
@@ -642,6 +923,13 @@
             Church Calendar
         </a>
         
+        {% if user.is_pastor or user.is_staff and not user.is_mission_admin and not user.is_superuser %}
+        <a href="{% url 'attendance:my_meetings' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">event_available</span>
+            My Meetings
+        </a>
+        {% endif %}
+        
         {% if user.is_mission_admin %}
         <!-- ============ MISSION ADMIN NAVIGATION ============ -->
         <div class="sidebar-section">Church Structure</div>
@@ -659,9 +947,17 @@
         </a>
 
         <div class="sidebar-section">Mission Finance</div>
+        <a href="{% url 'core:ledger_dashboard' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+            Financial Ledger
+        </a>
         <a href="{% url 'core:mission_financial_dashboard' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">account_balance_wallet</span>
             Mission Dashboard
+        </a>
+        <a href="{% url 'core:outstanding_remittances' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">pending_actions</span>
+            Money Owed to Mission
         </a>
         <a href="{% url 'core:mission_expenditure_list' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
@@ -768,6 +1064,12 @@
             Tithe Commission
         </a>
         
+        <div class="sidebar-section">Meetings</div>
+        <a href="{% url 'attendance:mission_staff_register' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">fact_check</span>
+            Meeting Attendance
+        </a>
+        
         <div class="sidebar-section">Users & Members</div>
         <a href="{% url 'accounts:users' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">manage_accounts</span>
@@ -802,6 +1104,10 @@
         <a href="{% url 'auditing:logs' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">history</span>
             Audit Logs
+        </a>
+        <a href="{% url 'core:archive_dashboard' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">archive</span>
+            Archive & History
         </a>
         
         <div class="sidebar-section">Communication</div>
@@ -887,6 +1193,10 @@
             <span class="material-icons-outlined text-xl mr-3">analytics</span>
             Tithe Performance
         </a>
+        <a href="{% url 'contributions:fund_assessment' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">assessment</span>
+            Fund Assessment
+        </a>
         
         <div class="sidebar-section">Expenditures</div>
         <a href="{% url 'expenditure:list' %}" class="sidebar-link">
@@ -945,15 +1255,77 @@
         </a>
         
         <div class="sidebar-section">Reports</div>
-        <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
-            <span class="material-icons-outlined text-xl mr-3">assessment</span>
-            Monthly Reports
+            <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">assessment</span>
+                Monthly Reports
+            </a>
+            <a href="{% url 'reports:index' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
+                Other Reports
+            </a>
+            <a href="{% url 'core:archive_dashboard' %}" class="sidebar-link">
+                <span class="material-icons-outlined text-xl mr-3">archive</span>
+                Archive & History
+            </a>
+        
+        {% elif user.is_pastor and user.pastoral_rank == 'area' %}
+        <!-- ============ AREA PASTOR ============ -->
+        <div class="sidebar-section">Area Ministry</div>
+        <a href="{% url 'members:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">groups</span>
+            Members in Area
         </a>
-        <a href="{% url 'reports:index' %}" class="sidebar-link">
-            <span class="material-icons-outlined text-xl mr-3">bar_chart</span>
-            Other Reports
+        <a href="{% url 'attendance:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">history</span>
+            Attendance Overview
+        </a>
+        <a href="{% url 'groups:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">diversity_3</span>
+            Groups
         </a>
         
+        <div class="sidebar-section">Financial Monitoring</div>
+        <a href="{% url 'contributions:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">payments</span>
+            View Contributions
+        </a>
+        <a href="{% url 'contributions:tithe_performance' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">analytics</span>
+            Area Performance
+        </a>
+        <a href="{% url 'expenditure:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">receipt_long</span>
+            View Expenditures
+        </a>
+        <a href="{% url 'contributions:remittances' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">sync_alt</span>
+            Remittance Status
+        </a>
+        
+        <div class="sidebar-section">Ministry</div>
+        <a href="{% url 'sermons:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">menu_book</span>
+            Sermons
+        </a>
+        <a href="{% url 'announcements:list' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">campaign</span>
+            Announcements
+        </a>
+        <a href="{% url 'core:prayer_requests' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">volunteer_activism</span>
+            Prayer Requests
+        </a>
+        
+        <div class="sidebar-section">Reports</div>
+        <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">calendar_month</span>
+            Monthly Reports
+        </a>
+        <a href="{% url 'reports:yearly_reports_index' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">date_range</span>
+            Yearly Reports
+        </a>
+
         {% elif user.is_pastor %}
         <!-- ============ PASTOR ============ -->
         <div class="sidebar-section">My Church</div>
@@ -1014,6 +1386,20 @@
         
         {% elif user.is_auditor %}
         <!-- ============ AUDITOR ============ -->
+        <div class="sidebar-section">Financial Ledger</div>
+        <a href="{% url 'core:ledger_dashboard' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+            Ledger Dashboard
+        </a>
+        <a href="{% url 'core:outstanding_remittances' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">pending_actions</span>
+            Money Owed to Mission
+        </a>
+        <a href="{% url 'core:ledger_audit_trail' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">history</span>
+            Ledger Audit Trail
+        </a>
+        
         <div class="sidebar-section">Financial Management</div>
         <a href="{% url 'reports:monthly_reports' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">assessment</span>
@@ -1046,6 +1432,10 @@
         <a href="{% url 'auditing:flags' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">flag</span>
             Audit Flags
+        </a>
+        <a href="{% url 'core:auditor_branch_statistics' %}" class="sidebar-link">
+            <span class="material-icons-outlined text-xl mr-3">account_balance</span>
+            Branch Statistics
         </a>
         <a href="{% url 'attendance:tracking' %}" class="sidebar-link">
             <span class="material-icons-outlined text-xl mr-3">groups</span>

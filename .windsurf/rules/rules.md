@@ -2,109 +2,147 @@
 trigger: always_on
 ---
 
-### **Antigravity Agent Rules for SDSCC System**
+You are modifying an EXISTING production codebase.
 
-**Rule 1 – File Verification & Consistency**
+THIS IS A CONTROLLED REFACTOR.
+DO NOT redesign the system.
+DO NOT introduce new architecture.
+DO NOT delete historical data.
 
-* Before executing any task, read all existing `.md` files (`admins.md`, `auditor.md`, `contributions.md`, `expenditure.md`, `members.md`, `overview.md`, `pastors.md`, `staff.md`).
-* Check for **discrepancies, missing features, or outdated info**.
-* Resolve any inconsistencies **before code generation begins**.
-* If improvements are possible, **update the source MD files** and document the changes.
+Your task is to REMOVE year-as-state behavior and replace it with date-based reporting.
 
----
+==================================================
+GOAL
+==================================================
 
-**Rule 2 – Full System Completion**
+Refactor the existing "Yearly Archive / Fiscal Year" logic so that:
 
-* Ensure that every feature described in the MD files is implemented in code:
+- The system does NOT have a "current year"
+- Years are NOT created, activated, or switched manually
+- Data is NEVER moved out of core tables
+- Reports (weekly, monthly, yearly) are based ONLY on date filtering
+- Monthly closing logic REMAINS
+- Yearly archiving logic is DISABLED or DEPRECATED
 
-  * **Models, Views, Templates, URLs, Forms, Dashboards, Sidebars, and Reports**.
-* No module should remain partially implemented.
-* All dashboards must have **role-based, mobile-first sidebars** and UI elements.
-* Confirm **pastor, member, branch, area, district, and mission-level hierarchies** are respected.
+==================================================
+CRITICAL CONSTRAINTS (DO NOT VIOLATE)
+==================================================
 
----
+- Do NOT rewrite the entire system
+- Do NOT change core tables:
+  Contribution, Expense, Remittance, Attendance, Member
+- Do NOT delete any tables or data
+- Do NOT introduce new models unless unavoidable
+- Prefer DISABLING or DEPRECATING code over deleting it
+- Changes must be minimal and reversible
 
-**Rule 3 – Error Handling & Validation**
+==================================================
+CURRENT PROBLEM (WHAT EXISTS NOW)
+==================================================
 
-* After every script or code block run:
+The system currently:
+- Uses a FiscalYear model with:
+  - is_current
+  - is_closed
+- Requires admins to "create" a new year
+- Automatically archives data into:
+  - FinancialArchive
+  - BranchArchive
+  - MemberArchive
+- Treats "year" as a system-wide state
 
-  * Check for **runtime or syntax errors**.
-  * Ensure migrations apply successfully (`makemigrations` and `migrate`).
-  * Validate all forms, templates, and view logic.
-* If errors occur, **resolve before proceeding**.
-* Log all fixes to `milestone.md` with clear description of what was corrected.
+THIS YEAR-AS-STATE LOGIC MUST STOP.
 
----
+==================================================
+TARGET DESIGN (FOLLOW EXACTLY)
+==================================================
 
-**Rule 4 – Professional Code Quality**
+1. TIME MODEL
+- Time is continuous
+- All records stay in original tables
+- Weekly / Monthly / Yearly = DATE FILTERS ONLY
+- No global "current year" exists
 
-* Follow **Django best practices** and **PEP8**.
-* All templates must use **TailwindCSS** primarily, **Bootstrap only where needed**, and **Material UI components consistently**.
-* Include **mobile-first layouts** and fully responsive design.
-* Comment code for clarity in complex modules, especially allocation, payroll, and auditing logic.
+2. FISCAL YEAR MODEL
+- Keep FiscalYear ONLY as OPTIONAL METADATA
+- IGNORE or DISABLE:
+  - is_current
+  - enforced single active year
+  - automatic year switching
+- FiscalYear must NOT control visibility or behavior
 
----
+3. ARCHIVE TABLES
+- FinancialArchive, BranchArchive, MemberArchive:
+  - Are OPTIONAL SUMMARY TABLES
+  - READ-ONLY
+  - NOT authoritative
+  - Must NOT replace real data
+- If risky to remove, mark as:
+  "DEPRECATED: year-as-state archive"
 
-**Rule 5 – Hierarchical UI / Navigation**
+4. YEAR-END BEHAVIOR
+- No admin action required at year end
+- No automatic archiving
+- No data migration
+- Yearly reports use date ranges (e.g. Jan 1 – Dec 31)
 
-* Any **admin-level feature** must include **hierarchical dropdowns** to select area, district, branch, or pastor.
-* Pastors should have their **own sidebar**.
-* Branch admins must have quick access to: members, contributions, expenditures, attendance, utility bills, and groups.
-* Dashboards must dynamically reflect **role and access scope**.
+5. MONTHLY CLOSING (KEEP THIS)
+- MonthlyClose logic remains
+- Monthly close:
+  - locks edits
+  - confirms totals
+- Monthly close MUST NOT move data
 
----
+6. UI CHANGES
+- Disable or hide:
+  - "Create New Fiscal Year"
+  - "Set Current Year"
+- Replace with:
+  - Year selector (for reports only)
+  - Date range filters
+- Archived year views must read from date-filtered data
 
-**Rule 6 – Financial & Audit Safety**
+7. PERMISSIONS
+- Mission admins and auditors:
+  - Can view ALL historical data
+- Branch admins:
+  - Can view full history of their branch
+- No user should ever "start a new year"
 
-* All financial flows (tithes, offerings, special contributions, expenditures, payroll) must be:
+==================================================
+TASKS TO PERFORM
+==================================================
 
-  * **Accurately allocated per hierarchy rules**
-  * Validated for rounding errors and splits
-  * Logged for audit trails
-* Never allow unreviewed modifications of mission-level funds.
+1. Locate all code paths that depend on:
+   - FiscalYear.is_current
+   - year switching logic
+   - archive triggers
 
----
+2. Refactor those paths to:
+   - use date filters
+   - NOT change system state
 
-**Rule 7 – Milestone Tracking & Reporting**
+3. Add comments where logic is disabled:
+   "DEPRECATED: Year-as-state architecture"
 
-* Maintain `milestone.md` for all completed tasks.
-* Include:
+4. Ensure existing reports still work using date ranges
 
-  * Features completed
-  * Bugs or issues fixed
-  * Screenshots or notes if applicable
-  * Dependencies for next tasks
+5. Do NOT add new abstractions or redesign reporting
 
----
+==================================================
+OUTPUT REQUIREMENTS
+==================================================
 
-**Rule 8 – Build Priority & Focus**
+After changes, provide:
+- A list of what was DISABLED
+- A list of what remains ACTIVE
+- A short explanation of how yearly reports now work
 
-* Focus primarily on **building working features**.
-* Documentation only if explicitly requested.
-* Always complete **templates, models, views, forms, and dashboards** before moving to optional enhancements.
+==================================================
+IMPORTANT
+==================================================
 
----
-
-**Rule 9 – Database & Deployment**
-
-* Use **SQLite for development**, but code must be **compatible with PostgreSQL / CockroachDB** for production.
-* Ensure **UUIDs for major models** and proper relational integrity.
-* Confirm migrations are **production-ready**.
-
----
-
-**Rule 10 – Continuous Verification**
-
-* After each significant feature or module:
-
-  * Run tests (unit tests if available)
-  * Validate forms, templates, and views
-  * Confirm sidebars, access rules, and permissions are correct
-  * Update `milestone.md`
-Always use poershell commands when running scripts. Dont use "&&" instead use ";"
-
----
-
-✅ **Summary for Agent:**
-
-> “Always read and verify MD files first. Resolve inconsistencies before coding. Complete **all models, views, templates, forms, dashboards, and sidebars**. Validate every script, check errors, and follow role-based access rules. Focus on building first, then document. Maintain milestone.md and ensure production-ready, mobile-first UI for all hierarchies.”
+If uncertain:
+- DO NOT guess
+- Leave TODO comments
+- Stability is more important than elegance

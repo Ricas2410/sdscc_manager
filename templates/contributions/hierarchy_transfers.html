@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+{% load financial_terms %}
+
+{% block title %}Hierarchy Transfers{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Hierarchy Transfers</h1>
+            <p class="text-gray-600">Manage transfers between hierarchy levels</p>
+        </div>
+        
+        {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %}
+        <div class="mt-4 md:mt-0">
+            <a href="{% url 'contributions:hierarchy_transfer_add' %}" class="btn-primary">
+                <span class="material-icons-outlined text-lg mr-1">add</span>
+                New Transfer
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">About Hierarchy Transfers</h2>
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <span class="material-icons-outlined text-blue-500">info</span>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            Hierarchy transfers allow funds to move between adjacent levels in the church hierarchy:
+                            Mission ↔ Area ↔ District ↔ Branch. These are NOT contributions or income, but allocations of funds.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <ul class="list-disc pl-5 text-gray-700 space-y-1">
+                <li>Transfers can only occur between adjacent levels</li>
+                <li>Transfers are NOT counted as contributions or income</li>
+                <li>Transfers do NOT generate commission</li>
+                <li>Transfers are excluded from tithe calculations</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Transfer Summary</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="financial-card financial-card-transfer">
+                    <div class="financial-card-title">
+                        {% financial_term_tooltip "Money Sent" "Total funds transferred out" %}
+                    </div>
+                    <div class="financial-card-amount">
+                        {{ transfers_sent|default:"0.00"|currency }}
+                    </div>
+                </div>
+                <div class="financial-card financial-card-transfer">
+                    <div class="financial-card-title">
+                        {% financial_term_tooltip "Money Received" "Total funds transferred in" %}
+                    </div>
+                    <div class="financial-card-amount">
+                        {{ transfers_received|default:"0.00"|currency }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Transfer Status</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-500">{{ pending_count|default:"0" }}</div>
+                    <div class="text-sm text-gray-500">Pending</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-500">{{ completed_count|default:"0" }}</div>
+                    <div class="text-sm text-gray-500">Completed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-500">{{ cancelled_count|default:"0" }}</div>
+                    <div class="text-sm text-gray-500">Cancelled</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800">Recent Transfers</h2>
+            <div class="flex space-x-2">
+                <a href="{% url 'contributions:hierarchy_transfers_sent' %}" class="text-sm text-blue-600 hover:text-blue-800">Sent</a>
+                <span class="text-gray-400">|</span>
+                <a href="{% url 'contributions:hierarchy_transfers_received' %}" class="text-sm text-blue-600 hover:text-blue-800">Received</a>
+                <span class="text-gray-400">|</span>
+                <a href="{% url 'contributions:hierarchy_transfers' %}" class="text-sm text-blue-600 hover:text-blue-800">All</a>
+            </div>
+        </div>
+        
+        {% if transfers %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transfer in transfers %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ transfer.date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ transfer.source_level|title }}</div>
+                            <div class="text-sm text-gray-500">
+                                {% if transfer.source_area %}{{ transfer.source_area.name }}
+                                {% elif transfer.source_district %}{{ transfer.source_district.name }}
+                                {% elif transfer.source_branch %}{{ transfer.source_branch.name }}
+                                {% else %}Mission{% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ transfer.destination_level|title }}</div>
+                            <div class="text-sm text-gray-500">
+                                {% if transfer.destination_area %}{{ transfer.destination_area.name }}
+                                {% elif transfer.destination_district %}{{ transfer.destination_district.name }}
+                                {% elif transfer.destination_branch %}{{ transfer.destination_branch.name }}
+                                {% else %}Mission{% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ transfer.amount|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {{ transfer.get_purpose_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if transfer.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif transfer.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ transfer.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'contributions:hierarchy_transfer_detail' transfer.id %}" class="text-blue-600 hover:text-blue-900">View</a>
+                            {% if user.is_mission_admin and transfer.status == 'pending' %}
+                            <a href="{% url 'contributions:hierarchy_transfer_approve' transfer.id %}" class="ml-3 text-green-600 hover:text-green-900">Approve</a>
+                            <a href="{% url 'contributions:hierarchy_transfer_cancel' transfer.id %}" class="ml-3 text-red-600 hover:text-red-900">Cancel</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-6 text-center">
+            <p class="text-gray-500">No transfers found.</p>
+            {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %}
+            <a href="{% url 'contributions:hierarchy_transfer_add' %}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <span class="material-icons-outlined text-lg mr-1">add</span>
+                New Transfer
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

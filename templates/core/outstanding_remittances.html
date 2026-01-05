@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Outstanding Remittances{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="text-sm text-gray-500 mb-2">
+                <a href="{% url 'core:ledger_dashboard' %}" class="hover:text-blue-600">Ledger Dashboard</a>
+                <span class="mx-2">/</span>
+                <span>Outstanding Remittances</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Outstanding Remittances</h1>
+            <p class="text-gray-600">Branches with pending payments to Mission</p>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="rounded-xl shadow-lg p-6 text-white" style="background: linear-gradient(to right, #f59e0b, #d97706);">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-amber-100">Total Outstanding</p>
+                <p class="text-4xl font-bold mt-2">GH₵{{ total_outstanding|floatformat:2|intcomma }}</p>
+                <p class="text-amber-100 mt-2">From {{ branch_count }} branch{{ branch_count|pluralize:"es" }}</p>
+            </div>
+            <div class="h-20 w-20 rounded-full bg-white/20 flex items-center justify-center">
+                <span class="material-icons-outlined text-4xl">pending_actions</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Branches with Outstanding Balances</h2>
+            <p class="text-sm text-gray-500">Sorted by amount owed (highest first)</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Area / District</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount Owed</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in outstanding %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ forloop.counter }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ item.branch.name }}</div>
+                            <div class="text-xs text-gray-500">{{ item.branch.code }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.area }} / {{ item.district }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="text-amber-600 font-bold text-lg">GH₵{{ item.amount_owed|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <a href="{% url 'core:branch_financial_position' item.branch.id %}" 
+                               class="text-blue-600 hover:text-blue-800 text-sm mr-3">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <span class="material-icons-outlined text-5xl text-green-400 mb-3">check_circle</span>
+                                <p class="text-gray-500 font-medium">All branches are up to date!</p>
+                                <p class="text-gray-400 text-sm">No outstanding remittances</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div class="flex">
+            <span class="material-icons-outlined text-amber-600 mr-3">info</span>
+            <div>
+                <h3 class="font-medium text-amber-800">About Outstanding Remittances</h3>
+                <p class="mt-1 text-sm text-amber-700">
+                    These amounts represent money that branches have collected on behalf of Mission but have not yet remitted.
+                    The money is physically held by the branches (custody) but belongs to Mission (ownership).
+                    Mission cannot spend this money until it is remitted.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

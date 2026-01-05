@@ -20,11 +20,13 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'rRBJ7zT5daSvTsNA6WyE5yjf13uyYn
 # Default to True for local development; production should set DJANGO_DEBUG=False
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,sdscc.fly.dev').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,sdscc.fly.dev,7dscc.fly.dev,app.7dscc.org').split(',')
 
 # CSRF Trusted Origins for fly.io
 CSRF_TRUSTED_ORIGINS = [
     'https://sdscc.fly.dev',
+    'https://7dscc.fly.dev',
+    'https://app.7dscc.org',
     'https://*.fly.dev',
 ]
 if DEBUG:

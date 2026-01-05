@@ -285,6 +285,7 @@ class Branch(TimeStampedModel):
     
     @property
     def member_count(self):
+        """Get total count of all active users in this branch."""
         from accounts.models import User
         return User.objects.filter(branch=self, is_active=True).count()
     
@@ -314,27 +315,17 @@ class FiscalYear(TimeStampedModel):
         return f"FY {self.year}"
     
     def save(self, *args, **kwargs):
-        # Ensure only one current fiscal year
-        if self.is_current:
-            FiscalYear.objects.filter(is_current=True).exclude(pk=self.pk).update(is_current=False)
+        # DEPRECATED: Year-as-state architecture
+        # is_current functionality disabled to eliminate global year state
+        # Multiple years can now be "current" - this field is ignored
         super().save(*args, **kwargs)
     
     @classmethod
     def get_current(cls):
-        """Get current fiscal year or create one."""
-        from datetime import date
-        current = cls.objects.filter(is_current=True).first()
-        if not current:
-            today = date.today()
-            current, _ = cls.objects.get_or_create(
-                year=today.year,
-                defaults={
-                    'start_date': date(today.year, 1, 1),
-                    'end_date': date(today.year, 12, 31),
-                    'is_current': True
-                }
-            )
-        return current
+        """DEPRECATED: Year-as-state architecture - Returns None to eliminate current year dependency.
+        Reports should use date filtering instead of fiscal year filtering.
+        """
+        return None
 
 
 class MonthlyClose(TimeStampedModel):
@@ -494,6 +485,73 @@ class PrayerRequest(TimeStampedModel):
     
     def __str__(self):
         return f"{self.requester.get_full_name()}: {self.title}"
+    
+    # Permission methods
+    def can_be_managed_by(self, user=None):
+        """
+        Check if user can edit/delete this prayer request.
+        - Creators can always manage their own requests
+        - Mission Admin (National) can manage any prayer request
+        - Branch admins can only manage prayer requests from their branch members
+        - Area/District admins can manage requests from their hierarchy
+        """
+        if user is None:
+            return False
+        # Creator can always manage their own requests
+        if self.requester == user:
+            return True
+        # Mission Admin (National) can manage any prayer request
+        if user.is_mission_admin:
+            return True
+        # Area Executive can manage requests from their area
+        if user.is_area_executive and user.managed_area:
+            return self.branch.district.area == user.managed_area
+        # District Executive can manage requests from their district
+        if user.is_district_executive and user.managed_district:
+            return self.branch.district == user.managed_district
+        # Branch Executive/Pastor can only manage requests from their branch members
+        if (user.is_branch_executive or user.is_pastor) and user.branch:
+            return self.branch == user.branch
+        return False
+    
+    def can_be_approved_by(self, user=None):
+        """Check if user can approve this prayer request."""
+        if user is None:
+            # When called from template, we can't pass user, so return False for safety
+            return False
+        return (user.is_mission_admin or 
+                (user.is_pastor and self.branch == user.branch) or 
+                (user.is_branch_executive and self.branch == user.branch))
+    
+    def can_be_prayed_by(self, user=None):
+        """Check if user can mark this as prayed (i.e., can see it)."""
+        if user is None:
+            # When called from template, we can't pass user, so return False for safety
+            return False
+        # User can always pray for their own requests
+        if self.requester == user:
+            return True
+        
+        # Must be approved for others to see and pray
+        if not self.is_approved:
+            return False
+        
+        # Check visibility based on user role and scope
+        if user.is_mission_admin:
+            return True
+        elif user.is_area_executive:
+            return (self.visibility_scope in ['mission', 'area'] or 
+                   (self.visibility_scope in ['branch', 'district'] and self.branch.district.area == user.managed_area))
+        elif user.is_district_executive:
+            return (self.visibility_scope in ['mission', 'area', 'district'] or
+                   (self.visibility_scope == 'branch' and self.branch.district == user.managed_district))
+        elif user.is_pastor or user.is_branch_executive:
+            return (self.visibility_scope in ['mission', 'area', 'district'] or
+                   self.branch == user.branch)
+        else:
+            # Regular members
+            return (self.visibility_scope in ['mission', 'area', 'district'] or
+                   (self.visibility_scope == 'branch' and self.branch == user.branch))
 
 
 class PrayerInteraction(models.Model):

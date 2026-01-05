@@ -5,190 +5,209 @@
 {% block title %}{{ visitor.first_name }} {{ visitor.last_name }} - Visitor Details{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Premium Header -->
+    <div class="mb-10">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-6">
                 <a href="{% url 'attendance:visitors' %}" 
-                   class="text-gray-500 hover:text-gray-700 mr-4">
+                   class="w-12 h-12 flex items-center justify-center bg-white text-gray-400 hover:text-indigo-600 rounded-2xl shadow-sm hover:shadow-md transition-all border border-gray-100">
                     <span class="material-icons-outlined">arrow_back</span>
                 </a>
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">{{ visitor.name }}</h1>
-                    <p class="text-gray-500 mt-2">
-                        Visitor since {{ visitor.visit_date|date:"F d, Y" }}
-                    </p>
+                <div class="flex items-center gap-5">
+                    <div class="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white font-black text-3xl shadow-xl border-4 border-white">
+                        {{ visitor.name|truncatechars:1|upper }}
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-black text-gray-900 tracking-tight">{{ visitor.name }}</h1>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-indigo-100">
+                                Guest since {{ visitor.visit_date|date:"M Y" }}
+                            </span>
+                            <div class="flex items-center text-gray-400 text-xs font-bold uppercase tracking-widest">
+                                <span class="material-icons-outlined text-sm mr-1">history</span>
+                                First visit: {{ visitor.visit_date|date:"F d, Y" }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="flex gap-3">
                 <a href="{% url 'attendance:session_detail' visitor.session.id %}" 
-                   class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                    <span class="material-icons-outlined mr-2">event</span>
-                    View Service
+                   class="inline-flex items-center px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all font-bold shadow-sm active:scale-95">
+                    <span class="material-icons-outlined mr-2">event_note</span>
+                    Visit Details
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Visitor Information -->
-        <div class="lg:col-span-2">
-            <!-- Basic Info Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
-                    <h2 class="text-lg font-semibold text-gray-900">Visitor Information</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Information -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Profile Overview Card -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight">Guest Profile</h2>
+                    <span class="material-icons-outlined text-gray-300">badge</span>
                 </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Full Name</h3>
-                            <p class="text-lg text-gray-900">{{ visitor.name }}</p>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div class="space-y-1">
+                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Contact Primary</h3>
+                            <div class="flex items-center gap-3 mt-2">
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-xl">phone</span>
+                                </div>
+                                <p class="text-lg font-bold text-gray-900">
+                                    {% if visitor.phone %}{{ visitor.phone }}{% else %}<span class="text-gray-300 italic">Not recorded</span>{% endif %}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Visit Date</h3>
-                            <p class="text-lg text-gray-900">{{ visitor.visit_date|date:"F d, Y" }}</p>
+                        <div class="space-y-1">
+                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Email Address</h3>
+                            <div class="flex items-center gap-3 mt-2">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-xl">alternate_email</span>
+                                </div>
+                                <p class="text-lg font-bold text-gray-900">
+                                    {% if visitor.email %}
+                                        <a href="mailto:{{ visitor.email }}" class="text-indigo-600 hover:text-indigo-800 transition-colors">
+                                            {{ visitor.email }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-gray-300 italic">Not recorded</span>
+                                    {% endif %}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Phone Number</h3>
-                            <p class="text-lg text-gray-900">
-                                {% if visitor.phone %}{{ visitor.phone }}{% else %}<span class="text-gray-400">Not provided</span>{% endif %}
-                            </p>
+                        <div class="space-y-1">
+                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Host Branch</h3>
+                            <div class="flex items-center gap-3 mt-2">
+                                <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-xl">church</span>
+                                </div>
+                                <p class="text-lg font-bold text-gray-900">{{ visitor.session.branch.name }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Email Address</h3>
-                            <p class="text-lg text-gray-900">
-                                {% if visitor.email %}
-                                    <a href="mailto:{{ visitor.email }}" class="text-blue-600 hover:text-blue-800">
-                                        {{ visitor.email }}
-                                    </a>
-                                {% else %}
-                                    <span class="text-gray-400">Not provided</span>
-                                {% endif %}
-                            </p>
+                        <div class="space-y-1">
+                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Service Entry</h3>
+                            <div class="flex items-center gap-3 mt-2">
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-xl">auto_stories</span>
+                                </div>
+                                <p class="text-lg font-bold text-gray-900">{{ visitor.session.service_type.name }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Visit Details Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
-                    <h2 class="text-lg font-semibold text-gray-900">Visit Details</h2>
+            <!-- Follow-up Insight Card -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight">Discipleship Insight</h2>
+                    <span class="material-icons-outlined text-gray-300">psychology</span>
                 </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Service Type</h3>
-                            <p class="text-lg text-gray-900">{{ visitor.session.service_type.name }}</p>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div class="space-y-1">
+                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Connection Source</h3>
+                            <div class="mt-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                <p class="text-sm font-bold text-gray-700">
+                                    {% if visitor.invited_by %}
+                                        <span class="text-indigo-600">Invited by:</span> {{ visitor.invited_by.get_full_name|default:visitor.invited_by.member_id }}
+                                    {% else %}
+                                        <span class="text-gray-400">Self-discovery entry</span>
+                                    {% endif %}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Church Branch</h3>
-                            <p class="text-lg text-gray-900">{{ visitor.session.branch.name }}</p>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Invited By</h3>
-                            <p class="text-lg text-gray-900">
-                                {% if visitor.invited_by %}
-                                    {{ visitor.invited_by.get_full_name|default:visitor.invited_by.member_id }}
-                                {% else %}
-                                    <span class="text-gray-400">Self-attended</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-medium text-gray-500 mb-1">Visitor Status</h3>
-                            <p class="text-lg">
+                        <div class="space-y-1">
+                            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Engagement Tier</h3>
+                            <div class="mt-2">
                                 {% if visitor.status == 'new' %}
-                                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        First Time Visitor
+                                    <span class="px-5 py-2 inline-flex text-xs font-black uppercase tracking-widest rounded-xl bg-blue-100 text-blue-800 border-2 border-white shadow-sm">
+                                        Prospect
                                     </span>
                                 {% elif visitor.status == 'returning' %}
-                                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Returning Visitor
+                                    <span class="px-5 py-2 inline-flex text-xs font-black uppercase tracking-widest rounded-xl bg-amber-100 text-amber-800 border-2 border-white shadow-sm">
+                                        Frequent Guest
                                     </span>
                                 {% elif visitor.status == 'joined' %}
-                                    <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Became Member
+                                    <span class="px-5 py-2 inline-flex text-xs font-black uppercase tracking-widest rounded-xl bg-emerald-100 text-emerald-800 border-2 border-white shadow-sm">
+                                        Full Member
                                     </span>
                                 {% endif %}
-                            </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Follow-up Information -->
-            {% if visitor.follow_up_notes %}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
-                    <h2 class="text-lg font-semibold text-gray-900">Follow-up Notes</h2>
-                </div>
-                <div class="p-6">
-                    <p class="text-gray-700 whitespace-pre-wrap">{{ visitor.follow_up_notes }}</p>
+                    {% if visitor.follow_up_notes %}
+                    <div class="mt-10">
+                        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Follow-up Dossier</h3>
+                        <div class="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 relative">
+                            <span class="material-icons-outlined absolute top-4 right-4 text-indigo-200">format_quote</span>
+                            <p class="text-gray-700 font-medium leading-relaxed italic whitespace-pre-wrap">{{ visitor.follow_up_notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
         </div>
 
-        <!-- Sidebar -->
-        <div class="lg:col-span-1">
-            <!-- Follow-up Status -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-gray-200 bg-orange-50">
-                    <h2 class="text-lg font-semibold text-gray-900">Follow-up Status</h2>
+        <!-- Lateral Intelligence -->
+        <div class="lg:col-span-1 space-y-8">
+            <!-- Strategic Status -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 bg-gray-50/30">
+                    <h2 class="text-lg font-black text-gray-900 tracking-tight">Current Status</h2>
                 </div>
-                <div class="p-6">
+                <div class="p-8">
                     <div class="text-center">
                         {% if visitor.is_follow_up_needed %}
-                            <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                                <span class="material-icons-outlined text-red-600 text-2xl">pending_actions</span>
+                            <div class="mx-auto w-20 h-20 bg-rose-50 text-rose-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner animate-pulse">
+                                <span class="material-icons-outlined text-4xl">pending_actions</span>
                             </div>
-                            <p class="text-lg font-medium text-gray-900 mb-2">Follow-up Needed</p>
-                            <p class="text-sm text-gray-500">
-                                {% if visitor.follow_up_date %}
-                                    Follow-up by: {{ visitor.follow_up_date|date:"M d, Y" }}
-                                {% else %}
-                                    Schedule follow-up soon
-                                {% endif %}
-                            </p>
+                            <p class="text-xl font-black text-gray-900 mb-2">Attention Required</p>
+                            <p class="text-sm font-bold text-gray-400 uppercase tracking-widest">Action Pending</p>
                         {% else %}
-                            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                                <span class="material-icons-outlined text-green-600 text-2xl">check_circle</span>
+                            <div class="mx-auto w-20 h-20 bg-emerald-50 text-emerald-600 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                                <span class="material-icons-outlined text-4xl">verified_user</span>
                             </div>
-                            <p class="text-lg font-medium text-gray-900 mb-2">Follow-up Complete</p>
-                            <p class="text-sm text-gray-500">No further action needed</p>
+                            <p class="text-xl font-black text-gray-900 mb-2">Follow-up Clear</p>
+                            <p class="text-sm font-bold text-gray-400 uppercase tracking-widest text-emerald-500">Cycle Complete</p>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            <!-- Precision Actions -->
+            <div class="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 bg-gray-50/30">
+                    <h2 class="text-lg font-black text-gray-900 tracking-tight">Operations</h2>
                 </div>
-                <div class="p-6 space-y-3">
+                <div class="p-8 space-y-4">
                     {% if visitor.phone %}
                     <a href="tel:{{ visitor.phone }}" 
-                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <span class="material-icons-outlined mr-2">phone</span>
-                        Call Visitor
+                       class="w-full inline-flex items-center justify-center px-6 py-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all font-black shadow-lg hover:shadow-indigo-500/25 active:scale-95 group">
+                        <span class="material-icons-outlined mr-3 group-hover:rotate-12 transition-transform">phone</span>
+                        Direct Voice
                     </a>
                     {% endif %}
                     
                     {% if visitor.email %}
                     <a href="mailto:{{ visitor.email }}" 
-                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                        <span class="material-icons-outlined mr-2">email</span>
-                        Send Email
+                       class="w-full inline-flex items-center justify-center px-6 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all font-black shadow-sm active:scale-95 group">
+                        <span class="material-icons-outlined mr-3 text-indigo-600 group-hover:translate-x-1 transition-transform">send</span>
+                        Official Email
                     </a>
                     {% endif %}
                     
                     <a href="{% url 'attendance:visitors' %}" 
-                       class="w-full inline-flex items-center justify-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                        <span class="material-icons-outlined mr-2">people</span>
-                        View All Visitors
+                       class="w-full inline-flex items-center justify-center px-6 py-4 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-bold text-sm active:scale-95">
+                        <span class="material-icons-outlined mr-2">groups</span>
+                        Return to Registry
                     </a>
                 </div>
             </div>

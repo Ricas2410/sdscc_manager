@@ -17,7 +17,7 @@ from accounts.models import User
 @login_required
 def branch_contribution_types(request):
     """List contribution types for branch admin."""
-    if not (request.user.is_branch_executive or request.user.is_mission_admin):
+    if not (request.user.is_branch_executive or request.user.is_mission_admin or request.user.is_area_executive or request.user.is_district_executive):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     

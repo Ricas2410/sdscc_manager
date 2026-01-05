@@ -1,15 +1,132 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
-{% block title %}Archives{% endblock %}
+{% block title %}Historical Archives{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900">Archives</h1>
-        <p class="mt-4 text-lg text-gray-500">Access to archived data will be available here.</p>
-        <div class="mt-8">
-            <a href="{% url 'core:dashboard' %}" class="text-primary-600 hover:text-primary-500 font-medium">
-                &larr; Back to Dashboard
+    <!-- Professional Header -->
+    <div class="mb-8">
+        <div class="bg-gradient-to-r from-slate-700 to-slate-900 rounded-2xl p-8 text-white shadow-xl">
+            <div class="flex items-center mb-3">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                    <span class="material-icons-outlined text-3xl">archive</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">Historical Archives</h1>
+                    <p class="text-slate-300 mt-1">Date-based historical summaries and reports without year state management. All data remains in core tables and is accessible via date filtering.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-6 mb-8">
+        <div class="flex items-start">
+            <span class="material-icons-outlined text-blue-600 text-2xl mr-3">info</span>
+            <div>
+                <h3 class="text-lg font-semibold text-blue-900 mb-2">Date-Based Archive System</h3>
+                <p class="text-blue-800 mb-2">Archive views now provide date-based historical summaries without year state management. All data remains in core tables and is accessible via date filtering.</p>
+                <ul class="list-disc list-inside text-sm text-blue-700 space-y-1">
+                    <li>No data is moved out of core tables</li>
+                    <li>Years are NOT created, activated, or switched manually</li>
+                    <li>Reports are based ONLY on date filtering</li>
+                    <li>Monthly closing logic REMAINS functional</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Years Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Available Years</h2>
+        <p class="text-gray-600 mb-6">Select a year to view historical data and generate reports for that period.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for year in available_years %}
+            <a href="?year={{ year }}" class="block p-6 bg-gradient-to-br from-slate-50 to-gray-50 border-2 border-gray-200 rounded-xl hover:border-slate-500 hover:shadow-lg transition-all group">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-3xl font-bold text-slate-700 group-hover:text-slate-900">{{ year }}</div>
+                        <div class="text-sm text-gray-600 mt-1">View Reports</div>
+                    </div>
+                    <span class="material-icons-outlined text-slate-400 group-hover:text-slate-600 text-3xl">calendar_today</span>
+                </div>
+            </a>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <span class="material-icons-outlined text-gray-300 text-6xl mb-4">folder_open</span>
+                <p class="text-gray-500 text-lg">No historical data available</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Current Year Card -->
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-xl p-8 text-white mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold mb-2">Current Year</h2>
+                <p class="text-3xl font-bold">{{ current_year }}</p>
+                <p class="text-blue-100 mt-2">{{ current_date_range }}</p>
+            </div>
+            <div class="bg-white/20 p-4 rounded-xl">
+                <span class="material-icons-outlined text-6xl">event</span>
+            </div>
+        </div>
+        <div class="mt-6 flex gap-3">
+            <a href="{% url 'reports:comprehensive_statistics' %}?year={{ current_year }}" class="inline-flex items-center px-6 py-3 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-all font-semibold shadow-lg">
+                <span class="material-icons-outlined mr-2">bar_chart</span>
+                View Current Statistics
+            </a>
+            <a href="{% url 'auditing:financial_audit_report' %}?year={{ current_year }}" class="inline-flex items-center px-6 py-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-semibold border-2 border-white/50">
+                <span class="material-icons-outlined mr-2">assessment</span>
+                Financial Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Access Reports -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="p-3 bg-green-100 rounded-lg mr-4">
+                    <span class="material-icons-outlined text-green-600 text-2xl">payments</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Contributions</h3>
+            </div>
+            <p class="text-gray-600 text-sm mb-4">View contribution history by date range</p>
+            <a href="{% url 'auditing:contributions' %}" class="inline-flex items-center text-green-600 hover:text-green-700 font-semibold">
+                View Reports
+                <span class="material-icons-outlined ml-1 text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="p-3 bg-red-100 rounded-lg mr-4">
+                    <span class="material-icons-outlined text-red-600 text-2xl">receipt_long</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Expenditures</h3>
+            </div>
+            <p class="text-gray-600 text-sm mb-4">View expenditure history by date range</p>
+            <a href="{% url 'auditing:expenditures' %}" class="inline-flex items-center text-red-600 hover:text-red-700 font-semibold">
+                View Reports
+                <span class="material-icons-outlined ml-1 text-sm">arrow_forward</span>
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                    <span class="material-icons-outlined text-blue-600 text-2xl">groups</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Attendance</h3>
+            </div>
+            <p class="text-gray-600 text-sm mb-4">View attendance records by date range</p>
+            <a href="{% url 'attendance:weekly_report' %}" class="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold">
+                View Reports
+                <span class="material-icons-outlined ml-1 text-sm">arrow_forward</span>
             </a>
         </div>
     </div>

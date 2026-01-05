@@ -64,7 +64,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Target Audience</label>
-                        <select name="scope" class="form-input form-select">
+                        <select name="scope" id="scope-select" class="form-input form-select">
                             <option value="branch" {% if announcement.scope == 'branch' %}selected{% endif %}>Branch Only</option>
                             {% if user.is_district_executive or user.is_area_executive or user.is_mission_admin %}
                             <option value="district" {% if announcement.scope == 'district' %}selected{% endif %}>District-wide</option>
@@ -75,6 +75,33 @@
                             {% if user.is_mission_admin %}
                             <option value="mission" {% if announcement.scope == 'mission' %}selected{% endif %}>Mission-wide (All Branches)</option>
                             {% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group" id="branch-field">
+                        <label class="form-label">Branch</label>
+                        <select name="branch" class="form-input form-select">
+                            <option value="">Select Branch</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" {% if announcement.branch.id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="district-field">
+                        <label class="form-label">District</label>
+                        <select name="district" class="form-input form-select">
+                            <option value="">Select District</option>
+                            {% for district in districts %}
+                            <option value="{{ district.id }}" {% if announcement.district.id == district.id %}selected{% endif %}>{{ district.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="area-field">
+                        <label class="form-label">Area</label>
+                        <select name="area" class="form-input form-select">
+                            <option value="">Select Area</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}" {% if announcement.area.id == area.id %}selected{% endif %}>{{ area.name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="form-group">
@@ -172,6 +199,39 @@
                                 fileInput.files = files;
                             }
                         }
+                    });
+                    </script>
+                    
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const scopeSelect = document.getElementById('scope-select');
+                        const branchField = document.getElementById('branch-field');
+                        const districtField = document.getElementById('district-field');
+                        const areaField = document.getElementById('area-field');
+                        
+                        function toggleFields() {
+                            const scope = scopeSelect.value;
+                            
+                            // Hide all fields first
+                            branchField.classList.add('hidden');
+                            districtField.classList.add('hidden');
+                            areaField.classList.add('hidden');
+                            
+                            // Show relevant field based on scope
+                            if (scope === 'branch') {
+                                branchField.classList.remove('hidden');
+                            } else if (scope === 'district') {
+                                districtField.classList.remove('hidden');
+                            } else if (scope === 'area') {
+                                areaField.classList.remove('hidden');
+                            }
+                        }
+                        
+                        // Initial toggle
+                        toggleFields();
+                        
+                        // Toggle on change
+                        scopeSelect.addEventListener('change', toggleFields);
                     });
                     </script>
                 </div>

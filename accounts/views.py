@@ -9,6 +9,8 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import models
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 from .models import User, UserProfile, LoginHistory, UserChangeRequest
 
@@ -179,6 +181,61 @@ def profile_edit_view(request):
         
         if 'profile_picture' in request.FILES:
             user.profile_picture = request.FILES['profile_picture']
+        elif request.POST.get('photo_data'):
+            # Handle base64 photo data from camera
+            import base64
+            from django.core.files.base import ContentFile
+            import uuid
+            from io import BytesIO
+            from PIL import Image
+            
+            photo_data = request.POST.get('photo_data')
+            if photo_data and photo_data.startswith('data:image'):
+                # Extract the base64 data
+                format, imgstr = photo_data.split(';base64,')
+                ext = format.split('/')[-1]
+                
+                # Decode and save
+                image_data = base64.b64decode(imgstr)
+                image = Image.open(BytesIO(image_data))
+                
+                # Convert RGBA to RGB if necessary
+                if image.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    if image.mode == 'P':
+                        image = image.convert('RGBA')
+                    background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                    image = background
+                
+                # Resize to max 800x800
+                max_size = (800, 800)
+                image.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                # Save to BytesIO
+                output = BytesIO()
+                if ext.lower() in ['jpg', 'jpeg']:
+                    image.save(output, format='JPEG', quality=85, optimize=True)
+                    ext = 'jpg'
+                elif ext.lower() == 'png':
+                    image.save(output, format='PNG', optimize=True)
+                else:
+                    image.save(output, format='JPEG', quality=85, optimize=True)
+                    ext = 'jpg'
+                
+                output.seek(0)
+                
+                # Generate unique filename
+                filename = f"profile_photos/{user.user_id}_{uuid.uuid4().hex[:8]}.{ext}"
+                
+                # Delete old photo if exists
+                if user.profile_picture:
+                    try:
+                        user.profile_picture.delete(save=False)
+                    except:
+                        pass
+                
+                # Save new photo
+                user.profile_picture.save(filename, ContentFile(output.read()), save=True)
         
         user.save()
         
@@ -419,7 +476,7 @@ def user_detail(request, user_id):
 @login_required
 def add_user(request):
     """Add a new user with auto-generated member ID."""
-    from core.models import Branch
+    from core.models import Branch, Area, District
     from groups.models import Group, GroupMembership
     from payroll.models import StaffPayrollProfile
     from decimal import Decimal
@@ -464,6 +521,9 @@ def add_user(request):
         baptism_by = request.POST.get('baptism_by', '')
         membership_date = request.POST.get('membership_date') or None
         previous_church = request.POST.get('previous_church', '')
+
+        # Area and District assignments are now automatic based on Branch hierarchy
+        # No manual assignment needed for executives
 
         # Emergency contact
         emergency_name = request.POST.get('emergency_contact_name', '')
@@ -611,6 +671,8 @@ def add_user(request):
             user.set_password(pin)  # Also set password for Django auth
             if branch_id:
                 user.branch_id = branch_id
+            
+            # Area and District assignments are now automatic via User.save() method
 
             # Set pastor-specific fields
             if role == 'pastor':
@@ -708,7 +770,7 @@ def add_user(request):
         'profile': None,
         'form_data': {},
         'roles': User.Role.choices,
-        'branches': Branch.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(is_active=True).select_related('district__area'),
         'groups': Group.objects.filter(is_active=True).select_related('category'),
     }
     return render(request, 'accounts/user_form.html', context)
@@ -717,7 +779,7 @@ def add_user(request):
 @login_required
 def edit_user(request, user_id):
     """Edit a user."""
-    from core.models import Branch
+    from core.models import Branch, Area, District
     from groups.models import Group, GroupMembership
     
     if not request.user.is_mission_admin:
@@ -740,6 +802,10 @@ def edit_user(request, user_id):
             user.branch_id = branch_id
         else:
             user.branch = None
+        
+        # Area and District assignments are now automatic based on Branch hierarchy
+        # No manual assignment needed for executives
+        
         user.is_active = request.POST.get('is_active') == 'on'
         
         # Update PIN if provided
@@ -782,7 +848,7 @@ def edit_user(request, user_id):
         'profile': profile,
         'form_data': {},
         'roles': User.Role.choices,
-        'branches': Branch.objects.filter(is_active=True),
+        'branches': Branch.objects.filter(is_active=True).select_related('district__area'),
         'groups': Group.objects.filter(is_active=True).select_related('category'),
         'user_groups': user_groups,
     }
@@ -1019,4 +1085,111 @@ def review_change_request(request, request_id):
     }
     
     return render(request, 'accounts/review_change_request.html', context)
+
+
+@require_http_methods(["POST"])
+@login_required
+@csrf_exempt
+def ajax_upload_photo(request):
+    """Handle AJAX photo upload for profile edit."""
+    try:
+        import base64
+        from django.core.files.base import ContentFile
+        import uuid
+        from io import BytesIO
+        from PIL import Image
+        
+        user = request.user
+        
+        # Handle file upload
+        if 'profile_picture' in request.FILES:
+            file = request.FILES['profile_picture']
+            
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            if file.content_type not in allowed_types:
+                return JsonResponse({'success': False, 'message': 'Invalid file type. Please use JPG, PNG, GIF, or WebP.'}, status=400)
+            
+            # Validate file size (5MB max)
+            max_size = 5 * 1024 * 1024  # 5MB
+            if file.size > max_size:
+                return JsonResponse({'success': False, 'message': 'File too large. Maximum size is 5MB.'}, status=400)
+            
+            # Delete old photo if exists
+            if user.profile_picture:
+                try:
+                    user.profile_picture.delete(save=False)
+                except:
+                    pass
+            
+            # Save new photo
+            user.profile_picture = file
+            user.save()
+            
+        # Handle base64 data from camera
+        elif request.POST.get('photo_data'):
+            photo_data = request.POST.get('photo_data')
+            if photo_data and photo_data.startswith('data:image'):
+                # Extract the base64 data
+                format, imgstr = photo_data.split(';base64,')
+                ext = format.split('/')[-1]
+                
+                # Decode and save
+                image_data = base64.b64decode(imgstr)
+                image = Image.open(BytesIO(image_data))
+                
+                # Convert RGBA to RGB if necessary
+                if image.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    if image.mode == 'P':
+                        image = image.convert('RGBA')
+                    background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                    image = background
+                
+                # Resize to max 800x800
+                max_size = (800, 800)
+                image.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                # Save to BytesIO
+                output = BytesIO()
+                if ext.lower() in ['jpg', 'jpeg']:
+                    image.save(output, format='JPEG', quality=85, optimize=True)
+                    ext = 'jpg'
+                elif ext.lower() == 'png':
+                    image.save(output, format='PNG', optimize=True)
+                else:
+                    image.save(output, format='JPEG', quality=85, optimize=True)
+                    ext = 'jpg'
+                
+                output.seek(0)
+                
+                # Generate unique filename
+                filename = f"profile_photos/{user.user_id}_{uuid.uuid4().hex[:8]}.{ext}"
+                
+                # Delete old photo if exists
+                if user.profile_picture:
+                    try:
+                        user.profile_picture.delete(save=False)
+                    except:
+                        pass
+                
+                # Save new photo
+                user.profile_picture.save(filename, ContentFile(output.read()), save=True)
+            else:
+                return JsonResponse({'success': False, 'message': 'Invalid photo data'}, status=400)
+        else:
+            return JsonResponse({'success': False, 'message': 'No photo provided'}, status=400)
+        
+        # Return success response
+        return JsonResponse({
+            'success': True,
+            'message': 'Photo uploaded successfully',
+            'photo_url': user.profile_picture.url if user.profile_picture else None
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error uploading photo: {str(e)}'
+        }, status=500)
 

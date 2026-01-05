@@ -47,8 +47,8 @@ def mission_financial_dashboard(request):
         period_type = 'yearly'
         period_name = f"Year {year}"
     
-    # Get fiscal year
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Removed fiscal_year usage
+    # Reports now use date filtering only
     
     # INCOME: Remittances received from branches
     remittances = Remittance.objects.filter(
@@ -76,7 +76,6 @@ def mission_financial_dashboard(request):
         level='mission',
         date__gte=start_date,
         date__lte=end_date,
-        fiscal_year=fiscal_year,
         status__in=['approved', 'paid']
     )
     
@@ -153,30 +152,27 @@ def mission_expenditure_list(request):
         messages.error(request, 'Access denied. Mission Admin role required.')
         return redirect('core:dashboard')
 
-    # Get fiscal year
-    fiscal_year = FiscalYear.get_current()
-
+    # DEPRECATED: Year-as-state architecture - Removed fiscal_year usage
+    # Reports now use date filtering only
+    
     # Get all mission expenditures
     expenditures = Expenditure.objects.filter(
-        level='mission',
-        fiscal_year=fiscal_year
+        level='mission'
     ).select_related('category', 'created_by', 'approved_by').order_by('-date')
-
+    
     # Filters
     category_id = request.GET.get('category')
     status = request.GET.get('status')
     year = request.GET.get('year')
     month = request.GET.get('month')
-
+    
+    # Apply date filtering instead of fiscal year filtering
     if category_id:
         expenditures = expenditures.filter(category_id=category_id)
-
     if status:
         expenditures = expenditures.filter(status=status)
-
     if year:
         expenditures = expenditures.filter(date__year=int(year))
-
     if month:
         expenditures = expenditures.filter(date__month=int(month))
 
@@ -327,14 +323,13 @@ def branch_financial_details(request, branch_id):
     year = int(request.GET.get('year', today.year))
     month = request.GET.get('month')
     
-    # Get fiscal year
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Removed fiscal_year usage
+    # Reports now use date filtering only
     
     # Branch contributions
     branch_contributions = Contribution.objects.filter(
         branch=branch,
-        date__year=year,
-        fiscal_year=fiscal_year
+        date__year=year
     )
     
     if month:
@@ -345,8 +340,7 @@ def branch_financial_details(request, branch_id):
     branch_expenditures = Expenditure.objects.filter(
         level='branch',
         branch=branch,
-        date__year=year,
-        fiscal_year=fiscal_year
+        date__year=year
     )
     
     if month:
@@ -356,14 +350,35 @@ def branch_financial_details(request, branch_id):
     total_contributions = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
     total_expenditures = branch_expenditures.aggregate(total=Sum('amount'))['total'] or Decimal('0')
     
-    # Calculate mission remittance (10% of tithes)
-    tithe_contributions = branch_contributions.filter(contribution_type__category='tithe')
-    total_tithes = tithe_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    mission_remittance = total_tithes * Decimal('0.10')
+    # Calculate mission remittance based on ACTUAL allocation percentages from ContributionType
+    # NOT hardcoded - uses the mission_percentage set by admin for each contribution type
+    mission_remittance = branch_contributions.aggregate(
+        total=Sum('mission_amount')
+    )['total'] or Decimal('0')
     
-    # Calculate what stays at branch (coffer)
+    # Get allocation breakdown by contribution type for display
+    from contributions.models import ContributionType
+    allocation_info = []
+    contribution_types_used = branch_contributions.values('contribution_type').distinct()
+    for ct_data in contribution_types_used:
+        ct = ContributionType.objects.filter(id=ct_data['contribution_type']).first()
+        if ct:
+            ct_contributions = branch_contributions.filter(contribution_type=ct)
+            ct_total = ct_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+            ct_mission = ct_contributions.aggregate(total=Sum('mission_amount'))['total'] or Decimal('0')
+            allocation_info.append({
+                'name': ct.name,
+                'total': ct_total,
+                'mission_amount': ct_mission,
+                'mission_percentage': ct.mission_percentage,
+                'branch_percentage': ct.branch_percentage,
+            })
+    
+    # Calculate what stays at branch (coffer) - based on actual branch_amount allocations
+    money_stays_at_branch = branch_contributions.aggregate(
+        total=Sum('branch_amount')
+    )['total'] or Decimal('0')
     money_for_mission = mission_remittance
-    money_stays_at_branch = total_contributions - mission_remittance
     money_spent_by_branch = total_expenditures
     branch_coffer_balance = money_stays_at_branch - money_spent_by_branch
     
@@ -379,6 +394,7 @@ def branch_financial_details(request, branch_id):
         'money_stays_at_branch': money_stays_at_branch,
         'money_spent_by_branch': money_spent_by_branch,
         'branch_coffer_balance': branch_coffer_balance,
+        'allocation_info': allocation_info,  # Dynamic allocation breakdown by contribution type
     }
     
     # Contributions by type
@@ -483,32 +499,27 @@ def branch_financial_overview(request):
     if branch_id:
         branches = branches.filter(id=branch_id)
 
-    # Get fiscal year
-    fiscal_year = FiscalYear.get_current()
-
     # BRANCH-LEVEL CONTRIBUTIONS (what stays at branch level)
     # These are contributions that are NOT sent to mission
     branch_contributions = Contribution.objects.filter(
         branch__in=branches,
-        date__year=year,
-        fiscal_year=fiscal_year
+        date__year=year
     )
-
+    
     if month:
         month = int(month)
         branch_contributions = branch_contributions.filter(date__month=month)
-
+    
     # Calculate total contributions that stayed at branch level
     total_branch_contributions = branch_contributions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-
+    
     # BRANCH-LEVEL EXPENDITURES (local branch expenses)
     branch_expenditures = Expenditure.objects.filter(
         level='branch',
         branch__in=branches,
-        date__year=year,
-        fiscal_year=fiscal_year
+        date__year=year
     )
-
+    
     if month:
         branch_expenditures = branch_expenditures.filter(date__month=month)
 

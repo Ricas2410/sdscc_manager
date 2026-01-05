@@ -4,118 +4,318 @@
 {% block title %}Add Visitor - {{ session.service_type.name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Precision Header -->
     <div class="mb-8">
-        <div class="flex items-center">
-            <a href="{% url 'attendance:session_detail' session.id %}" 
-               class="text-gray-500 hover:text-gray-700 mr-4">
-                <span class="material-icons-outlined">arrow_back</span>
-            </a>
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Add Visitor</h1>
-                <p class="text-gray-500 mt-2">
-                    {{ session.service_type.name }} - {{ session.date|date:"F d, Y" }} at {{ session.branch.name }}
-                </p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'attendance:session_detail' session.id %}" 
+                   class="w-12 h-12 flex items-center justify-center bg-white text-gray-400 hover:text-indigo-600 rounded-2xl shadow-sm hover:shadow-md transition-all border border-gray-100">
+                    <span class="material-icons-outlined">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Register New Visitor</h1>
+                    <p class="text-gray-500 font-medium mt-1">
+                        {{ session.service_type.name }} • {{ session.date|date:"F d, Y" }} • {{ session.branch.name }}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="flex items-center gap-3">
+                <div class="text-center px-4 py-2 bg-blue-50 rounded-xl border border-blue-200">
+                    <div class="text-lg font-bold text-blue-600">{{ session.visitors_count }}</div>
+                    <div class="text-xs text-blue-600">Visitors Today</div>
+                </div>
+                <div class="text-center px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                    <div class="text-lg font-bold text-green-600">{{ session.total_attendance }}</div>
+                    <div class="text-xs text-green-600">Total Attendance</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Add Visitor Form -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
-            <h2 class="text-lg font-semibold text-gray-900">Visitor Information</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <!-- Data Entry Terminal -->
+            <div class="card card-overflow-hidden">
+                <div class="card-header bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                            <span class="material-icons-outlined text-indigo-600 mr-2">person_add</span>
+                            Visitor Information
+                        </h2>
+                        <div class="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="text-xs font-semibold uppercase tracking-wider">Active Entry</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="post" class="p-8 space-y-8">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information Section -->
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center pb-2 border-b border-gray-200">
+                            <span class="material-icons-outlined text-gray-400 mr-2">badge</span>
+                            Personal Details
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Full Name -->
+                            <div class="md:col-span-2">
+                                <label class="form-label required">Full Name</label>
+                                <input type="text" 
+                                       name="name" 
+                                       required 
+                                       class="form-input" 
+                                       placeholder="e.g., John Michael Doe">
+                            </div>
+                            
+                            <!-- Phone -->
+                            <div>
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" 
+                                       name="phone" 
+                                       class="form-input" 
+                                       placeholder="(555) 123-4567">
+                            </div>
+                            
+                            <!-- Email -->
+                            <div>
+                                <label class="form-label">Email Address</label>
+                                <input type="email" 
+                                       name="email" 
+                                       class="form-input" 
+                                       placeholder="visitor@example.com">
+                            </div>
+                            
+                            <!-- Address -->
+                            <div class="md:col-span-2">
+                                <label class="form-label">Address</label>
+                                <textarea name="address" 
+                                          rows="2" 
+                                          class="form-input resize-none" 
+                                          placeholder="123 Main St, City, State 12345"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Visit Information Section -->
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center pb-2 border-b border-gray-200">
+                            <span class="material-icons-outlined text-gray-400 mr-2">event</span>
+                            Visit Details
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Visit Status -->
+                            <div>
+                                <label class="form-label">Visit Status</label>
+                                <select name="status" class="form-input form-select">
+                                    <option value="new">First Time Visitor</option>
+                                    <option value="returning">Returning Visitor</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Visit Count -->
+                            <div>
+                                <label class="form-label">Number of Visits</label>
+                                <input type="number" 
+                                       name="visit_count" 
+                                       min="1" 
+                                       value="1"
+                                       class="form-input" 
+                                       placeholder="1">
+                            </div>
+                            
+                            <!-- Interested in Membership -->
+                            <div class="md:col-span-2">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="interested_in_membership" value="true" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Interested in becoming a member</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Follow-up Information Section -->
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center pb-2 border-b border-gray-200">
+                            <span class="material-icons-outlined text-gray-400 mr-2">follow_the_signs</span>
+                            Follow-up & Discipleship
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Invited By -->
+                            <div class="md:col-span-2">
+                                <label class="form-label">Invited By (Member)</label>
+                                <select name="invited_by" class="form-input form-select">
+                                    <option value="">Select inviting member (optional)</option>
+                                    {% for member in members %}
+                                    <option value="{{ member.id }}">
+                                        {{ member.get_full_name|default:member.member_id }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Follow-up Needed -->
+                            <div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="follow_up_needed" value="true" checked class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Follow-up required</span>
+                                </label>
+                            </div>
+                            
+                            <!-- Follow-up Date -->
+                            <div>
+                                <label class="form-label">Follow-up Date</label>
+                                <input type="date" 
+                                       name="follow_up_date" 
+                                       class="form-input">
+                            </div>
+                            
+                            <!-- Follow-up Assigned To -->
+                            <div class="md:col-span-2">
+                                <label class="form-label">Follow-up Assigned To</label>
+                                <select name="follow_up_assigned_to" class="form-input form-select">
+                                    <option value="">Assign follow-up (optional)</option>
+                                    {% for member in members %}
+                                    <option value="{{ member.id }}">
+                                        {{ member.get_full_name|default:member.member_id }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Follow-up Notes -->
+                            <div class="md:col-span-2">
+                                <label class="form-label">Follow-up Notes</label>
+                                <textarea name="follow_up_notes" 
+                                          rows="4" 
+                                          class="form-input resize-none" 
+                                          placeholder="Special interests, prayer requests, conversation topics, or follow-up needs..."></textarea>
+                            </div>
+                            
+                            <!-- General Notes -->
+                            <div class="md:col-span-2">
+                                <label class="form-label">Additional Notes</label>
+                                <textarea name="notes" 
+                                          rows="3" 
+                                          class="form-input resize-none" 
+                                          placeholder="Any additional information about the visit..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-200">
+                        <a href="{% url 'attendance:session_detail' session.id %}" 
+                           class="btn btn-secondary">
+                            <span class="material-icons-outlined mr-2">cancel</span>
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                class="btn btn-primary btn-lg">
+                            <span class="material-icons-outlined mr-2">how_to_reg</span>
+                            Register Visitor
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
         
-        <form method="post" class="p-6">
-            {% csrf_token %}
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Name -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           name="name" 
-                           required 
-                           class="form-input" 
-                           placeholder="Enter full name">
+        <!-- Sidebar Information -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Service Information Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <span class="material-icons-outlined text-indigo-600 mr-2">info</span>
+                        Service Information
+                    </h3>
                 </div>
-                
-                <!-- Phone -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
-                    </label>
-                    <input type="tel" 
-                           name="phone" 
-                           class="form-input" 
-                           placeholder="Enter phone number">
-                </div>
-                
-                <!-- Email -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address
-                    </label>
-                    <input type="email" 
-                           name="email" 
-                           class="form-input" 
-                           placeholder="Enter email address">
-                </div>
-                
-                <!-- Invited By -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Invited By (Member who invited this visitor)
-                    </label>
-                    <select name="invited_by" class="form-input">
-                        <option value="">Select member (optional)</option>
-                        {% for member in members %}
-                        <option value="{{ member.id }}">
-                            {{ member.get_full_name|default:member.member_id }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <!-- Follow-up Notes -->
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Follow-up Notes
-                    </label>
-                    <textarea name="follow_up_notes" 
-                              rows="4" 
-                              class="form-input" 
-                              placeholder="Any notes for follow-up (special interests, prayer requests, etc.)"></textarea>
+                <div class="card-body space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Service Type</span>
+                        <span class="font-medium">{{ session.service_type.name }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Date</span>
+                        <span class="font-medium">{{ session.date|date:"M d, Y" }}</span>
+                    </div>
+                    {% if session.start_time %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Time</span>
+                        <span class="font-medium">{{ session.start_time }} - {{ session.end_time|default:"TBD" }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Location</span>
+                        <span class="font-medium">{{ session.branch.name }}</span>
+                    </div>
+                    {% if session.preacher %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Preacher</span>
+                        <span class="font-medium">{{ session.preacher.get_full_name }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
-            <!-- Form Actions -->
-            <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-                <a href="{% url 'attendance:session_detail' session.id %}" 
-                   class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
-                    Cancel
-                </a>
-                <button type="submit" 
-                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                    <span class="material-icons-outlined mr-2 text-sm">person_add</span>
-                    Add Visitor
-                </button>
+            <!-- Best Practices Card -->
+            <div class="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                <div class="card-header bg-blue-100/50 border-blue-200">
+                    <h3 class="font-semibold text-blue-900 flex items-center">
+                        <span class="material-icons-outlined text-blue-600 mr-2">tips_and_updates</span>
+                        Best Practices
+                    </h3>
+                </div>
+                <div class="card-body space-y-3">
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-outlined text-blue-500 text-sm mt-0.5">check_circle</span>
+                        <p class="text-sm text-blue-800">Collect accurate contact information for effective follow-up</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-outlined text-blue-500 text-sm mt-0.5">check_circle</span>
+                        <p class="text-sm text-blue-800">Note special interests or prayer requests</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-outlined text-blue-500 text-sm mt-0.5">check_circle</span>
+                        <p class="text-sm text-blue-800">Assign a follow-up person for better discipleship</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="material-icons-outlined text-blue-500 text-sm mt-0.5">check_circle</span>
+                        <p class="text-sm text-blue-800">Link to an inviting member when possible</p>
+                    </div>
+                </div>
             </div>
-        </form>
-    </div>
-    
-    <!-- Quick Tips -->
-    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h3 class="text-sm font-medium text-blue-900 mb-2">Quick Tips:</h3>
-        <ul class="text-sm text-blue-700 space-y-1">
-            <li>• Collect accurate contact information for follow-up</li>
-            <li>• Note who invited the visitor for personal connection</li>
-            <li>• Record any special interests or prayer requests</li>
-            <li>• Set follow-up reminders within 48 hours of visit</li>
-        </ul>
+            
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <span class="material-icons-outlined text-indigo-600 mr-2">bolt</span>
+                        Quick Actions
+                    </h3>
+                </div>
+                <div class="card-body space-y-3">
+                    <a href="{% url 'attendance:visitors' %}" class="btn btn-secondary btn-sm w-full justify-start">
+                        <span class="material-icons-outlined mr-2">people</span>
+                        View All Visitors
+                    </a>
+                    <a href="{% url 'attendance:session_detail' session.id %}" class="btn btn-secondary btn-sm w-full justify-start">
+                        <span class="material-icons-outlined mr-2">event</span>
+                        Back to Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -123,8 +323,8 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-focus first name field
-    document.querySelector('input[name="first_name"]').focus();
+    // Auto-focus name field
+    document.querySelector('input[name="name"]').focus();
     
     // Phone number formatting
     const phoneInput = document.querySelector('input[name="phone"]');
@@ -133,15 +333,43 @@ document.addEventListener('DOMContentLoaded', function() {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 0) {
                 if (value.length <= 3) {
-                    value = value;
+                    value = '(' + value;
                 } else if (value.length <= 6) {
-                    value = value.slice(0, 3) + '-' + value.slice(3);
+                    value = '(' + value.slice(0, 3) + ') ' + value.slice(3);
                 } else {
-                    value = value.slice(0, 3) + '-' + value.slice(3, 6) + '-' + value.slice(6, 10);
+                    value = '(' + value.slice(0, 3) + ') ' + value.slice(3, 6) + '-' + value.slice(6, 10);
                 }
             }
             e.target.value = value;
         });
+    }
+    
+    // Set default follow-up date to 3 days from now
+    const followUpDateInput = document.querySelector('input[name="follow_up_date"]');
+    if (followUpDateInput && !followUpDateInput.value) {
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 3);
+        followUpDateInput.value = defaultDate.toISOString().split('T')[0];
+    }
+    
+    // Toggle follow-up date visibility based on checkbox
+    const followUpCheckbox = document.querySelector('input[name="follow_up_needed"]');
+    const followUpDateField = followUpDateInput?.closest('div');
+    
+    if (followUpCheckbox && followUpDateField) {
+        function toggleFollowUpFields() {
+            const parentDiv = followUpDateField.parentElement;
+            if (followUpCheckbox.checked) {
+                parentDiv.style.display = 'block';
+                followUpDateInput.required = true;
+            } else {
+                parentDiv.style.display = 'none';
+                followUpDateInput.required = false;
+            }
+        }
+        
+        followUpCheckbox.addEventListener('change', toggleFollowUpFields);
+        toggleFollowUpFields(); // Initial state
     }
 });
 </script>

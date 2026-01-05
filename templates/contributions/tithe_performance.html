@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Tithe Performance Tracking{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Professional Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-violet-800 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="mb-6 lg:mb-0">
+                    <h1 class="text-3xl font-bold text-white">Tithe Performance Tracking</h1>
+                    <p class="mt-2 text-blue-200">Monitor branch tithe targets and commission calculations</p>
+                    <div class="mt-4 text-sm text-blue-300">
+                        Period: {{ month_name }} {{ year }}
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="window.print()" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <span class="material-icons-outlined mr-2">print</span>
+                        Print Report
+                    </button>
+                    {% if user.is_mission_admin %}
+                    <a href="{% url 'contributions:commission_management' %}?month={{ month }}&year={{ year }}" 
+                       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <span class="material-icons-outlined mr-2">paid</span>
+                        Manage Commissions
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 mb-8">
+            <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                            <span class="material-icons-outlined mr-3 text-blue-600">filter_alt</span>
+                            Period Selection
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-600">Select reporting period</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form method="get" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 {% if user.is_mission_admin %}lg:grid-cols-5{% else %}lg:grid-cols-2{% endif %} gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">calendar_month</span>
+                                Month
+                            </label>
+                            <select name="month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                {% for m_num, m_name in months %}
+                                <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">event</span>
+                                Year
+                            </label>
+                            <select name="year" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                                {% for y in years %}
+                                <option value="{{ y }}" {% if year == y %}selected{% endif %}">{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if user.is_mission_admin %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">public</span>
+                                Area
+                            </label>
+                            <select name="area" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Areas</option>
+                                {% for area in areas %}
+                                <option value="{{ area.id }}" {% if area.id == selected_area %}selected{% endif %}">{{ area.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">map</span>
+                                District
+                            </label>
+                            <select name="district" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Districts</option>
+                                {% for district in districts %}
+                                <option value="{{ district.id }}" {% if district.id == selected_district %}selected{% endif %}">{{ district.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="material-icons-outlined text-sm mr-1">church</span>
+                                Branch
+                            </label>
+                            <select name="branch" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Branches</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}" {% if branch.id == selected_branch %}selected{% endif %}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Filter Actions -->
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div class="text-sm text-gray-600">
+                            {% if month or year or selected_area or selected_district or selected_branch %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <span class="material-icons-outlined text-xs mr-1">filter_list</span>
+                                    Active filters applied
+                                </span>
+                            {% else %}
+                                <span class="text-gray-500">No filters applied</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2">
+                            {% if month or year or selected_area or selected_district or selected_branch %}
+                                <a href="?" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                                    <span class="material-icons-outlined mr-1 text-sm">clear_all</span>
+                                    Clear Filters
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                                <span class="material-icons-outlined mr-1 text-sm">search</span>
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-violet-200 rounded-xl flex items-center justify-center">
+                            <span class="material-icons text-blue-600 text-xl">savings</span>
+                        </div>
+                        <span class="text-sm text-gray-500">Total</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ total_tithes|floatformat:0|intcomma }}</h3>
+                    <p class="text-sm text-gray-600 mt-1">Total Tithes Collected</p>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Mission Portion</span>
+                            <span class="font-semibold text-blue-600">{{ total_mission_amount|floatformat:0|intcomma }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-gray-600">Branch Retained</span>
+                            <span class="font-semibold text-blue-600">{{ total_branch_amount|floatformat:0|intcomma }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                            <span class="material-icons text-blue-600 text-xl">trending_up</span>
+                        </div>
+                        <span class="text-sm text-gray-500">Average</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ avg_tithe|floatformat:0|intcomma }}</h3>
+                    <p class="text-sm text-gray-600 mt-1">Average Per Branch</p>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Target Achievement</span>
+                            <span class="font-semibold text-purple-600">{{ target_achievement|floatformat:1 }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl flex items-center justify-center">
+                            <span class="material-icons text-yellow-600 text-xl">emoji_events</span>
+                        </div>
+                        <span class="text-sm text-gray-500">Top</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ top_branch.name|default:"-" }}</h3>
+                    <p class="text-sm text-gray-600 mt-1">Best Performing Branch</p>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Tithes Collected</span>
+                            <span class="font-semibold text-yellow-600">{{ top_branch.total_tithes|floatformat:0|intcomma|default:"-" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-xl flex items-center justify-center">
+                            <span class="material-icons text-indigo-600 text-xl">paid</span>
+                        </div>
+                        <span class="text-sm text-gray-500">Total</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">{{ total_commission|floatformat:0|intcomma }}</h3>
+                    <p class="text-sm text-gray-600 mt-1">Total Commission Eligible</p>
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Branches Qualified</span>
+                            <span class="font-semibold text-indigo-600">{{ qualified_branches }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branch Performance Table -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">Branch Tithe Performance</h2>
+                        <p class="mt-1 text-sm text-gray-600">Detailed tithe collection and target achievement by branch</p>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        {{ branch_data|length }} branches analyzed
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">District</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tithes Collected</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Target</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Achievement %</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Mission Portion</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Branch Retained</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Commission Status</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Commission Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for branch in branch_data %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ branch.name }}</div>
+                                <div class="text-xs text-gray-500">{{ branch.code }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {{ branch.area_name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {{ branch.district_name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold">
+                                {{ branch.total_tithes|floatformat:0|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                {{ branch.monthly_target|floatformat:0|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="h-2 rounded-full {% if branch.achievement_percentage >= 100 %}bg-green-500{% elif branch.achievement_percentage >= 75 %}bg-yellow-500{% else %}bg-red-500{% endif %}" 
+                                              style="width: {{ branch.achievement_percentage|floatformat:1 }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-bold {% if branch.achievement_percentage >= 100 %}text-green-600{% elif branch.achievement_percentage >= 75 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                        {{ branch.achievement_percentage|floatformat:1 }}%
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                {{ branch.mission_amount|floatformat:0|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                {{ branch.branch_amount|floatformat:0|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    {% if branch.qualified_for_commission %}bg-green-100 text-green-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if branch.qualified_for_commission %}Qualified{% else %}Not Qualified{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold
+                                {% if branch.qualified_for_commission %}text-green-600{% else %}text-gray-400{% endif %}">
+                                {% if branch.qualified_for_commission %}
+                                    {{ branch.commission_amount|floatformat:0|intcomma }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <span class="material-icons-outlined text-6xl text-gray-300 mb-4">savings</span>
+                                    <p class="text-xl font-semibold text-gray-700">No tithe data found</p>
+                                    <p class="text-sm text-gray-500 mt-2">Try adjusting your filters or select a different period</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced filter hierarchy with proper reset logic
+document.addEventListener('DOMContentLoaded', function() {
+    const areaSelect = document.querySelector('select[name="area"]');
+    const districtSelect = document.querySelector('select[name="district"]');
+    const branchSelect = document.querySelector('select[name="branch"]');
+    const monthSelect = document.querySelector('select[name="month"]');
+    const yearSelect = document.querySelector('select[name="year"]');
+    
+    // Area change: Reset district and branch
+    areaSelect.addEventListener('change', function() {
+        districtSelect.value = '';
+        branchSelect.value = '';
+        submitForm();
+    });
+    
+    // District change: Reset branch only
+    districtSelect.addEventListener('change', function() {
+        branchSelect.value = '';
+        submitForm();
+    });
+    
+    // Month/Year change: Submit form (keep hierarchy filters)
+    monthSelect.addEventListener('change', submitForm);
+    yearSelect.addEventListener('change', submitForm);
+    
+    // Branch change: Submit form
+    branchSelect.addEventListener('change', submitForm);
+    
+    function submitForm() {
+        const form = document.querySelector('form[method="get"]');
+        form.submit();
+    }
+    
+    // Add visual feedback for active filters
+    function updateFilterIndicators() {
+        const filters = [
+            { select: monthSelect, label: 'Month' },
+            { select: yearSelect, label: 'Year' },
+            { select: areaSelect, label: 'Area' },
+            { select: districtSelect, label: 'District' },
+            { select: branchSelect, label: 'Branch' }
+        ];
+        
+        filters.forEach(filter => {
+            if (filter.select.value) {
+                filter.select.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+            } else {
+                filter.select.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+            }
+        });
+    }
+    
+    // Initial update
+    updateFilterIndicators();
+    
+    // Update on any change
+    [areaSelect, districtSelect, branchSelect, monthSelect, yearSelect].forEach(select => {
+        select.addEventListener('change', updateFilterIndicators);
+    });
+});
+</script>
+{% endblock %}

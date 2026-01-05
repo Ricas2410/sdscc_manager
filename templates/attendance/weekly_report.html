@@ -12,9 +12,25 @@
             <div>
                 <p class="text-emerald-700 text-sm font-semibold">Attendance Analytics</p>
                 <h1 class="text-2xl font-bold text-gray-900">Weekly Attendance Report</h1>
-                <p class="text-emerald-600 mt-1">Track attendance trends across all branches</p>
+                <p class="text-emerald-600 mt-1">Branch-level attendance summary for {{ week_start|date:"M d, Y" }} - {{ week_end|date:"M d, Y" }}</p>
             </div>
-            <div class="mt-4 md:mt-0">
+            <div class="mt-4 md:mt-0 flex gap-2">
+                <!-- Week Navigation -->
+                <div class="flex items-center gap-2">
+                    <a href="?week={{ week_offset|add:-1 }}{% if selected_area %}&area={{ selected_area }}{% endif %}{% if selected_district %}&district={{ selected_district }}{% endif %}{% if selected_branch %}&branch={{ selected_branch }}{% endif %}" 
+                       class="btn btn-secondary btn-sm">
+                        <span class="material-icons-outlined">chevron_left</span>
+                    </a>
+                    <span class="px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium">
+                        {% if current_week %}Current Week{% else %}Week {{ week_offset }}{% endif %}
+                    </span>
+                    {% if not current_week %}
+                    <a href="?week={{ week_offset|add:1 }}{% if selected_area %}&area={{ selected_area }}{% endif %}{% if selected_district %}&district={{ selected_district }}{% endif %}{% if selected_branch %}&branch={{ selected_branch }}{% endif %}" 
+                       class="btn btn-secondary btn-sm">
+                        <span class="material-icons-outlined">chevron_right</span>
+                    </a>
+                    {% endif %}
+                </div>
                 <a href="{% url 'attendance:list' %}" class="btn btn-secondary">
                     <span class="material-icons-outlined mr-2">event</span>
                     View Sessions
@@ -23,137 +39,178 @@
         </div>
     </div>
 
-    <!-- Current Week Stats -->
-    <div class="rounded-2xl shadow-lg overflow-hidden bg-slate-900 text-slate-100 border border-white/10">
-        <div class="px-6 py-4 border-b border-white/10 bg-slate-900/90">
-            <h2 class="text-lg font-semibold text-emerald-300">Current Week Overview</h2>
-            <p class="text-sm text-slate-200">{{ current_week.week_start_date|date:"M d, Y" }} - {{ current_week.week_end_date|date:"M d, Y" }}</p>
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <span class="material-icons-outlined mr-2 text-primary-600">filter_list</span>
+                Hierarchical Filters
+            </h3>
         </div>
-        <div class="p-6 bg-slate-900/90">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-blue-200">{{ current_week.total_attendees }}</div>
-                    <div class="text-sm text-slate-200">Total Attendees</div>
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="form-label">Area</label>
+                    <select name="area" id="area_select" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if selected_area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-green-200">{{ current_week.total_members }}</div>
-                    <div class="text-sm text-slate-200">Total Members</div>
+                <div>
+                    <label class="form-label">District</label>
+                    <select name="district" id="district_select" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" data-area-id="{{ district.area.id }}" {% if selected_district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-purple-200">{{ current_week.attendance_percentage|floatformat:1 }}%</div>
-                    <div class="text-sm text-slate-200">Attendance Rate</div>
+                <div>
+                    <label class="form-label">Branch</label>
+                    <select name="branch" id="branch_select" class="form-input form-select" onchange="this.form.submit()">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" data-district-id="{{ branch.district.id }}" data-area-id="{{ branch.district.area.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-orange-200">{{ current_week.first_time_visitors }}</div>
-                    <div class="text-sm text-slate-200">New Visitors</div>
+                <div class="flex items-end">
+                    <a href="?" class="btn btn-secondary w-full">
+                        <span class="material-icons-outlined mr-2">clear</span>
+                        Clear Filters
+                    </a>
                 </div>
-            </div>
-
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
-                    <div class="text-sm text-blue-100 font-medium">Sabbath Service</div>
-                    <div class="text-2xl font-bold text-white">{{ current_week.sabbath_attendance }}</div>
-                </div>
-                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
-                    <div class="text-sm text-green-100 font-medium">Midweek Service</div>
-                    <div class="text-2xl font-bold text-white">{{ current_week.midweek_attendance }}</div>
-                </div>
-                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
-                    <div class="text-sm text-white font-medium">Special Service</div>
-                    <div class="text-2xl font-bold text-white">{{ current_week.special_service_attendance }}</div>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
     <!-- Overall Statistics -->
-    <div class="card">
-        <div class="card-header">
-            <h2 class="text-lg font-semibold text-gray-900">Overall Statistics</h2>
-            <p class="text-sm text-gray-500">Across {{ total_weeks }} weeks of data</p>
+    <div class="rounded-2xl shadow-lg overflow-hidden bg-slate-900 text-slate-100 border border-white/10">
+        <div class="px-6 py-4 border-b border-white/10 bg-slate-900/90">
+            <h2 class="text-lg font-semibold text-emerald-300">Overall Statistics</h2>
+            <p class="text-sm text-slate-200">{{ total_branches }} branches reporting</p>
         </div>
-        <div class="card-body">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="p-6 bg-slate-900/90">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-blue-600">{{ avg_attendance|floatformat:1 }}%</div>
-                    <div class="text-sm text-gray-500">Average Attendance Rate</div>
+                    <div class="text-3xl font-bold text-blue-200">{{ overall_total_attendance|intcomma }}</div>
+                    <div class="text-sm text-slate-200">Total Attendance</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-green-600">{{ total_weeks }}</div>
-                    <div class="text-sm text-gray-500">Weeks Tracked</div>
+                    <div class="text-3xl font-bold text-green-200">{{ overall_total_members|intcomma }}</div>
+                    <div class="text-sm text-slate-200">Total Members</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-purple-600">
-                        {% if total_weeks > 0 %}
-                            {{ weekly_stats|length|mul:100|div:total_weeks|floatformat:0 }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                    </div>
-                    <div class="text-sm text-gray-500">Data Completeness</div>
+                    <div class="text-3xl font-bold text-purple-200">{{ overall_attendance_rate|floatformat:1 }}%</div>
+                    <div class="text-sm text-slate-200">Attendance Rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-200">{{ overall_visitors|intcomma }}</div>
+                    <div class="text-sm text-slate-200">Total Visitors</div>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-blue-100 font-medium">Average Per Service</div>
+                    <div class="text-2xl font-bold text-white">{{ overall_avg_attendance|floatformat:1 }}</div>
+                </div>
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-green-100 font-medium">Total Services</div>
+                    <div class="text-2xl font-bold text-white">{{ overall_total_sessions }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Weekly History -->
+    <!-- Branch Summaries -->
     <div class="card">
         <div class="card-header">
-            <h2 class="text-lg font-semibold text-gray-900">Weekly History</h2>
-            <p class="text-sm text-gray-500">Attendance trends over time</p>
+            <h2 class="text-lg font-semibold text-gray-900">Branch Performance Summary</h2>
+            <p class="text-sm text-gray-500">Click "View Details" to see individual attendance records</p>
         </div>
         <div class="card-body">
             <div class="overflow-x-auto">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Week</th>
-                            <th>Attendees</th>
-                            <th>Members</th>
+                            <th>Branch</th>
+                            <th>District / Area</th>
+                            <th>Total Attendance</th>
                             <th>Attendance Rate</th>
+                            <th>Avg Per Service</th>
+                            <th>Members</th>
                             <th>Sabbath</th>
                             <th>Midweek</th>
                             <th>Special</th>
-                            <th>New Visitors</th>
+                            <th>Visitors</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for week in weekly_stats %}
-                        <tr class="{% if week.attendance_percentage < 50 %}bg-red-50{% elif week.attendance_percentage > 80 %}bg-green-50{% endif %}">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ week.week_start_date|date:"M d" }} - {{ week.week_end_date|date:"M d, Y" }}
+                        {% for summary in branch_summaries %}
+                        <tr class="{% if summary.attendance_rate < 50 %}bg-red-50{% elif summary.attendance_rate > 80 %}bg-green-50{% endif %}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                                            <span class="text-primary-600 font-bold text-sm">{{ summary.branch.name|slice:":3"|upper }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ summary.branch.name }}</div>
+                                        <div class="text-sm text-gray-500">ID: {{ summary.branch.branch_id }}</div>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ week.total_attendees }}
+                                <div>{{ summary.branch.district.name }}</div>
+                                <div class="text-gray-500">{{ summary.branch.district.area.name }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ week.total_members }}
+                                <span class="font-bold text-blue-600">{{ summary.total_attendance|intcomma }}</span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs font-medium rounded-full
-                                    {% if week.attendance_percentage >= 80 %}bg-green-100 text-green-800
-                                    {% elif week.attendance_percentage >= 60 %}bg-yellow-100 text-yellow-800
+                                    {% if summary.attendance_rate >= 80 %}bg-green-100 text-green-800
+                                    {% elif summary.attendance_rate >= 60 %}bg-yellow-100 text-yellow-800
                                     {% else %}bg-red-100 text-red-800{% endif %}">
-                                    {{ week.attendance_percentage|floatformat:1 }}%
+                                    {{ summary.attendance_rate|floatformat:1 }}%
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ week.sabbath_attendance }}
+                                {{ summary.avg_attendance|floatformat:1 }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ week.midweek_attendance }}
+                                {{ summary.member_count|intcomma }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ week.special_service_attendance }}
+                                {{ summary.sabbath_attendance|intcomma }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ week.first_time_visitors }}
+                                {{ summary.midweek_attendance|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ summary.special_attendance|intcomma }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="text-orange-600 font-medium">{{ summary.visitors_count|intcomma }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{% url 'attendance:branch_weekly_detail' summary.branch.id week_start|date:'Y-m-d' %}" 
+                                   class="text-primary-600 hover:text-primary-900">
+                                    <span class="material-icons-outlined align-middle mr-1">visibility</span>
+                                    View Details
+                                </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">
-                                No weekly attendance data available yet. Data will populate as attendance sessions are recorded.
+                            <td colspan="12" class="px-6 py-12 text-center text-sm text-gray-500">
+                                <span class="material-icons-outlined text-4xl text-gray-300">event_busy</span>
+                                <p class="mt-2">No attendance data found for the selected criteria.</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -163,4 +220,7 @@
         </div>
     </div>
 </div>
+
+<!-- Include hierarchical selectors JavaScript -->
+<script src="{% static 'js/hierarchical-selectors.js' %}"></script>
 {% endblock %}

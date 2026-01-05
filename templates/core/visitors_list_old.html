@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Visitor Follow-up{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-user-friends me-2"></i>Visitor Management</h2>
+                <a href="{% url 'core:visitor_add' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Visitor
+                </a>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" name="search" placeholder="Search visitors..." value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="area" id="areaSelect">
+                                <option value="">All Areas</option>
+                                {% for area in areas %}
+                                <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>{{ area.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="district" id="districtSelect">
+                                <option value="">All Districts</option>
+                                {% for district in districts %}
+                                <option value="{{ district.id }}" {% if request.GET.district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="branch" id="branchSelect">
+                                <option value="">All Branches</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-outline-primary">Filter</button>
+                            <a href="{% url 'core:visitors' %}" class="btn btn-outline-secondary">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Visitors Table -->
+            {% if visitors %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Visit Date</th>
+                                    <th>Branch</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for visitor in visitors %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ visitor.name }}</strong>
+                                        {% if visitor.address %}<br><small class="text-muted">{{ visitor.address }}</small>{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if visitor.phone %}<i class="fas fa-phone me-1"></i>{{ visitor.phone }}<br>{% endif %}
+                                        {% if visitor.email %}<i class="fas fa-envelope me-1"></i>{{ visitor.email }}{% endif %}
+                                    </td>
+                                    <td>{{ visitor.visit_date|date:"M d, Y" }}</td>
+                                    <td>{{ visitor.branch.name|default:"Not assigned" }}</td>
+                                    <td>
+                                        {% if visitor.followed_up %}
+                                        <span class="badge bg-success">Followed Up</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'core:visitor_detail' visitor.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'core:visitor_edit' visitor.id %}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'core:visitor_delete' visitor.id %}" class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No visitors found</h4>
+                <p class="text-muted">Try adjusting your search criteria or add a new visitor.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const areaSelect = document.getElementById('areaSelect');
+    const districtSelect = document.getElementById('districtSelect');
+    const branchSelect = document.getElementById('branchSelect');
+    
+    if (areaSelect && districtSelect && branchSelect) {
+        areaSelect.addEventListener('change', function() {
+            filterDistricts(this.value);
+        });
+        
+        districtSelect.addEventListener('change', function() {
+            filterBranches(this.value);
+        });
+        
+        // Initialize filters based on current selections
+        if (areaSelect.value) {
+            areaSelect.dispatchEvent(new Event('change'));
+        } else if (districtSelect.value) {
+            filterBranches(districtSelect.value);
+        }
+    }
+});
+
+function filterDistricts(areaId) {
+    const districtSelect = document.getElementById('districtSelect');
+    if (!districtSelect) return;
+    
+    // This would typically be an AJAX call to get districts for the selected area
+    // For now, just show all districts
+    districtSelect.disabled = false;
+}
+
+function filterBranches(districtId) {
+    const branchSelect = document.getElementById('branchSelect');
+    if (!branchSelect) return;
+    
+    // This would typically be an AJAX call to get branches for the selected district
+    // For now, just show all branches
+    branchSelect.disabled = false;
+}
+</script>
+{% endblock %}

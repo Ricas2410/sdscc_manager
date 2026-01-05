@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ fiscal_year.year }} - Archive Details{% endblock %}
+{% block title %}{{ year }} - Historical Summary{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -11,253 +11,294 @@
                 <span class="material-icons-outlined">arrow_back</span>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">{{ fiscal_year.year }} - Archive Details</h1>
-                <p class="text-gray-500">{{ fiscal_year.start_date|date:"M d, Y" }} - {{ fiscal_year.end_date|date:"M d, Y" }}</p>
+                <h1 class="text-2xl font-bold text-gray-900">{{ year }} - Historical Summary</h1>
+                <p class="text-gray-500">{{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
-                <span class="material-icons-outlined text-sm align-middle mr-1">archive</span>
-                Archived
+            {% if has_cached_data %}
+                <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+                    <span class="material-icons-outlined text-sm align-middle mr-1">cached</span>
+                    Cached Data Available
+                </span>
+            {% endif %}
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                <span class="material-icons-outlined text-sm align-middle mr-1">calendar_today</span>
+                Date-Based Summary
             </span>
         </div>
     </div>
 
-    <!-- Mission-Level Summary -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Financial Summary -->
-        {% if financial_archive %}
+    <!-- Info Banner -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-blue-600 mt-0.5">info</span>
+            <div>
+                <h3 class="font-semibold text-blue-900 mb-1">Date-Based Historical Summary</h3>
+                <p class="text-blue-700 text-sm">
+                    This summary is computed live from core tables using date filtering ({{ start_date|date:"M d, Y" }} to {{ end_date|date:"M d, Y" }}). 
+                    No data movement or archiving occurs - all historical data remains accessible in real-time.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                        <span class="material-icons-outlined text-green-600">account_balance</span>
+                        <span class="material-icons-outlined text-green-600">trending_up</span>
                     </div>
                     <div>
-                        <h2 class="font-semibold text-gray-900">Financial Summary</h2>
-                        <p class="text-sm text-gray-500">Mission-level financial performance</p>
+                        <h2 class="font-semibold text-gray-900">Contributions</h2>
+                        <p class="text-sm text-gray-500">Total income received</p>
                     </div>
                 </div>
             </div>
-            <div class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-green-50 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="material-icons-outlined text-green-600 text-sm">trending_up</span>
-                            <p class="text-sm font-medium text-green-900">Total Contributions</p>
-                        </div>
-                        <p class="text-2xl font-bold text-green-600">{{ financial_archive.mission_total_contributions|currency }}</p>
-                    </div>
-                    <div class="bg-red-50 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="material-icons-outlined text-red-600 text-sm">trending_down</span>
-                            <p class="text-sm font-medium text-red-900">Total Expenditures</p>
-                        </div>
-                        <p class="text-2xl font-bold text-red-600">{{ financial_archive.mission_total_expenditures|currency }}</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-blue-50 rounded-lg p-4">
-                        <p class="text-sm font-medium text-blue-900 mb-2">Total Tithes</p>
-                        <p class="text-xl font-bold text-blue-600">{{ financial_archive.mission_total_tithes|currency }}</p>
-                    </div>
-                    <div class="bg-purple-50 rounded-lg p-4">
-                        <p class="text-sm font-medium text-purple-900 mb-2">Total Offerings</p>
-                        <p class="text-xl font-bold text-purple-600">{{ financial_archive.mission_total_offerings|currency }}</p>
-                    </div>
-                </div>
-                <div class="bg-amber-50 rounded-lg p-4">
-                    <p class="text-sm font-medium text-amber-900 mb-2">Pastor Commissions</p>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div>
-                            <p class="text-xs text-amber-700">Total Earned</p>
-                            <p class="text-lg font-bold text-amber-600">{{ financial_archive.total_pastor_commissions|currency }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-amber-700">Paid</p>
-                            <p class="text-lg font-bold text-green-600">{{ financial_archive.commissions_paid|currency }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-amber-700">Pending</p>
-                            <p class="text-lg font-bold text-orange-600">{{ financial_archive.commissions_pending|currency }}</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="p-6">
+                <p class="text-3xl font-bold text-green-600">{{ contributions_total|currency }}</p>
+                <p class="text-sm text-gray-500 mt-2">{{ contributions_count }} contributions</p>
             </div>
         </div>
-        {% endif %}
 
-        <!-- Member Summary -->
-        {% if member_archive %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-red-600">trending_down</span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Expenditures</h2>
+                        <p class="text-sm text-gray-500">Total expenses paid</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-3xl font-bold text-red-600">{{ expenditures_total|currency }}</p>
+                <p class="text-sm text-gray-500 mt-2">{{ expenditures_count }} expenditures</p>
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <span class="material-icons-outlined text-blue-600">people</span>
+                        <span class="material-icons-outlined text-blue-600">account_balance</span>
                     </div>
                     <div>
-                        <h2 class="font-semibold text-gray-900">Member Summary</h2>
-                        <p class="text-sm text-gray-500">Membership and attendance statistics</p>
+                        <h2 class="font-semibold text-gray-900">Net Balance</h2>
+                        <p class="text-sm text-gray-500">Contributions minus expenditures</p>
                     </div>
                 </div>
             </div>
-            <div class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-blue-50 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="material-icons-outlined text-blue-600 text-sm">groups</span>
-                            <p class="text-sm font-medium text-blue-900">Total Members</p>
-                        </div>
-                        <p class="text-2xl font-bold text-blue-600">{{ member_archive.total_members }}</p>
-                    </div>
-                    <div class="bg-green-50 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="material-icons-outlined text-green-600 text-sm">person_add</span>
-                            <p class="text-sm font-medium text-green-900">New Members</p>
-                        </div>
-                        <p class="text-2xl font-bold text-green-600">{{ member_archive.new_members }}</p>
-                    </div>
-                </div>
-                <div class="bg-purple-50 rounded-lg p-4">
-                    <p class="text-sm font-medium text-purple-900 mb-3">Attendance Statistics</p>
-                    <div class="grid grid-cols-3 gap-4">
-                        <div>
-                            <p class="text-xs text-purple-700">Total Services</p>
-                            <p class="text-lg font-bold text-purple-600">{{ member_archive.total_services }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-purple-700">Average Attendance</p>
-                            <p class="text-lg font-bold text-purple-600">{{ member_archive.average_attendance|floatformat:0 }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-purple-700">Highest Attendance</p>
-                            <p class="text-lg font-bold text-purple-600">{{ member_archive.highest_attendance }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <p class="text-sm font-medium text-gray-900 mb-3">Member Distribution</p>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">By Area</span>
-                            <span class="text-sm font-medium text-gray-900">{{ member_archive.members_by_area|length }} areas</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">By District</span>
-                            <span class="text-sm font-medium text-gray-900">{{ member_archive.members_by_district|length }} districts</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">By Branch</span>
-                            <span class="text-sm font-medium text-gray-900">{{ member_archive.members_by_branch|length }} branches</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="p-6">
+                <p class="text-3xl font-bold {% if net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ net_balance|currency }}
+                </p>
+                <p class="text-sm text-gray-500 mt-2">
+                    {% if net_balance >= 0 %}Surplus{% else %}Deficit{% endif %}
+                </p>
             </div>
         </div>
-        {% endif %}
     </div>
 
-    <!-- Branch Performance -->
-    {% if branch_archives %}
+    <!-- Contribution Breakdown -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
         <div class="p-6 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                        <span class="material-icons-outlined text-indigo-600">business</span>
-                    </div>
-                    <div>
-                        <h2 class="font-semibold text-gray-900">Branch Performance</h2>
-                        <p class="text-sm text-gray-500">{{ branch_archives|length }} branches</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm text-gray-500">Total Contributions:</span>
-                    <span class="text-sm font-bold text-green-600">
-                        {{ branch_archives|sum:'total_contributions'|currency }}
-                    </span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="divide-y divide-gray-200">
-            {% for area_name, area_branches in branches_by_area.items %}
-            <div class="p-6">
-                <h3 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="material-icons-outlined text-indigo-600">location_city</span>
-                    {{ area_name }}
-                    <span class="text-sm text-gray-500">({{ area_branches|length }} branches)</span>
-                </h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for branch_archive in area_branches %}
-                    <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-medium text-gray-900">{{ branch_archive.branch.name }}</h4>
-                            <span class="text-xs text-gray-500">{{ branch_archive.branch.pastor.get_full_name|default:"No Pastor" }}</span>
-                        </div>
-                        
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Contributions</span>
-                                <span class="text-sm font-bold text-green-600">{{ branch_archive.total_contributions|currency }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Members</span>
-                                <span class="text-sm font-bold text-blue-600">{{ branch_archive.member_count }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Avg Attendance</span>
-                                <span class="text-sm font-bold text-purple-600">{{ branch_archive.average_attendance|floatformat:0 }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Tithe Achievement</span>
-                                <span class="text-sm font-bold {% if branch_archive.tithe_target_achievement >= 100 %}text-green-600{% else %}text-orange-600{% endif %}">
-                                    {{ branch_archive.tithe_target_achievement|floatformat:1 }}%
-                                </span>
-                            </div>
-                        </div>
-                        
-                        {% if branch_archive.pastor_commission_earned > 0 %}
-                        <div class="mt-3 pt-3 border-t border-gray-200">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs text-gray-600">Pastor Commission</span>
-                                <span class="text-xs font-bold text-amber-600">{{ branch_archive.pastor_commission_earned|currency }}</span>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Export Options -->
-    <div class="bg-gray-50 rounded-xl p-6">
-        <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                    <span class="material-icons-outlined text-gray-600">download</span>
+                <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-purple-600">pie_chart</span>
                 </div>
                 <div>
-                    <h3 class="font-medium text-gray-900">Export Data</h3>
-                    <p class="text-sm text-gray-500">Download archived data for this fiscal year</p>
+                    <h2 class="font-semibold text-gray-900">Contribution Breakdown</h2>
+                    <p class="text-sm text-gray-500">Contributions by type</p>
                 </div>
             </div>
-            <div class="flex gap-3">
-                <button class="btn-secondary">
-                    <span class="material-icons-outlined text-sm mr-2 align-middle">description</span>
-                    Export PDF Report
-                </button>
-                <button class="btn-secondary">
-                    <span class="material-icons-outlined text-sm mr-2 align-middle">table_chart</span>
-                    Export Excel
-                </button>
+        </div>
+        <div class="p-6">
+            {% if contribution_types %}
+                <div class="space-y-3">
+                    {% for contrib_type in contribution_types %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <span class="material-icons-outlined text-purple-600 text-sm">payments</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ contrib_type.contribution_type__name|default:"Unknown" }}</p>
+                                    <p class="text-sm text-gray-500">{{ contrib_type.count }} contributions</p>
+                                </div>
+                            </div>
+                            <p class="font-bold text-green-600">{{ contrib_type.total|currency }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <span class="material-icons-outlined text-gray-400 text-4xl">payments</span>
+                    <p class="text-gray-500 mt-2">No contribution data available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Expenditure Breakdown -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-orange-600">receipt_long</span>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-gray-900">Expenditure Breakdown</h2>
+                    <p class="text-sm text-gray-500">Expenditures by category</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            {% if expenditure_categories %}
+                <div class="space-y-3">
+                    {% for exp_category in expenditure_categories %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                    <span class="material-icons-outlined text-orange-600 text-sm">shopping_cart</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ exp_category.category__name|default:"Unknown" }}</p>
+                                    <p class="text-sm text-gray-500">{{ exp_category.count }} expenditures</p>
+                                </div>
+                            </div>
+                            <p class="font-bold text-red-600">{{ exp_category.total|currency }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <span class="material-icons-outlined text-gray-400 text-4xl">receipt_long</span>
+                    <p class="text-gray-500 mt-2">No expenditure data available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Branch Summaries -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-teal-600">business</span>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-gray-900">Branch Performance</h2>
+                    <p class="text-sm text-gray-500">Financial summary by branch</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            {% if branch_summaries %}
+                <div class="space-y-4">
+                    {% for branch_summary in branch_summaries %}
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-gray-900">{{ branch_summary.branch.name }}</h3>
+                                <p class="text-sm font-bold {% if branch_summary.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ branch_summary.net_balance|currency }}
+                                </p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-600">Contributions:</p>
+                                    <p class="font-medium text-green-600">{{ branch_summary.contributions_total|currency }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600">Expenditures:</p>
+                                    <p class="font-medium text-red-600">{{ branch_summary.expenditures_total|currency }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <span class="material-icons-outlined text-gray-400 text-4xl">business</span>
+                    <p class="text-gray-500 mt-2">No branch data available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-indigo-600">people</span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Active Members</h2>
+                        <p class="text-sm text-gray-500">Members with activity</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-3xl font-bold text-indigo-600">{{ active_members }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-pink-600">event_available</span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Attendance Sessions</h2>
+                        <p class="text-sm text-gray-500">Total services held</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-3xl font-bold text-pink-600">{{ attendance_sessions_count }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                        <span class="material-icons-outlined text-cyan-600">groups</span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Total Attendance</h2>
+                        <p class="text-sm text-gray-500">Combined attendance</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-3xl font-bold text-cyan-600">{{ total_attendance }}</p>
             </div>
         </div>
     </div>
+
+    <!-- Archive Data Info -->
+    {% if has_cached_data %}
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+                <span class="material-icons-outlined text-amber-600 mt-0.5">cached</span>
+                <div>
+                    <h3 class="font-semibold text-amber-900 mb-1">Cached Archive Data Available</h3>
+                    <p class="text-amber-700 text-sm">
+                        Historical archive tables contain cached summaries for this period. 
+                        The live data shown above is computed directly from core tables and may be more current.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
 </div>
 {% endblock %}

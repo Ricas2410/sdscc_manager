@@ -49,47 +49,90 @@
         </div>
     </div>
 
-    <!-- Branches Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for branch in branches %}
-        <div class="bg-white shadow rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-            <div class="h-20 bg-gradient-to-r from-green-500 to-teal-600 flex items-center px-4">
-                <span class="material-icons-outlined text-4xl text-white/50">church</span>
-                <div class="ml-3 text-white">
-                    <h3 class="font-semibold">{{ branch.name }}</h3>
-                    <p class="text-xs text-white/80">Code: {{ branch.code|default:"N/A" }}</p>
-                </div>
-            </div>
-            <div class="p-4">
-                <div class="text-sm text-gray-500 mb-3">
-                    <p>{{ branch.district.name }} • {{ branch.district.area.name }}</p>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-center mb-4">
-                    <div class="bg-gray-50 rounded p-2">
-                        <p class="text-lg font-bold text-gray-900">{{ branch.total_members|default:"0" }}</p>
-                        <p class="text-xs text-gray-500">Members</p>
-                    </div>
-                    <div class="bg-gray-50 rounded p-2">
-                        <p class="text-lg font-bold text-gray-900">{{ branch.monthly_tithe_target|currency }}</p>
-                        <p class="text-xs text-gray-500">Target</p>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center pt-3 border-t">
-                    {% if branch.pastor %}
-                    <span class="text-xs text-gray-500">Pastor: {{ branch.pastor.get_full_name }}</span>
-                    {% else %}
-                    <span class="text-xs text-gray-400">No pastor assigned</span>
-                    {% endif %}
-                    <button type="button" onclick="viewBranch('{{ branch.id }}', '{{ branch.name|escapejs }}', '{{ branch.code|default:""|escapejs }}', '{{ branch.district.name|escapejs }}', '{{ branch.district.area.name|escapejs }}', '{% if branch.pastor %}{{ branch.pastor.get_full_name|escapejs }}{% else %}Not assigned{% endif %}', '{{ branch.address|default:""|escapejs }}', '{{ branch.phone|default:""|escapejs }}', '{{ branch.total_members|default:0 }}')" class="text-sm text-primary-600 hover:text-primary-500">View Details →</button>
-                </div>
-            </div>
+    <!-- Branches List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Branch
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Location
+                        </th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Members
+                        </th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Target
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Pastor
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for branch in branches %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center">
+                                    <span class="material-icons-outlined text-2xl text-green-600">church</span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ branch.name }}</div>
+                                    <div class="text-sm text-gray-500">Code: {{ branch.code|default:"N/A" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="text-gray-900">{{ branch.district.name }}</div>
+                            <div class="text-gray-500">{{ branch.district.area.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                            {{ branch.total_members|default:"0" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                            {{ branch.monthly_tithe_target|currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if branch.pastor %}
+                                {{ branch.pastor.get_full_name }}
+                            {% else %}
+                                <span class="text-gray-400">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button type="button" 
+                                    class="view-branch-btn text-primary-600 hover:text-primary-500 font-medium"
+                                    data-id="{{ branch.id }}"
+                                    data-name="{{ branch.name|escapejs }}"
+                                    data-code="{{ branch.code|default:''|escapejs }}"
+                                    data-district="{{ branch.district.name|escapejs }}"
+                                    data-area="{{ branch.district.area.name|escapejs }}"
+                                    data-pastor="{% if branch.pastor %}{{ branch.pastor.get_full_name|escapejs }}{% else %}Not assigned{% endif %}"
+                                    data-address="{{ branch.address|default:''|escapejs }}"
+                                    data-phone="{{ branch.phone|default:''|escapejs }}"
+                                    data-members="{{ branch.total_members|default:0 }}">
+                                View Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <span class="material-icons-outlined text-5xl text-gray-300">church</span>
+                            <p class="mt-2 text-gray-500">No branches found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% empty %}
-        <div class="col-span-full bg-white shadow rounded-lg p-12 text-center">
-            <span class="material-icons-outlined text-5xl text-gray-300">church</span>
-            <p class="mt-2 text-gray-500">No branches found</p>
-        </div>
-        {% endfor %}
     </div>
 </div>
 
@@ -322,6 +365,27 @@
 let currentBranchId = null;
 const districts = {{ districts_json|safe }};
 
+// Add event listeners for view branch buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const viewButtons = document.querySelectorAll('.view-branch-btn');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const data = this.dataset;
+            viewBranch(
+                data.id,
+                data.name,
+                data.code,
+                data.district,
+                data.area,
+                data.pastor,
+                data.address,
+                data.phone,
+                data.members
+            );
+        });
+    });
+});
+
 function openAddModal() {
     document.getElementById('addBranchModal').classList.remove('hidden');
 }
@@ -349,9 +413,9 @@ function loadDistrictsForAdd() {
     
     if (areaId) {
         // Filter districts by area
-        districts.forEach(d => {
+        districts.forEach(function(d) {
             if (d.area_id == areaId) {
-                districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                districtSelect.innerHTML += '<option value="' + d.id + '">' + d.name + '</option>';
             }
         });
     }
@@ -442,9 +506,9 @@ function loadDistrictsForEdit() {
     districtSelect.disabled = !areaId;
     
     if (areaId) {
-        districts.forEach(d => {
+        districts.forEach(function(d) {
             if (d.area_id == areaId) {
-                districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                districtSelect.innerHTML += '<option value="' + d.id + '">' + d.name + '</option>';
             }
         });
     }

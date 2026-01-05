@@ -57,24 +57,47 @@ def check_monthly_closing_status(request):
 @login_required
 def monthly_closing_dashboard(request):
     """Dashboard for monthly closing operations."""
-    if not (request.user.is_mission_admin or request.user.is_branch_executive):
+    if not (request.user.is_mission_admin or request.user.is_any_admin):
         messages.error(request, 'Access denied.')
         return redirect('core:dashboard')
     
-    # Get user's branch or allow selection for mission admin
-    if request.user.is_mission_admin:
+    # Initialize hierarchy-based filtering
+    user_scope = 'mission'  # Default for mission admin
+    if request.user.is_branch_executive and request.user.branch:
+        user_scope = 'branch'
+    elif request.user.is_district_executive and request.user.managed_district:
+        user_scope = 'district'
+    elif request.user.is_area_executive and request.user.managed_area:
+        user_scope = 'area'
+    
+    # Get branches based on user hierarchy
+    if user_scope == 'area':
+        branches = Branch.objects.filter(district__area=request.user.managed_area, is_active=True)
+        selected_branch_id = request.GET.get('branch')
+        if selected_branch_id:
+            branch = get_object_or_404(Branch, pk=selected_branch_id, district__area=request.user.managed_area)
+        else:
+            branch = branches.first()
+    elif user_scope == 'district':
+        branches = Branch.objects.filter(district=request.user.managed_district, is_active=True)
+        selected_branch_id = request.GET.get('branch')
+        if selected_branch_id:
+            branch = get_object_or_404(Branch, pk=selected_branch_id, district=request.user.managed_district)
+        else:
+            branch = branches.first()
+    elif user_scope == 'branch':
+        branch = request.user.branch
+        branches = Branch.objects.filter(id=branch.id) if branch else Branch.objects.none()
+    else:
         branches = Branch.objects.filter(is_active=True)
         selected_branch_id = request.GET.get('branch')
         if selected_branch_id:
             branch = get_object_or_404(Branch, pk=selected_branch_id)
         else:
             branch = branches.first()
-    else:
-        branch = request.user.branch
-        branches = Branch.objects.filter(id=branch.id) if branch else Branch.objects.none()
     
     if not branch:
-        messages.error(request, 'No branch assigned.')
+        messages.error(request, 'No branch available.')
         return redirect('core:dashboard')
     
     # Get current month and year
@@ -241,8 +264,13 @@ def monthly_report_view(request):
 def monthly_report_pdf(request):
     """Generate PDF of monthly report."""
     from django.template.loader import render_to_string
-    from weasyprint import HTML
     import tempfile
+    
+    try:
+        from weasyprint import HTML
+        WEASYPRINT_AVAILABLE = True
+    except ImportError:
+        WEASYPRINT_AVAILABLE = False
     
     if not request.user.can_view_finances:
         messages.error(request, 'Access denied.')
@@ -294,6 +322,10 @@ def monthly_report_pdf(request):
     })
     
     # Generate PDF
+    if not WEASYPRINT_AVAILABLE:
+        messages.error(request, 'PDF generation is not available. Please install weasyprint or use the Excel export instead.')
+        return redirect('core:monthly_report')
+    
     html = HTML(string=html_string)
     pdf_file = html.write_pdf()
     

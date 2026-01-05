@@ -6,7 +6,7 @@
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
     <!-- Header with Back Button -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center">
             <a href="{% url 'announcements:list' %}" class="mr-4 text-gray-400 hover:text-gray-600 transition-colors duration-200">
                 <span class="material-icons-outlined text-2xl">arrow_back</span>
@@ -24,21 +24,21 @@
             <a href="{% url 'announcements:edit' announcement.id %}" 
                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 <span class="material-icons-outlined text-base mr-1">edit</span>
-                Edit
+                <span class="hidden sm:inline">Edit</span>
             </a>
             <button type="button" 
                     onclick="openDeleteModal('{% url 'announcements:delete' announcement.id %}', '{{ announcement.title|escapejs }}')"
                     class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                 <span class="material-icons-outlined text-base mr-1">delete</span>
-                Delete
+                <span class="hidden sm:inline">Delete</span>
             </button>
         </div>
         {% endif %}
     {% endif %}
     </div>
 
-    <!-- Announcement Card -->
-    <article class="bg-white shadow-xl rounded-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+    <!-- Announcement Content -->
+    <div class="sm:bg-white sm:shadow-xl sm:rounded-xl sm:overflow-hidden transition-all duration-300 hover:shadow-2xl">
         <!-- Announcement Image -->
         {% if announcement.image %}
         <div class="relative h-64 md:h-96 w-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -257,15 +257,15 @@
             
             <!-- Action Buttons -->
             <div class="mt-8 pt-8 border-t border-gray-200">
-                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div class="flex items-center text-sm text-gray-500">
+                <div class="flex flex-col gap-4 items-stretch sm:items-center sm:flex-row sm:justify-between">
+                    <div class="flex items-center text-sm text-gray-500 order-2 sm:order-1">
                         <span class="material-icons-outlined text-base mr-2">visibility</span>
                         <span>This announcement has been viewed <span class="font-semibold text-gray-700">{{ announcement.view_count }}</span> time{{ announcement.view_count|pluralize }}</span>
                     </div>
                     
-                    <div class="flex items-center space-x-3">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 order-1 sm:order-2">
                         <a href="{% url 'announcements:list' %}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
+                           class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200">
                             <span class="material-icons-outlined text-base mr-2">arrow_back</span>
                             Back to Announcements
                         </a>
@@ -273,13 +273,13 @@
                         {% if user.is_authenticated and user.role != 'member' %}
                         {% if user == announcement.created_by or user.is_mission_admin %}
                         <a href="{% url 'announcements:edit' announcement.id %}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
+                           class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
                             <span class="material-icons-outlined text-base mr-2">edit</span>
                             Edit
                         </a>
                         <button type="button" 
                                 onclick="openDeleteModal('{% url 'announcements:delete' announcement.id %}', '{{ announcement.title|escapejs }}')"
-                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors duration-200">
+                                class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors duration-200">
                             <span class="material-icons-outlined text-base mr-2">delete</span>
                             Delete
                         </button>
@@ -289,7 +289,7 @@
                 </div>
             </div>
         </div>
-    </article>
+    </div>
 </div>
 
 <!-- Delete Confirmation Modal (reusing the same modal from list view) -->

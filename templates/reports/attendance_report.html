@@ -35,8 +35,7 @@
                     <select name="area" id="areaSelect" class="form-input form-select" onchange="updateDistricts()">
                         <option value="">All Areas</option>
                         {% for area in areas %}
-                        <option value="{{ area.id }}" {% if selected_area==area.id|stringformat:"s" %}selected{% endif
-                            %}>
+                        <option value="{{ area.id }}" {% if selected_area == area.id|stringformat:"s" %}selected{% endif %}>
                             {{ area.name }}
                         </option>
                         {% endfor %}
@@ -44,27 +43,16 @@
                 </div>
                 <div class="form-group mb-0">
                     <label class="form-label">District</label>
-                    <select name="district" id="districtSelect" class="form-input form-select"
-                        onchange="updateBranches()">
+                    <select name="district" id="districtSelect" class="form-input form-select" onchange="updateBranches()">
                         <option value="">All Districts</option>
-                        {% for district in districts %}
-                        <option value="{{ district.id }}" data-area="{{ district.area_id }}" {% if
-                            selected_district==district.id|stringformat:"s" %}selected{% endif %}>
-                            {{ district.name }}
-                        </option>
-                        {% endfor %}
+                        {% for district in districts %}<option value="{{ district.id }}" data-area="{{ district.area_id }}" {% if selected_district == district.id|stringformat:"s" %}selected{% endif %}>{{ district.name }}</option>{% endfor %}
                     </select>
                 </div>
                 <div class="form-group mb-0">
                     <label class="form-label">Branch</label>
                     <select name="branch" id="branchSelect" class="form-input form-select">
                         <option value="">All Branches</option>
-                        {% for branch in branches %}
-                        <option value="{{ branch.id }}" data-district="{{ branch.district_id }}" {% if
-                            selected_branch==branch.id|stringformat:"s" %}selected{% endif %}>
-                            {{ branch.name }}
-                        </option>
-                        {% endfor %}
+                        {% for branch in branches %}<option value="{{ branch.id }}" data-district="{{ branch.district_id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>{% endfor %}
                     </select>
                 </div>
                 <div class="form-group mb-0">
@@ -252,38 +240,36 @@
         // Initialize chart
         const ctx = document.getElementById('attendanceChart');
         if (ctx) {
-            const chartLabels = {{ chart_labels| safe |default: "['Week 1','Week 2','Week 3','Week 4']"
-        }
-    };
-    const chartData = {{ chart_data| safe |default: "[0,0,0,0]" }};
+            const chartLabels = {{ chart_labels|safe }};
+            const chartData = {{ chart_data|safe }};
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: 'Attendance',
-                data: chartData,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 }
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Attendance',
+                        data: chartData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
                 }
-            }
-        }
-    });
+            });
         }
     });
 </script>

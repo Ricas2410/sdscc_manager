@@ -3,13 +3,14 @@ Core Views - Dashboard and administration views
 """
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from .models import Area, District, Branch, SiteSettings, FiscalYear
 
@@ -54,8 +55,10 @@ def mission_dashboard(request):
     from accounts.models import User
     from attendance.models import WeeklyAttendance
     
-    # Get current fiscal year
-    fiscal_year = FiscalYear.get_current()
+    # DEPRECATED: Year-as-state architecture - Use current year date range instead of fiscal year
+    current_year = timezone.now().year
+    from_date = datetime(current_year, 1, 1).date()
+    to_date = datetime(current_year, 12, 31).date()
     today = timezone.now().date()
     month_start = today.replace(day=1)
     
@@ -75,15 +78,13 @@ def mission_dashboard(request):
         'total_members': User.objects.filter(is_active=True).count(),
         'total_pastors': User.objects.filter(role='pastor', is_active=True).count(),
         
-        # Financial summaries
+        # Financial summaries - use date filtering instead of fiscal year
         'monthly_contributions': Contribution.objects.filter(
-            date__gte=month_start,
-            fiscal_year=fiscal_year
+            date__gte=month_start
         ).aggregate(total=Sum('amount'))['total'] or 0,
         
         'monthly_expenditure': Expenditure.objects.filter(
-            date__gte=month_start,
-            fiscal_year=fiscal_year
+            date__gte=month_start
         ).aggregate(total=Sum('amount'))['total'] or 0,
         
         'pending_remittances': Remittance.objects.filter(
@@ -101,7 +102,7 @@ def mission_dashboard(request):
             'district__area', 'pastor'
         ).order_by('-created_at')[:5],
         
-        'fiscal_year': fiscal_year,
+        'current_year': current_year,  # Use current year instead of fiscal year object
         'weekly_attendance': weekly_attendance,
     }
     
@@ -114,6 +115,11 @@ def mission_dashboard(request):
 @login_required
 def area_dashboard(request):
     """Dashboard for Area Executive."""
+    from contributions.models import Contribution, Remittance
+    from expenditure.models import Expenditure
+    from accounts.models import User
+    from attendance.models import WeeklyAttendance
+    
     user = request.user
     area = user.managed_area
     
@@ -121,11 +127,134 @@ def area_dashboard(request):
         messages.warning(request, 'No area assigned to your account.')
         return redirect('core:dashboard')
     
+    # Get current date ranges
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+    
+    # Get districts and branches in this area
+    districts = District.objects.filter(area=area, is_active=True)
+    # Get branches in this area
+    branches = Branch.objects.filter(district__area=area, is_active=True)
+    
+    # Calculate total members in area
+    total_members = User.objects.filter(
+        branch__district__area=area,
+        is_active=True,
+        role='member'
+    ).count()
+    
+    # Get financial data for the area
+    monthly_contributions = Contribution.objects.filter(
+        branch__district__area=area,
+        date__gte=month_start
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    yearly_contributions = Contribution.objects.filter(
+        branch__district__area=area,
+        date__gte=year_start
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    monthly_expenditure = Expenditure.objects.filter(
+        branch__district__area=area,
+        date__gte=month_start,
+        status__in=['approved', 'paid']
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Get pending remittances from branches in this area
+    pending_remittances = Remittance.objects.filter(
+        branch__district__area=area,
+        status__in=['pending', 'sent']
+    ).count()
+    
+    # Get recent activities in the area
+    recent_contributions = Contribution.objects.filter(
+        branch__district__area=area
+    ).select_related(
+        'branch', 'contribution_type', 'member'
+    ).order_by('-created_at')[:10]
+    
+    # Get branch performance data
+    branch_performance = []
+    for branch in branches:
+        branch_contributions = Contribution.objects.filter(
+            branch=branch,
+            date__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Get attendance data for this branch
+        from attendance.models import AttendanceSession
+        branch_attendance = AttendanceSession.objects.filter(
+            branch=branch,
+            date__gte=month_start
+        ).aggregate(
+            total=Sum('total_attendance'),
+            avg=Avg('total_attendance'),
+            count=Count('id')
+        )
+        
+        branch_performance.append({
+            'branch': branch,
+            'monthly_total': branch_contributions,
+            'member_count': User.objects.filter(
+                branch=branch,
+                is_active=True,
+                role='member'
+            ).count(),
+            'attendance_total': branch_attendance['total'] or 0,
+            'attendance_avg': round(branch_attendance['avg'] or 0, 1),
+            'attendance_count': branch_attendance['count'] or 0,
+        })
+    
+    # Sort by monthly contributions
+    branch_performance.sort(key=lambda x: x['monthly_total'], reverse=True)
+    
+    # Get weekly attendance by branch
+    from attendance.models import AttendanceSession
+    week_start = today - timedelta(days=today.weekday())
+    week_branch_attendance = []
+    
+    for branch in branches[:10]:  # Limit to top 10 branches
+        week_sessions = AttendanceSession.objects.filter(
+            branch=branch,
+            date__gte=week_start,
+            date__lte=today
+        ).order_by('-date')
+        
+        if week_sessions.exists():
+            total_week_attendance = week_sessions.aggregate(total=Sum('total_attendance'))['total'] or 0
+            week_branch_attendance.append({
+                'branch': branch,
+                'sessions': week_sessions,
+                'total_attendance': total_week_attendance,
+                'avg_attendance': round(total_week_attendance / week_sessions.count(), 1) if week_sessions.count() > 0 else 0
+            })
+    
+    week_branch_attendance.sort(key=lambda x: x['avg_attendance'], reverse=True)
+    
     context = {
         'area': area,
-        'districts': District.objects.filter(area=area, is_active=True),
-        'branches': Branch.objects.filter(district__area=area, is_active=True),
-        'branch_count': Branch.objects.filter(district__area=area, is_active=True).count(),
+        'districts': districts,
+        'branches': branches,
+        'branch_count': branches.count(),
+        'total_members': total_members,
+        
+        # Financial data
+        'monthly_contributions': monthly_contributions,
+        'yearly_contributions': yearly_contributions,
+        'monthly_expenditure': monthly_expenditure,
+        'pending_remittances': pending_remittances,
+        
+        # Performance data
+        'branch_performance': branch_performance[:10],  # Top 10 branches
+        'recent_contributions': recent_contributions,
+        
+        # Attendance data
+        'week_branch_attendance': week_branch_attendance,
+        'current_week_start': week_start,
+        
+        # Current week attendance
+        'weekly_attendance': WeeklyAttendance.get_current_week(),
     }
     
     # Add PIN change modal context
@@ -137,6 +266,12 @@ def area_dashboard(request):
 @login_required
 def district_dashboard(request):
     """Dashboard for District Executive."""
+    from contributions.models import Contribution, Remittance
+    from expenditure.models import Expenditure
+    from accounts.models import User
+    from attendance.models import AttendanceSession
+    from datetime import timedelta
+    
     user = request.user
     district = user.managed_district
     
@@ -144,10 +279,110 @@ def district_dashboard(request):
         messages.warning(request, 'No district assigned to your account.')
         return redirect('core:dashboard')
     
+    # Get current date ranges
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    week_start = today - timedelta(days=today.weekday())
+    
+    # Get branches in this district
+    branches = Branch.objects.filter(district=district, is_active=True)
+    
+    # Calculate statistics
+    total_members = User.objects.filter(
+        branch__district=district,
+        is_active=True,
+        role='member'
+    ).count()
+    
+    # Financial data
+    monthly_contributions = Contribution.objects.filter(
+        branch__district=district,
+        date__gte=month_start
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    monthly_expenditure = Expenditure.objects.filter(
+        branch__district=district,
+        date__gte=month_start,
+        status__in=['approved', 'paid']
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    pending_remittances = Remittance.objects.filter(
+        branch__district=district,
+        status__in=['pending', 'sent']
+    ).count()
+    
+    # Get branch performance with attendance
+    branch_performance = []
+    for branch in branches:
+        branch_contributions = Contribution.objects.filter(
+            branch=branch,
+            date__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Get attendance data for this branch
+        branch_attendance = AttendanceSession.objects.filter(
+            branch=branch,
+            date__gte=month_start
+        ).aggregate(
+            total=Sum('total_attendance'),
+            avg=Avg('total_attendance'),
+            count=Count('id')
+        )
+        
+        branch_performance.append({
+            'branch': branch,
+            'monthly_total': branch_contributions,
+            'member_count': User.objects.filter(
+                branch=branch,
+                is_active=True,
+                role='member'
+            ).count(),
+            'attendance_total': branch_attendance['total'] or 0,
+            'attendance_avg': round(branch_attendance['avg'] or 0, 1),
+            'attendance_count': branch_attendance['count'] or 0,
+        })
+    
+    # Sort by monthly contributions
+    branch_performance.sort(key=lambda x: x['monthly_total'], reverse=True)
+    
+    # Get weekly attendance by branch
+    week_branch_attendance = []
+    
+    for branch in branches:
+        week_sessions = AttendanceSession.objects.filter(
+            branch=branch,
+            date__gte=week_start,
+            date__lte=today
+        ).order_by('-date')
+        
+        if week_sessions.exists():
+            total_week_attendance = week_sessions.aggregate(total=Sum('total_attendance'))['total'] or 0
+            week_branch_attendance.append({
+                'branch': branch,
+                'sessions': week_sessions,
+                'total_attendance': total_week_attendance,
+                'avg_attendance': round(total_week_attendance / week_sessions.count(), 1) if week_sessions.count() > 0 else 0
+            })
+    
+    week_branch_attendance.sort(key=lambda x: x['avg_attendance'], reverse=True)
+    
     context = {
         'district': district,
-        'branches': Branch.objects.filter(district=district, is_active=True),
-        'branch_count': Branch.objects.filter(district=district, is_active=True).count(),
+        'branches': branches,
+        'branch_count': branches.count(),
+        'total_members': total_members,
+        
+        # Financial data
+        'monthly_contributions': monthly_contributions,
+        'monthly_expenditure': monthly_expenditure,
+        'pending_remittances': pending_remittances,
+        
+        # Performance data
+        'branch_performance': branch_performance,
+        
+        # Attendance data
+        'week_branch_attendance': week_branch_attendance,
+        'current_week_start': week_start,
     }
     
     # Add PIN change modal context
@@ -174,9 +409,19 @@ def branch_dashboard(request):
     today = timezone.now().date()
     month_start = today.replace(day=1)
     
+    # Last attendance - always show the most recent session
+    last_attendance_session = AttendanceSession.objects.filter(
+        branch=branch
+    ).order_by('-date').first()
+    
+    # Calculate absentees for last attendance
+    absentees_count = 0
+    if last_attendance_session:
+        absentees_count = max(0, branch.member_count - last_attendance_session.total_attendance)
+    
     context = {
         'branch': branch,
-        'member_count': branch.member_count,
+        'total_members': branch.member_count,
         
         # Financial
         'monthly_contributions': Contribution.objects.filter(
@@ -193,6 +438,12 @@ def branch_dashboard(request):
         
         'local_balance': branch.local_balance,
         'tithe_target': branch.monthly_tithe_target,
+        
+        # Last attendance - always show the most recent session
+        'last_attendance': last_attendance_session,
+        
+        # Calculate absentees for last attendance
+        'absentees_count': absentees_count,
         
         # Recent attendance
         'recent_attendance': AttendanceSession.objects.filter(
@@ -725,8 +976,17 @@ def areas_list(request):
             try:
                 area = Area.objects.get(pk=area_id)
                 area_name = area.name
-                area.delete()
-                messages.success(request, f'Area "{area_name}" deleted successfully.')
+                
+                # Check for related districts
+                related_districts = area.districts.all()
+                if related_districts.exists():
+                    district_names = [d.name for d in related_districts]
+                    messages.error(request, 
+                        f'Cannot delete area "{area_name}" because it has {len(related_districts)} district(s) associated with it: '
+                        f'{", ".join(district_names)}. Please delete or reassign these districts first.')
+                else:
+                    area.delete()
+                    messages.success(request, f'Area "{area_name}" deleted successfully.')
             except Area.DoesNotExist:
                 messages.error(request, 'Area not found.')
             except Exception as e:
@@ -838,8 +1098,17 @@ def districts_list(request):
             try:
                 district = District.objects.get(pk=district_id)
                 district_name = district.name
-                district.delete()
-                messages.success(request, f'District "{district_name}" deleted successfully.')
+                
+                # Check for related branches
+                related_branches = district.branches.all()
+                if related_branches.exists():
+                    branch_names = [b.name for b in related_branches]
+                    messages.error(request, 
+                        f'Cannot delete district "{district_name}" because it has {len(related_branches)} branch(es) associated with it: '
+                        f'{", ".join(branch_names)}. Please delete or reassign these branches first.')
+                else:
+                    district.delete()
+                    messages.success(request, f'District "{district_name}" deleted successfully.')
             except District.DoesNotExist:
                 messages.error(request, 'District not found.')
             except Exception as e:
@@ -1212,23 +1481,69 @@ def calendar_view(request):
     # Get yearly calendar info
     yearly_cal = YearlyCalendar.objects.filter(year=year).first()
     
-    # Get events for the month
-    events = CalendarEvent.objects.filter(
+    # Get events for the month from both CalendarEvent and Event models
+    from announcements.models import Event
+    
+    # Fetch CalendarEvent objects (core calendar system)
+    calendar_events = CalendarEvent.objects.filter(
         start_date__year=year,
         start_date__month=month,
         is_published=True,
         is_cancelled=False
-    )
+    ).order_by('start_date', 'start_time')
     
-    # Filter by user's scope
+    # Fetch Event objects (announcements system)
+    announcement_events = Event.objects.filter(
+        start_date__year=year,
+        start_date__month=month,
+        is_published=True,
+        is_cancelled=False
+    ).order_by('start_date', 'start_time')
+    
+    # Filter by user's scope if not mission admin
     if not request.user.is_mission_admin:
         if request.user.branch:
-            events = events.filter(
+            calendar_events = calendar_events.filter(
                 Q(scope='mission') |
                 Q(scope='branch', branch=request.user.branch) |
                 Q(scope='area', area=request.user.branch.district.area) |
-                Q(scope='district', branch__district=request.user.branch.district)
+                Q(scope='district', district=request.user.branch.district)
             )
+            announcement_events = announcement_events.filter(
+                Q(scope='mission') |
+                Q(scope='branch', branch=request.user.branch) |
+                Q(scope='area', area=request.user.branch.district.area) |
+                Q(scope='district', district=request.user.branch.district)
+            )
+    
+    # Combine all events into a single list
+    # Add a source field to distinguish event types
+    events = []
+    for event in calendar_events:
+        event.source = 'calendar'
+        # Ensure consistent color field
+        if not hasattr(event, 'color') or not event.color:
+            event.color = '#3B82F6'  # Default blue for calendar events
+        events.append(event)
+    
+    for event in announcement_events:
+        event.source = 'announcements'
+        # Map event_type to color for announcements events
+        color_map = {
+            'service': '#3B82F6',      # blue
+            'meeting': '#10B981',      # green  
+            'conference': '#8B5CF6',   # purple
+            'workshop': '#F59E0B',     # yellow
+            'fellowship': '#EF4444',   # red
+            'outreach': '#06B6D4',     # cyan
+            'fundraising': '#84CC16',  # lime
+            'other': '#6B7280'         # gray
+        }
+        event.color = color_map.get(event.event_type, '#6B7280')
+        events.append(event)
+    
+    # Sort combined events by date and time
+    events.sort(key=lambda x: (x.start_date, x.start_time or '00:00:00'))
     
     # Build calendar grid
     cal_obj = cal.Calendar(firstweekday=6)  # Sunday start
@@ -1670,29 +1985,13 @@ def get_time_ago(dt):
 
 @login_required
 def prayer_requests(request):
-    """List prayer requests with proper visibility control."""
+    """List prayer requests - all requests are auto-approved and visible."""
     from .models import PrayerRequest, PrayerInteraction
     
     user = request.user
     is_admin = user.is_mission_admin or user.is_pastor or user.is_branch_executive
     
-    # Handle approval action for admins
-    if request.method == 'POST' and is_admin:
-        action = request.POST.get('action')
-        prayer_id = request.POST.get('prayer_id')
-        if action == 'approve' and prayer_id:
-            try:
-                prayer = PrayerRequest.objects.get(pk=prayer_id)
-                prayer.is_approved = True
-                prayer.approved_by = user
-                prayer.approved_at = timezone.now()
-                prayer.save()
-                messages.success(request, 'Prayer request approved and now visible to members.')
-            except PrayerRequest.DoesNotExist:
-                pass
-            return redirect('core:prayer_requests')
-    
-    # Build queryset based on user role
+    # Build queryset based on user role - no approval required
     if user.is_mission_admin:
         # Mission admin sees all
         prayers = PrayerRequest.objects.all()
@@ -1700,29 +1999,29 @@ def prayer_requests(request):
         # Area exec sees area-wide and mission-wide requests
         prayers = PrayerRequest.objects.filter(
             Q(branch__district__area=user.managed_area) |
-            Q(visibility_scope='mission', is_approved=True)
+            Q(visibility_scope='mission')
         )
     elif user.is_district_executive:
         # District exec sees district-wide and above
         prayers = PrayerRequest.objects.filter(
             Q(branch__district=user.managed_district) |
-            Q(visibility_scope__in=['area', 'mission'], is_approved=True)
+            Q(visibility_scope__in=['area', 'mission'])
         )
     elif user.is_pastor or user.is_branch_executive:
-        # Branch admin/pastor sees all in their branch (for approval) + approved wider scope
+        # Branch admin/pastor sees all in their branch + wider scope
         prayers = PrayerRequest.objects.filter(
             Q(branch=user.branch) |
-            Q(visibility_scope__in=['district', 'area', 'mission'], is_approved=True)
+            Q(visibility_scope__in=['district', 'area', 'mission'])
         )
     else:
         # Regular members see:
         # 1. Their own requests (always)
-        # 2. Approved branch-level requests from their branch
-        # 3. Approved wider-scope requests
+        # 2. Branch-level requests from their branch
+        # 3. Wider-scope requests
         prayers = PrayerRequest.objects.filter(
             Q(requester=user) |
-            Q(branch=user.branch, visibility_scope='branch', is_approved=True) |
-            Q(visibility_scope__in=['district', 'area', 'mission'], is_approved=True)
+            Q(branch=user.branch, visibility_scope='branch') |
+            Q(visibility_scope__in=['district', 'area', 'mission'])
         )
     
     prayers = prayers.select_related('requester', 'branch', 'approved_by').order_by('-created_at')
@@ -1761,6 +2060,36 @@ def prayer_requests(request):
 
 
 @login_required
+def prayer_request_approve(request, pk):
+    """Approve a prayer request."""
+    from .models import PrayerRequest
+    
+    prayer = get_object_or_404(PrayerRequest, pk=pk)
+    user = request.user
+    
+    # Check if user has permission to approve
+    if not prayer.can_be_approved_by(user):
+        messages.error(request, 'You do not have permission to approve this prayer request.')
+        return redirect('core:prayer_requests')
+    
+    if request.method == 'POST':
+        prayer.is_approved = True
+        prayer.approved_by = user
+        prayer.approved_at = timezone.now()
+        prayer.save()
+        messages.success(request, 'Prayer request approved and now visible to members.')
+        
+        # Maintain current filters in redirect if provided
+        redirect_url = reverse('core:prayer_requests')
+        query_params = request.GET.urlencode()
+        if query_params:
+            redirect_url = f"{redirect_url}?{query_params}"
+        return redirect(redirect_url)
+    
+    return redirect('core:prayer_requests')
+
+
+@login_required
 def prayer_request_add(request):
     """Add a new prayer request."""
     from .models import PrayerRequest
@@ -1771,15 +2100,36 @@ def prayer_request_add(request):
         visibility_scope = request.POST.get('visibility_scope', 'branch')
         
         if title and description:
+            # Handle branch assignment based on visibility scope and user role
+            branch_id = None
+            
+            # For mission admins creating mission-wide requests without a branch,
+            # we need to handle this case. Since branch is required, we'll use
+            # the first available branch as a default for mission-wide requests
+            if visibility_scope == 'mission' and request.user.is_mission_admin and not request.user.branch:
+                from .models import Branch
+                default_branch = Branch.objects.filter(is_active=True).first()
+                if default_branch:
+                    branch_id = default_branch.id
+                else:
+                    messages.error(request, 'No branches available. Please create a branch first.')
+                    return redirect('core:prayer_request_add')
+            else:
+                # For all other cases, use the user's branch
+                if not request.user.branch:
+                    messages.error(request, 'You must be assigned to a branch to create prayer requests.')
+                    return redirect('core:prayer_request_add')
+                branch_id = request.user.branch.id
+            
             PrayerRequest.objects.create(
                 requester=request.user,
-                branch=request.user.branch,
+                branch_id=branch_id,
                 title=title,
                 description=description,
                 visibility_scope=visibility_scope,
-                is_approved=False  # Requires admin approval
+                is_approved=True  # Auto-approved - no approval needed
             )
-            messages.success(request, 'Prayer request submitted! It will be visible to others once approved by a pastor or admin.')
+            messages.success(request, 'Prayer request posted successfully! It is now visible to others.')
             return redirect('core:prayer_requests')
         else:
             messages.error(request, 'Please provide both title and description.')
@@ -1792,18 +2142,18 @@ def prayer_request_add(request):
 
 @login_required
 def prayer_request_edit(request, pk):
-    """Edit a prayer request (only by the requester)."""
+    """Edit a prayer request (by requester or admins)."""
     from .models import PrayerRequest
     
     prayer = get_object_or_404(PrayerRequest, pk=pk)
     
-    # Only allow the requester to edit
-    if prayer.requester != request.user:
-        messages.error(request, 'You can only edit your own prayer requests.')
+    # Check permissions using the model's permission method
+    if not prayer.can_be_managed_by(request.user):
+        messages.error(request, 'You do not have permission to edit this prayer request.')
         return redirect('core:prayer_requests')
     
-    # Don't allow editing if already approved
-    if prayer.is_approved:
+    # Don't allow editing if already approved (except for admins)
+    if prayer.is_approved and not request.user.is_mission_admin:
         messages.warning(request, 'This prayer request cannot be edited as it has been approved.')
         return redirect('core:prayer_requests')
     
@@ -1850,6 +2200,113 @@ def prayer_request_pray(request, pk):
     return redirect('core:prayer_requests')
 
 
+@login_required
+def prayer_request_delete(request, pk):
+    """Delete a prayer request (only by the requester or admin)."""
+    from .models import PrayerRequest
+    
+    prayer = get_object_or_404(PrayerRequest, pk=pk)
+    
+    # Check permissions
+    if not prayer.can_be_managed_by(request.user):
+        messages.error(request, 'You do not have permission to delete this prayer request.')
+        return redirect('core:prayer_requests')
+    
+    if request.method == 'POST':
+        prayer.delete()
+        messages.success(request, 'Prayer request deleted successfully.')
+        return redirect('core:prayer_requests')
+    
+    # For GET request, show confirmation page (will be replaced with modal)
+    context = {'prayer': prayer}
+    return render(request, 'core/prayer_request_confirm_delete.html', context)
+
+
+@login_required
+def prayer_request_detail(request, pk):
+    """View prayer request details."""
+    from .models import PrayerRequest
+    
+    prayer = get_object_or_404(PrayerRequest, pk=pk)
+    user = request.user
+    
+    # Use the same visibility logic as the list view
+    can_view = False
+    
+    if user.is_mission_admin:
+        # Mission admin sees all
+        can_view = True
+    elif user.is_area_executive:
+        # Area exec sees area-wide and mission-wide requests
+        can_view = (
+            prayer.branch.district.area == user.managed_area or
+            prayer.visibility_scope == 'mission'
+        )
+    elif user.is_district_executive:
+        # District exec sees district-wide and above
+        can_view = (
+            prayer.branch.district == user.managed_district or
+            prayer.visibility_scope in ['area', 'mission']
+        )
+    elif user.is_pastor or user.is_branch_executive:
+        # Branch admin/pastor sees all in their branch + wider scope
+        can_view = (
+            prayer.branch == user.branch or
+            prayer.visibility_scope in ['district', 'area', 'mission']
+        )
+    else:
+        # Regular members see:
+        # 1. Their own requests (always)
+        # 2. Branch-level requests from their branch
+        # 3. Wider-scope requests
+        can_view = (
+            prayer.requester == user or
+            (prayer.branch == user.branch and prayer.visibility_scope == 'branch') or
+            prayer.visibility_scope in ['district', 'area', 'mission']
+        )
+    
+    if not can_view:
+        messages.error(request, 'You do not have permission to view this prayer request.')
+        return redirect('core:prayer_requests')
+    
+    context = {
+        'prayer': prayer,
+        'can_edit': prayer.can_be_managed_by(request.user),
+        'can_pray': prayer.can_be_prayed_by(request.user),
+        'can_approve': prayer.can_be_approved_by(request.user),
+    }
+    
+    return render(request, 'core/prayer_request_detail.html', context)
+
+
+@login_required
+def prayer_request_detail_ajax(request, pk):
+    """Return prayer request data as JSON for AJAX calls."""
+    from .models import PrayerRequest
+    
+    prayer = get_object_or_404(PrayerRequest, pk=pk)
+    
+    # All authenticated users can view prayer requests
+    # Only editing/deleting is restricted to creators and admins
+    
+    data = {
+        'id': str(prayer.id),
+        'title': prayer.title,
+        'description': prayer.description,
+        'status': prayer.status,
+        'requester': prayer.requester.get_full_name() or prayer.requester.username,
+        'branch': prayer.branch.name if prayer.branch else '',
+        'created_at': prayer.created_at.strftime('%b %d, %Y'),
+        'prayer_count': prayer.prayer_count,
+        'is_approved': prayer.is_approved,
+        'visibility_scope': prayer.get_visibility_scope_display(),
+        'can_edit': prayer.requester == request.user or request.user.is_mission_admin or request.user.is_branch_executive,
+        'can_pray': prayer.can_be_prayed_by(request.user)
+    }
+    
+    return JsonResponse(data)
+
+
 # ============ VISITOR FOLLOW-UP VIEWS ============
 
 @login_required
@@ -1888,6 +2345,8 @@ def visitors_list(request):
     context = {
         'visitors': visitors[:100],
         'status_choices': Visitor.Status.choices,
+        'areas': Area.objects.filter(is_active=True) if user.is_mission_admin else None,
+        'districts': District.objects.filter(is_active=True) if user.is_mission_admin else None,
         'branches': Branch.objects.filter(is_active=True) if user.is_mission_admin else None,
         'stats': {
             'total': visitors.count(),
@@ -1933,6 +2392,8 @@ def visitor_add(request):
         return redirect('core:visitors')
     
     context = {
+        'areas': Area.objects.filter(is_active=True) if user.is_mission_admin else None,
+        'districts': District.objects.filter(is_active=True) if user.is_mission_admin else None,
         'branches': Branch.objects.filter(is_active=True) if user.is_mission_admin else None,
     }
     return render(request, 'core/visitor_form.html', context)
@@ -2247,11 +2708,27 @@ def data_backup(request):
     from accounts.models import User
     from contributions.models import Contribution, ContributionType, Remittance
     from expenditure.models import Expenditure, ExpenditureCategory
-    from attendance.models import AttendanceSession, AttendanceRecord
+    from attendance.models import AttendanceSession, AttendanceRecord, ServiceType
     from members.models import Member
-    from groups.models import Group, GroupMembership
+    from groups.models import Group, GroupCategory, GroupMembership
     from announcements.models import Announcement
     from payroll.models import StaffPayrollProfile, PayrollRun, PaySlip
+    from core.models import FiscalYear
+    # Import models that reference Branch
+    from attendance.models import WeeklyAttendance, AttendanceSession, Meeting
+    from core.models import MonthlyClose, PrayerRequest, Visitor, BranchFinancialSummary, CalendarEvent, ChurchAsset, ChurchAssetTransfer, Notification, MissionFinancialSummary
+    from expenditure.models import UtilityBill, WelfarePayment, Asset
+    from contributions.models import TitheCommission, WeeklyContributionSummary
+    from contributions.models_opening_balance import OpeningBalance
+    from contributions.models_transfers import HierarchyTransfer
+    from contributions.models_remittance import HierarchyRemittance
+    from reports.models import MonthlyReport
+    from reports.models_hierarchy import AreaFinancialReport, DistrictFinancialReport
+    from auditing.models import FinancialAuditReport, AuditFlag, AuditLog
+    from announcements.models import Announcement, Event
+    from sermons.models import Sermon
+    from members.models import DeceasedMember
+    from core.ledger_models import LedgerEntry
     
     if not request.user.is_mission_admin:
         messages.error(request, 'Access denied.')
@@ -2277,7 +2754,10 @@ def data_backup(request):
             backup_data['branches'] = json.loads(serializers.serialize('json', Branch.objects.all()))
             backup_data['contribution_types'] = json.loads(serializers.serialize('json', ContributionType.objects.all()))
             backup_data['expenditure_categories'] = json.loads(serializers.serialize('json', ExpenditureCategory.objects.all()))
+            backup_data['group_categories'] = json.loads(serializers.serialize('json', GroupCategory.objects.all()))
             backup_data['groups'] = json.loads(serializers.serialize('json', Group.objects.all()))
+            backup_data['service_types'] = json.loads(serializers.serialize('json', ServiceType.objects.all()))
+            backup_data['fiscal_years'] = json.loads(serializers.serialize('json', FiscalYear.objects.all()))
             
             if backup_type == 'full':
                 # Include all data
@@ -2288,11 +2768,40 @@ def data_backup(request):
                 backup_data['expenditures'] = json.loads(serializers.serialize('json', Expenditure.objects.all()))
                 backup_data['attendance_sessions'] = json.loads(serializers.serialize('json', AttendanceSession.objects.all()))
                 backup_data['attendance_records'] = json.loads(serializers.serialize('json', AttendanceRecord.objects.all()))
+                backup_data['weekly_attendances'] = json.loads(serializers.serialize('json', WeeklyAttendance.objects.all()))
                 backup_data['announcements'] = json.loads(serializers.serialize('json', Announcement.objects.all()))
                 backup_data['group_memberships'] = json.loads(serializers.serialize('json', GroupMembership.objects.all()))
                 backup_data['staff_payroll'] = json.loads(serializers.serialize('json', StaffPayrollProfile.objects.all()))
                 backup_data['payroll_runs'] = json.loads(serializers.serialize('json', PayrollRun.objects.all()))
-                backup_data['payslips'] = json.loads(serializers.serialize('json', PaySlip.objects.all()))
+                backup_data['pay_slips'] = json.loads(serializers.serialize('json', PaySlip.objects.all()))
+                backup_data['monthly_closes'] = json.loads(serializers.serialize('json', MonthlyClose.objects.all()))
+                backup_data['prayer_requests'] = json.loads(serializers.serialize('json', PrayerRequest.objects.all()))
+                backup_data['visitors'] = json.loads(serializers.serialize('json', Visitor.objects.all()))
+                backup_data['ledger_entries'] = json.loads(serializers.serialize('json', LedgerEntry.objects.all()))
+                backup_data['utility_bills'] = json.loads(serializers.serialize('json', UtilityBill.objects.all()))
+                backup_data['welfare_payments'] = json.loads(serializers.serialize('json', WelfarePayment.objects.all()))
+                backup_data['assets'] = json.loads(serializers.serialize('json', Asset.objects.all()))
+                backup_data['branch_financial_summaries'] = json.loads(serializers.serialize('json', BranchFinancialSummary.objects.all()))
+                backup_data['tithe_commissions'] = json.loads(serializers.serialize('json', TitheCommission.objects.all()))
+                backup_data['monthly_reports'] = json.loads(serializers.serialize('json', MonthlyReport.objects.all()))
+                backup_data['area_financial_reports'] = json.loads(serializers.serialize('json', AreaFinancialReport.objects.all()))
+                backup_data['district_financial_reports'] = json.loads(serializers.serialize('json', DistrictFinancialReport.objects.all()))
+                backup_data['mission_financial_summaries'] = json.loads(serializers.serialize('json', MissionFinancialSummary.objects.all()))
+                backup_data['financial_audit_reports'] = json.loads(serializers.serialize('json', FinancialAuditReport.objects.all()))
+                backup_data['audit_flags'] = json.loads(serializers.serialize('json', AuditFlag.objects.all()))
+                backup_data['audit_logs'] = json.loads(serializers.serialize('json', AuditLog.objects.all()))
+                backup_data['meetings'] = json.loads(serializers.serialize('json', Meeting.objects.all()))
+                backup_data['calendar_events'] = json.loads(serializers.serialize('json', CalendarEvent.objects.all()))
+                backup_data['church_assets'] = json.loads(serializers.serialize('json', ChurchAsset.objects.all()))
+                backup_data['church_asset_transfers'] = json.loads(serializers.serialize('json', ChurchAssetTransfer.objects.all()))
+                backup_data['notifications'] = json.loads(serializers.serialize('json', Notification.objects.all()))
+                backup_data['deceased_members'] = json.loads(serializers.serialize('json', DeceasedMember.objects.all()))
+                backup_data['hierarchy_transfers'] = json.loads(serializers.serialize('json', HierarchyTransfer.objects.all()))
+                backup_data['hierarchy_remittances'] = json.loads(serializers.serialize('json', HierarchyRemittance.objects.all()))
+                backup_data['weekly_contribution_summaries'] = json.loads(serializers.serialize('json', WeeklyContributionSummary.objects.all()))
+                backup_data['opening_balances'] = json.loads(serializers.serialize('json', OpeningBalance.objects.all()))
+                backup_data['events'] = json.loads(serializers.serialize('json', Event.objects.all()))
+                backup_data['sermons'] = json.loads(serializers.serialize('json', Sermon.objects.all()))
             
             response = HttpResponse(
                 json.dumps(backup_data, indent=2),
@@ -2318,46 +2827,929 @@ def data_backup(request):
                 
                 restore_type = request.POST.get('restore_type', 'structure')
                 restored_items = []
+                errors = []
                 
                 with transaction.atomic():
-                    # Restore structure only
-                    if 'areas' in backup_data and restore_type in ['structure', 'full']:
+                    # If replace mode, delete existing data first
+                    if restore_type == 'replace':
+                        # Temporarily disconnect the branch deletion signal to allow deletion during restore
+                        from django.db.models.signals import pre_delete
+                        from core.signals import prevent_branch_deletion_with_members
+                        pre_delete.disconnect(prevent_branch_deletion_with_members, sender=Branch)
+                        
+                        try:
+                            # Delete in reverse dependency order to avoid foreign key violations
+                            # Delete transactional data first
+                            PaySlip.objects.all().delete()
+                            PayrollRun.objects.all().delete()
+                            StaffPayrollProfile.objects.all().delete()
+                            AttendanceRecord.objects.all().delete()
+                            AttendanceSession.objects.all().delete()
+                            WeeklyAttendance.objects.all().delete()
+                            Announcement.objects.all().delete()
+                            Contribution.objects.all().delete()
+                            Remittance.objects.all().delete()
+                            Expenditure.objects.all().delete()
+                            GroupMembership.objects.all().delete()
+                            Member.objects.all().delete()
+                            
+                            # Delete models that reference Branch
+                            MonthlyClose.objects.all().delete()
+                            PrayerRequest.objects.all().delete()
+                            Visitor.objects.all().delete()
+                            LedgerEntry.objects.all().delete()
+                            UtilityBill.objects.all().delete()
+                            WelfarePayment.objects.all().delete()
+                            Asset.objects.all().delete()
+                            BranchFinancialSummary.objects.all().delete()
+                            TitheCommission.objects.all().delete()
+                            MonthlyReport.objects.all().delete()
+                            FinancialAuditReport.objects.all().delete()
+                            AuditFlag.objects.all().delete()
+                            AuditLog.objects.all().delete()
+                            WeeklyAttendance.objects.all().delete()
+                            AttendanceSession.objects.all().delete()
+                            Meeting.objects.all().delete()
+                            CalendarEvent.objects.all().delete()
+                            ChurchAsset.objects.all().delete()
+                            ChurchAssetTransfer.objects.all().delete()
+                            Notification.objects.all().delete()
+                            DeceasedMember.objects.all().delete()
+                            HierarchyTransfer.objects.all().delete()
+                            HierarchyRemittance.objects.all().delete()
+                            WeeklyContributionSummary.objects.all().delete()
+                            OpeningBalance.objects.all().delete()
+                            Event.objects.all().delete()
+                            Sermon.objects.all().delete()
+                            
+                            # Delete structure data
+                            Group.objects.all().delete()
+                            GroupCategory.objects.all().delete()
+                            ServiceType.objects.all().delete()
+                            AreaFinancialReport.objects.all().delete()
+                            DistrictFinancialReport.objects.all().delete()
+                            Branch.objects.all().delete()
+                            User.objects.all().delete()
+                            District.objects.all().delete()
+                            Area.objects.all().delete()
+                            ContributionType.objects.all().delete()
+                            ExpenditureCategory.objects.all().delete()
+                            MissionFinancialSummary.objects.all().delete()
+                            FiscalYear.objects.all().delete()
+                            
+                            # Keep SiteSettings as it's system configuration
+                            restored_items.append('All existing data deleted')
+                        finally:
+                            # Always reconnect the signal
+                            pre_delete.connect(prevent_branch_deletion_with_members, sender=Branch)
+                    # CRITICAL: Restore in dependency order to avoid foreign key violations
+                    # Order: Areas -> Districts -> Users -> Branches -> Groups -> Members -> Contributions/Expenditures
+                    
+                    # 1. Restore Areas (no dependencies)
+                    if 'areas' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
                         for item in serializers.deserialize('json', json.dumps(backup_data['areas'])):
                             if not Area.objects.filter(pk=item.object.pk).exists():
                                 item.save()
-                                restored_items.append('Areas')
+                                count += 1
+                        if count > 0:
+                            restored_items.append(f'{count} Areas')
                     
-                    if 'districts' in backup_data and restore_type in ['structure', 'full']:
+                    # Restore Area Financial Reports (depends on Areas)
+                    if 'area_financial_reports' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['area_financial_reports'])):
+                            if not AreaFinancialReport.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'AreaFinancialReport: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Area Financial Reports')
+                    
+                    # 2. Restore Districts (depends on Areas)
+                    if 'districts' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
                         for item in serializers.deserialize('json', json.dumps(backup_data['districts'])):
                             if not District.objects.filter(pk=item.object.pk).exists():
                                 item.save()
-                                restored_items.append('Districts')
+                                count += 1
+                        if count > 0:
+                            restored_items.append(f'{count} Districts')
                     
-                    if 'branches' in backup_data and restore_type in ['structure', 'full']:
+                    # Restore District Financial Reports (depends on Districts)
+                    if 'district_financial_reports' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['district_financial_reports'])):
+                            if not DistrictFinancialReport.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'DistrictFinancialReport: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} District Financial Reports')
+                    
+                    # 3. Restore Users BEFORE Branches (branches reference users as pastors)
+                    # CRITICAL: Always restore users if they exist in backup, even for structure restore
+                    # This prevents foreign key violations when branches reference pastors
+                    if 'users' in backup_data:
+                        count = 0
+                        skipped_member_ids = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['users'])):
+                            if not User.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    # Check if member_id already exists, if so generate a unique one
+                                    if item.object.member_id:
+                                        if User.objects.filter(member_id=item.object.member_id).exists():
+                                            # Generate a unique member_id by appending timestamp
+                                            import uuid
+                                            unique_suffix = str(int(timezone.now().timestamp()))[-6:]
+                                            item.object.member_id = f"{item.object.member_id}_{unique_suffix}"
+                                            skipped_member_ids += 1
+                                    
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'User {item.object.username}: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Users')
+                        if skipped_member_ids > 0:
+                            errors.append(f'{skipped_member_ids} users had duplicate member IDs (renamed)')
+                    
+                    # 4. Restore Branches (depends on Districts and Users)
+                    if 'branches' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
+                        skipped_pastors = 0
                         for item in serializers.deserialize('json', json.dumps(backup_data['branches'])):
                             if not Branch.objects.filter(pk=item.object.pk).exists():
-                                item.save()
-                                restored_items.append('Branches')
+                                try:
+                                    # Check if pastor exists, if not set to NULL to avoid foreign key violation
+                                    if item.object.pastor_id:
+                                        if not User.objects.filter(pk=item.object.pastor_id).exists():
+                                            item.object.pastor_id = None
+                                            skipped_pastors += 1
+                                    
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Branch {item.object.name}: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Branches')
+                        if skipped_pastors > 0:
+                            errors.append(f'{skipped_pastors} branches had missing pastors (set to NULL)')
                     
-                    if 'contribution_types' in backup_data and restore_type in ['structure', 'full']:
+                    # 5. Restore Contribution Types (no dependencies)
+                    if 'contribution_types' in backup_data and restore_type in ['structure', 'full', 'replace']:
                         from contributions.models import ContributionType
+                        count = 0
                         for item in serializers.deserialize('json', json.dumps(backup_data['contribution_types'])):
                             if not ContributionType.objects.filter(pk=item.object.pk).exists():
                                 item.save()
-                                restored_items.append('Contribution Types')
+                                count += 1
+                        if count > 0:
+                            restored_items.append(f'{count} Contribution Types')
                     
-                    if 'expenditure_categories' in backup_data and restore_type in ['structure', 'full']:
+                    # 6. Restore Expenditure Categories (no dependencies)
+                    if 'expenditure_categories' in backup_data and restore_type in ['structure', 'full', 'replace']:
                         from expenditure.models import ExpenditureCategory
+                        count = 0
                         for item in serializers.deserialize('json', json.dumps(backup_data['expenditure_categories'])):
                             if not ExpenditureCategory.objects.filter(pk=item.object.pk).exists():
                                 item.save()
-                                restored_items.append('Expenditure Categories')
+                                count += 1
+                        if count > 0:
+                            restored_items.append(f'{count} Expenditure Categories')
+                    
+                    # 7. Restore Group Categories (no dependencies)
+                    if 'group_categories' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        from groups.models import GroupCategory
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['group_categories'])):
+                            if not GroupCategory.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Group Category {item.object.name}: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Group Categories')
+                    
+                    # 8. Restore Groups (depends on Branches and GroupCategories)
+                    if 'groups' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
+                        skipped_categories = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['groups'])):
+                            if not Group.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    # Check if category exists, if not set to NULL to avoid foreign key violation
+                                    if item.object.category_id:
+                                        if not GroupCategory.objects.filter(pk=item.object.category_id).exists():
+                                            item.object.category_id = None
+                                            skipped_categories += 1
+                                    
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Group {item.object.name}: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Groups')
+                        if skipped_categories > 0:
+                            errors.append(f'{skipped_categories} groups had missing categories (set to NULL)')
+                    
+                    # Restore Fiscal Years (no dependencies)
+                    if 'fiscal_years' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['fiscal_years'])):
+                            if not FiscalYear.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Fiscal Year {item.object.year}: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Fiscal Years')
+                    
+                    # Restore Mission Financial Summaries (depends on FiscalYear)
+                    if 'mission_financial_summaries' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['mission_financial_summaries'])):
+                            if not MissionFinancialSummary.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'MissionFinancialSummary: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Mission Financial Summaries')
+                    
+                    # FULL RESTORE ONLY - Restore transactional data
+                    if restore_type == 'full':
+                        # 10. Restore Members (depends on Branches)
+                        if 'members' in backup_data:
+                            count = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['members'])):
+                                if not Member.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Member {item.object.member_id}: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Members')
+                        
+                        # 11. Restore Group Memberships (depends on Groups and Members)
+                        if 'group_memberships' in backup_data:
+                            count = 0
+                            skipped_groups = 0
+                            skipped_members = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['group_memberships'])):
+                                if not GroupMembership.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if group exists, if not skip to avoid foreign key violation
+                                        if item.object.group_id:
+                                            if not Group.objects.filter(pk=item.object.group_id).exists():
+                                                skipped_groups += 1
+                                                continue  # Skip this record entirely as it has no valid group
+                                        
+                                        # Check if member exists, if not set to NULL to avoid foreign key violation
+                                        if item.object.member_id:
+                                            if not User.objects.filter(pk=item.object.member_id).exists():
+                                                item.object.member_id = None
+                                                skipped_members += 1
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Group Membership: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Group Memberships')
+                            if skipped_groups > 0:
+                                errors.append(f'{skipped_groups} group memberships had missing groups (skipped)')
+                            if skipped_members > 0:
+                                errors.append(f'{skipped_members} group memberships had missing members (set to NULL)')
+                        
+                        # 12. Restore Contributions (depends on Members, Branches, ContributionTypes, FiscalYears)
+                        if 'contributions' in backup_data:
+                            count = 0
+                            skipped_fiscal_years = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['contributions'])):
+                                if not Contribution.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if fiscal year exists, if not skip to avoid NOT NULL constraint violation
+                                        if item.object.fiscal_year_id:
+                                            if not FiscalYear.objects.filter(pk=item.object.fiscal_year_id).exists():
+                                                skipped_fiscal_years += 1
+                                                continue  # Skip this record entirely as fiscal_year_id is NOT NULL
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Contribution: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Contributions')
+                            if skipped_fiscal_years > 0:
+                                errors.append(f'{skipped_fiscal_years} contributions had missing fiscal years (skipped)')
+                        
+                        # 13. Restore Remittances (depends on Branches, FiscalYears)
+                        if 'remittances' in backup_data:
+                            count = 0
+                            skipped_fiscal_years = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['remittances'])):
+                                if not Remittance.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if fiscal year exists, if not skip to avoid NOT NULL constraint violation
+                                        if item.object.fiscal_year_id:
+                                            if not FiscalYear.objects.filter(pk=item.object.fiscal_year_id).exists():
+                                                skipped_fiscal_years += 1
+                                                continue  # Skip this record entirely as fiscal_year_id is NOT NULL
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Remittance: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Remittances')
+                            if skipped_fiscal_years > 0:
+                                errors.append(f'{skipped_fiscal_years} remittances had missing fiscal years (skipped)')
+                        
+                        # 14. Restore Expenditures (depends on Branches, ExpenditureCategories, FiscalYears)
+                        if 'expenditures' in backup_data:
+                            count = 0
+                            skipped_fiscal_years = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['expenditures'])):
+                                if not Expenditure.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if fiscal year exists, if not skip to avoid NOT NULL constraint violation
+                                        if item.object.fiscal_year_id:
+                                            if not FiscalYear.objects.filter(pk=item.object.fiscal_year_id).exists():
+                                                skipped_fiscal_years += 1
+                                                continue  # Skip this record entirely as fiscal_year_id is NOT NULL
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Expenditure: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Expenditures')
+                            if skipped_fiscal_years > 0:
+                                errors.append(f'{skipped_fiscal_years} expenditures had missing fiscal years (skipped)')
+                        
+                        # 15. Restore Service Types (no dependencies)
+                        if 'service_types' in backup_data and restore_type in ['structure', 'full', 'replace']:
+                            count = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['service_types'])):
+                                if not ServiceType.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Service Type {item.object.name}: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Service Types')
+                        
+                        # 16. Restore Attendance Sessions (depends on Branches, ServiceTypes)
+                        if 'attendance_sessions' in backup_data:
+                            count = 0
+                            skipped_service_types = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['attendance_sessions'])):
+                                if not AttendanceSession.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if service type exists, if not set to NULL to avoid foreign key violation
+                                        if item.object.service_type_id:
+                                            if not ServiceType.objects.filter(pk=item.object.service_type_id).exists():
+                                                item.object.service_type_id = None
+                                                skipped_service_types += 1
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Attendance Session: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Attendance Sessions')
+                            if skipped_service_types > 0:
+                                errors.append(f'{skipped_service_types} attendance sessions had missing service types (set to NULL)')
+                        
+                        # 17. Restore Attendance Records (depends on AttendanceSessions and Members)
+                        if 'attendance_records' in backup_data:
+                            count = 0
+                            skipped_sessions = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['attendance_records'])):
+                                if not AttendanceRecord.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if session exists, if not skip to avoid foreign key violation
+                                        if item.object.session_id:
+                                            if not AttendanceSession.objects.filter(pk=item.object.session_id).exists():
+                                                skipped_sessions += 1
+                                                continue  # Skip this record entirely as it has no valid session
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Attendance Record: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Attendance Records')
+                            if skipped_sessions > 0:
+                                errors.append(f'{skipped_sessions} attendance records had missing sessions (skipped)')
+                        
+                        # 18. Restore Announcements (depends on Branches, Users)
+                        if 'announcements' in backup_data:
+                            count = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['announcements'])):
+                                if not Announcement.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Announcement: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Announcements')
+                        
+                        # 19. Restore Staff Payroll Profiles (depends on Users)
+                        if 'staff_payroll' in backup_data:
+                            count = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['staff_payroll'])):
+                                if not StaffPayrollProfile.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Staff Payroll Profile: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Staff Payroll Profiles')
+                        
+                        # 20. Restore Payroll Runs (depends on Branches, FiscalYears)
+                        if 'payroll_runs' in backup_data:
+                            count = 0
+                            skipped_fiscal_years = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['payroll_runs'])):
+                                if not PayrollRun.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if fiscal year exists, if not skip to avoid NOT NULL constraint violation
+                                        if item.object.fiscal_year_id:
+                                            if not FiscalYear.objects.filter(pk=item.object.fiscal_year_id).exists():
+                                                skipped_fiscal_years += 1
+                                                continue  # Skip this record entirely as fiscal_year_id is NOT NULL
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'Payroll Run: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} Payroll Runs')
+                            if skipped_fiscal_years > 0:
+                                errors.append(f'{skipped_fiscal_years} payroll runs had missing fiscal years (skipped)')
+                        
+                        # 21. Restore PaySlips (depends on PayrollRuns and StaffPayrollProfiles)
+                        if 'payslips' in backup_data:
+                            count = 0
+                            skipped_payroll_runs = 0
+                            skipped_staff = 0
+                            for item in serializers.deserialize('json', json.dumps(backup_data['payslips'])):
+                                if not PaySlip.objects.filter(pk=item.object.pk).exists():
+                                    try:
+                                        # Check if payroll run exists, if not skip to avoid foreign key violation
+                                        if item.object.payroll_run_id:
+                                            if not PayrollRun.objects.filter(pk=item.object.payroll_run_id).exists():
+                                                skipped_payroll_runs += 1
+                                                continue  # Skip this record entirely as it has no valid payroll run
+                                        
+                                        # Check if staff exists, if not set to NULL to avoid foreign key violation
+                                        if item.object.staff_id:
+                                            if not StaffPayrollProfile.objects.filter(pk=item.object.staff_id).exists():
+                                                item.object.staff_id = None
+                                                skipped_staff += 1
+                                        
+                                        with transaction.atomic():
+                                            item.save()
+                                            count += 1
+                                    except Exception as e:
+                                        errors.append(f'PaySlip: {str(e)}')
+                            if count > 0:
+                                restored_items.append(f'{count} PaySlips')
+                            if skipped_payroll_runs > 0:
+                                errors.append(f'{skipped_payroll_runs} payslips had missing payroll runs (skipped)')
+                            if skipped_staff > 0:
+                                errors.append(f'{skipped_staff} payslips had missing staff (set to NULL)')
                 
-                unique_items = list(set(restored_items))
-                if unique_items:
-                    messages.success(request, f'Restore completed! Restored: {", ".join(unique_items)}')
+                # Restore additional models for full restore
+                if restore_type == 'full':
+                    # Restore MonthlyClose
+                    if 'monthly_closes' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['monthly_closes'])):
+                            if not MonthlyClose.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'MonthlyClose: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Monthly Closes')
+                    
+                    # Restore PrayerRequest
+                    if 'prayer_requests' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['prayer_requests'])):
+                            if not PrayerRequest.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'PrayerRequest: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Prayer Requests')
+                    
+                    # Restore Visitor
+                    if 'visitors' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['visitors'])):
+                            if not Visitor.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Visitor: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Visitors')
+                    
+                    # Restore LedgerEntry
+                    if 'ledger_entries' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['ledger_entries'])):
+                            if not LedgerEntry.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'LedgerEntry: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Ledger Entries')
+                    
+                    # Restore UtilityBill
+                    if 'utility_bills' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['utility_bills'])):
+                            if not UtilityBill.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'UtilityBill: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Utility Bills')
+                    
+                    # Restore WelfarePayment
+                    if 'welfare_payments' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['welfare_payments'])):
+                            if not WelfarePayment.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'WelfarePayment: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Welfare Payments')
+                    
+                    # Restore Asset
+                    if 'assets' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['assets'])):
+                            if not Asset.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Asset: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Assets')
+                    
+                    # Restore BranchFinancialSummary
+                    if 'branch_financial_summaries' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['branch_financial_summaries'])):
+                            if not BranchFinancialSummary.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'BranchFinancialSummary: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Branch Financial Summaries')
+                    
+                    # Restore TitheCommission
+                    if 'tithe_commissions' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['tithe_commissions'])):
+                            if not TitheCommission.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'TitheCommission: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Tithe Commissions')
+                    
+                    # Restore MonthlyReport
+                    if 'monthly_reports' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['monthly_reports'])):
+                            if not MonthlyReport.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'MonthlyReport: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Monthly Reports')
+                    
+                    # Restore FinancialAuditReport
+                    if 'financial_audit_reports' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['financial_audit_reports'])):
+                            if not FinancialAuditReport.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'FinancialAuditReport: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Financial Audit Reports')
+                    
+                    # Restore AuditFlag
+                    if 'audit_flags' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['audit_flags'])):
+                            if not AuditFlag.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'AuditFlag: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Audit Flags')
+                    
+                    # Restore AuditLog
+                    if 'audit_logs' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['audit_logs'])):
+                            if not AuditLog.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'AuditLog: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Audit Logs')
+                    
+                    # Restore WeeklyAttendance
+                    if 'weekly_attendances' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['weekly_attendances'])):
+                            if not WeeklyAttendance.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'WeeklyAttendance: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Weekly Attendances')
+                    
+                    # Restore AttendanceSession
+                    if 'attendance_sessions' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['attendance_sessions'])):
+                            if not AttendanceSession.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'AttendanceSession: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Attendance Sessions')
+                    
+                    # Restore Meeting
+                    if 'meetings' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['meetings'])):
+                            if not Meeting.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Meeting: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Meetings')
+                    
+                    # Restore CalendarEvent
+                    if 'calendar_events' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['calendar_events'])):
+                            if not CalendarEvent.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'CalendarEvent: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Calendar Events')
+                    
+                    # Restore ChurchAsset
+                    if 'church_assets' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['church_assets'])):
+                            if not ChurchAsset.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'ChurchAsset: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Church Assets')
+                    
+                    # Restore ChurchAssetTransfer
+                    if 'church_asset_transfers' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['church_asset_transfers'])):
+                            if not ChurchAssetTransfer.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'ChurchAssetTransfer: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Church Asset Transfers')
+                    
+                    # Restore Notification
+                    if 'notifications' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['notifications'])):
+                            if not Notification.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Notification: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Notifications')
+                    
+                    # Restore DeceasedMember
+                    if 'deceased_members' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['deceased_members'])):
+                            if not DeceasedMember.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'DeceasedMember: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Deceased Members')
+                    
+                    # Restore HierarchyTransfer
+                    if 'hierarchy_transfers' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['hierarchy_transfers'])):
+                            if not HierarchyTransfer.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'HierarchyTransfer: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Hierarchy Transfers')
+                    
+                    # Restore HierarchyRemittance
+                    if 'hierarchy_remittances' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['hierarchy_remittances'])):
+                            if not HierarchyRemittance.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'HierarchyRemittance: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Hierarchy Remittances')
+                    
+                    # Restore WeeklyContributionSummary
+                    if 'weekly_contribution_summaries' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['weekly_contribution_summaries'])):
+                            if not WeeklyContributionSummary.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'WeeklyContributionSummary: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Weekly Contribution Summaries')
+                    
+                    # Restore OpeningBalance
+                    if 'opening_balances' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['opening_balances'])):
+                            if not OpeningBalance.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'OpeningBalance: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Opening Balances')
+                    
+                    # Restore Event
+                    if 'events' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['events'])):
+                            if not Event.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Event: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Events')
+                    
+                    # Restore Sermon
+                    if 'sermons' in backup_data:
+                        count = 0
+                        for item in serializers.deserialize('json', json.dumps(backup_data['sermons'])):
+                            if not Sermon.objects.filter(pk=item.object.pk).exists():
+                                try:
+                                    with transaction.atomic():
+                                        item.save()
+                                        count += 1
+                                except Exception as e:
+                                    errors.append(f'Sermon: {str(e)}')
+                        if count > 0:
+                            restored_items.append(f'{count} Sermons')
+                
+                # Report results to user
+                if restored_items:
+                    messages.success(request, f'Restore completed! Restored: {", ".join(restored_items)}')
                 else:
                     messages.info(request, 'No new items to restore. All items already exist.')
+                
+                # Report any errors that occurred
+                if errors:
+                    error_summary = f'{len(errors)} items had errors during restore.'
+                    if len(errors) <= 5:
+                        # Show all errors if there are few
+                        for error in errors:
+                            messages.warning(request, error)
+                    else:
+                        # Show summary if there are many errors
+                        messages.warning(request, f'{error_summary} First 5 errors:')
+                        for error in errors[:5]:
+                            messages.warning(request, error)
                     
             except json.JSONDecodeError:
                 messages.error(request, 'Invalid JSON file. Please select a valid backup file.')

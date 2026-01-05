@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Ledger Audit Trail{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="text-sm text-gray-500 mb-2">
+                <a href="{% url 'core:ledger_dashboard' %}" class="hover:text-blue-600">Ledger Dashboard</a>
+                <span class="mx-2">/</span>
+                <span>Audit Trail</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Ledger Audit Trail</h1>
+            <p class="text-gray-600">Complete history of all financial entries</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Filter Ledger Entries</h2>
+            <a href="{% url 'core:ledger_audit_trail' %}" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                <span class="material-icons-outlined text-sm mr-1">refresh</span>
+                Clear All
+            </a>
+        </div>
+        <form method="get" class="space-y-4">
+            <!-- Row 1: Owner, Entry Type, Source -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Owner Type</label>
+                    <select name="owner_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Owners</option>
+                        {% for value, label in owner_types %}
+                        <option value="{{ value }}" {% if value == selected_owner_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Entry Type</label>
+                    <select name="entry_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Types</option>
+                        {% for value, label in entry_types %}
+                        <option value="{{ value }}" {% if value == selected_entry_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                    <select name="source_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Sources</option>
+                        {% for value, label in source_types %}
+                        <option value="{{ value }}" {% if value == selected_source_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Row 2: Branch, Date Range -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                    <select name="branch" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">All Branches</option>
+                        {% for b in branches %}
+                        <option value="{{ b.id }}" {% if b.id|stringformat:"s" == selected_branch %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="date" name="start_date" value="{{ selected_start_date }}" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input type="date" name="end_date" value="{{ selected_end_date }}" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                    <span class="material-icons-outlined text-lg mr-2">filter_alt</span>
+                    Apply Filters
+                </button>
+                <a href="{% url 'core:ledger_audit_trail' %}" class="inline-flex items-center px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span class="material-icons-outlined text-lg mr-2">clear</span>
+                    Reset
+                </a>
+                <div class="ml-auto text-sm text-gray-500">
+                    {% if selected_owner_type or selected_entry_type or selected_source_type or selected_branch or selected_start_date or selected_end_date %}
+                    <span class="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full">
+                        <span class="material-icons-outlined text-sm mr-1">filter_list</span>
+                        Filters active
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Entries Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Owner</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for entry in entries %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {{ entry.entry_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            {% if entry.entry_type == 'cash' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">CASH</span>
+                            {% elif entry.entry_type == 'receivable' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">RECEIVABLE</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">PAYABLE</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="font-medium text-gray-900">{{ entry.get_owner_display }}</div>
+                            {% if entry.get_counterparty_display %}
+                            <div class="text-xs text-gray-500">↔ {{ entry.get_counterparty_display }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 max-w-xs truncate" title="{{ entry.description }}">
+                            {{ entry.description|truncatechars:50 }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {{ entry.get_source_type_display }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right">
+                            {% if entry.amount >= 0 %}
+                            <span class="text-green-600 font-medium">+{{ entry.amount|floatformat:2|intcomma }}</span>
+                            {% else %}
+                            <span class="text-red-600 font-medium">{{ entry.amount|floatformat:2|intcomma }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right text-sm text-gray-500">
+                            {{ entry.balance_after|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-center">
+                            {% if entry.is_locked %}
+                            <span class="material-icons-outlined text-gray-400 text-sm" title="Locked">lock</span>
+                            {% endif %}
+                            {% if entry.status == 'reversed' %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Reversed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                            No ledger entries found matching your criteria
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if entries.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div class="text-sm text-gray-500">
+                Showing {{ entries.start_index }} to {{ entries.end_index }} of {{ entries.paginator.count }} entries
+            </div>
+            <div class="flex gap-2">
+                {% if entries.has_previous %}
+                <a href="?page={{ entries.previous_page_number }}&owner_type={{ selected_owner_type }}&entry_type={{ selected_entry_type }}&source_type={{ selected_source_type }}&branch={{ selected_branch }}&start_date={{ selected_start_date }}&end_date={{ selected_end_date }}" 
+                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Previous</a>
+                {% endif %}
+                <span class="px-3 py-1 text-sm">Page {{ entries.number }} of {{ entries.paginator.num_pages }}</span>
+                {% if entries.has_next %}
+                <a href="?page={{ entries.next_page_number }}&owner_type={{ selected_owner_type }}&entry_type={{ selected_entry_type }}&source_type={{ selected_source_type }}&branch={{ selected_branch }}&start_date={{ selected_start_date }}&end_date={{ selected_end_date }}" 
+                   class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Meeting Attendance Register{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Meeting Attendance Register</h1>
+        <p class="text-gray-600 mt-1">Record attendance for all mission staff members</p>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex flex-wrap gap-4">
+            <a href="{% url 'attendance:mission_staff_register' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Take Attendance
+            </a>
+            <a href="{% url 'attendance:mission_staff_history' %}" class="bg-white text-blue-600 border border-blue-300 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+                Meeting History
+            </a>
+            <a href="{% url 'attendance:mission_staff_summary' %}" class="bg-white text-blue-600 border border-blue-300 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+                Meeting Summary
+            </a>
+            {% if request.user.is_mission_admin or request.user.is_pastor or request.user.is_staff %}
+            <a href="{% url 'attendance:my_meetings' %}" class="bg-white text-blue-600 border border-blue-300 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+                My Meetings
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Attendance Info -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <form id="attendanceForm" method="post" action="{% url 'attendance:mission_staff_save' %}">
+            {% csrf_token %}
+            <input type="hidden" name="attendance_id" value="{{ attendance.id }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" name="date" value="{{ attendance.date|default:today_date }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           readonly>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Meeting Title</label>
+                    <input type="text" name="title" id="meetingTitle" value="{{ attendance.title }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Mission Staff Meeting">
+                </div>
+            </div>
+
+            {% if can_edit %}
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-600">
+                        <span class="font-medium">Total Staff:</span> {{ staff_list|length }}
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="markAllPresent" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="markAllPresent" class="text-sm text-gray-700 cursor-pointer">Mark all as Present</label>
+                    </div>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Save Attendance
+                </button>
+            </div>
+            {% else %}
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div class="flex">
+                    <svg class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-yellow-800">
+                        {% if is_locked %}
+                            This attendance is locked. Changes require admin override.
+                        {% else %}
+                            This attendance can no longer be edited (24-hour window has passed).
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Staff List -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Staff Members</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Staff Member
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Role
+                        </th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Notes
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in staff_list %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 flex-shrink-0">
+                                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                        <span class="text-sm font-medium text-gray-700">
+                                            {{ item.staff.first_name.0 }}{{ item.staff.last_name.0 }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ item.staff.get_full_name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ item.staff.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if item.staff.is_mission_admin %}Mission Admin{% endif %}
+                                {% if item.staff.is_area_executive %}Area Executive{% endif %}
+                                {% if item.staff.is_district_executive %}District Executive{% endif %}
+                                {% if item.staff.is_pastor %}Pastor{% endif %}
+                                {% if item.staff.is_staff %}Staff{% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if can_edit %}
+                            <select name="staff_status_{{ item.staff.id }}" 
+                                    class="attendance-status-select px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                    data-staff-id="{{ item.staff.id }}">
+                                <option value="present" {% if item.status == 'present' %}selected{% endif %}>
+                                    Present
+                                </option>
+                                <option value="absent" {% if item.status == 'absent' %}selected{% endif %}>
+                                    Absent
+                                </option>
+                                <option value="excused" {% if item.status == 'excused' %}selected{% endif %}>
+                                    Excused
+                                </option>
+                            </select>
+                            {% else %}
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if item.status == 'present' %}bg-green-100 text-green-800{% endif %}
+                                {% if item.status == 'absent' %}bg-red-100 text-red-800{% endif %}
+                                {% if item.status == 'excused' %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ item.status|title }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if can_edit %}
+                            <input type="text" name="staff_notes_{{ item.staff.id }}" 
+                                   value="{{ item.notes }}"
+                                   placeholder="Add notes..."
+                                   class="w-full px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                            {% else %}
+                            <span class="text-sm text-gray-600">{{ item.notes|default:"-" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Attendance Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-gray-900">{{ attendance.total_staff }}</div>
+                <div class="text-sm text-gray-600">Total Staff</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">{{ attendance.present_count }}</div>
+                <div class="text-sm text-gray-600">Present</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-600">{{ attendance.absent_count }}</div>
+                <div class="text-sm text-gray-600">Absent</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">
+                    {% if attendance.total_staff > 0 %}
+                        {% widthratio attendance.present_count attendance.total_staff 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
+                <div class="text-sm text-gray-600">Attendance Rate</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('attendanceForm');
+    const titleInput = document.getElementById('meetingTitle');
+    const markAllCheckbox = document.getElementById('markAllPresent');
+    
+    // Mark all as present functionality
+    markAllCheckbox.addEventListener('change', function() {
+        const statusSelects = document.querySelectorAll('.attendance-status-select');
+        statusSelects.forEach(function(select) {
+            if (markAllCheckbox.checked) {
+                select.value = 'present';
+            } else {
+                select.value = 'absent';
+            }
+        });
+    });
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Collect all staff attendance data
+        const staffData = [];
+        const statusSelects = document.querySelectorAll('.attendance-status-select');
+        
+        statusSelects.forEach(function(select) {
+            const staffId = select.dataset.staffId;
+            const status = select.value;
+            const notesInput = document.querySelector(`input[name="staff_notes_${staffId}"]`);
+            const notes = notesInput ? notesInput.value : '';
+            
+            staffData.push(`${staffId}|${status}|${notes}`);
+        });
+        
+        // Create hidden input for staff data
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'staff_attendance';
+        hiddenInput.value = staffData;
+        form.appendChild(hiddenInput);
+        
+        // Submit form via AJAX
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'An error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving attendance');
+        });
+    });
+});
+</script>
+{% endblock %}

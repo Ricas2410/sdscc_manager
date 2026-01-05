@@ -47,6 +47,28 @@ def announcement_list(request):
                 
         # Remove duplicates and order by publish date
         announcements = announcements.distinct().order_by('-publish_date')
+    elif user.is_area_executive and user.managed_area:
+        # Area executives see:
+        # 1. Mission-wide announcements
+        # 2. Area announcements for their area
+        # 3. District announcements for districts in their area
+        # 4. Branch announcements for branches in their area
+        announcements = announcements.filter(
+            Q(scope='mission') |
+            Q(scope='area', area=user.managed_area) |
+            Q(scope='district', district__area=user.managed_area) |
+            Q(scope='branch', branch__district__area=user.managed_area)
+        ).distinct().order_by('-publish_date')
+    elif user.is_district_executive and user.managed_district:
+        # District executives see:
+        # 1. Mission-wide announcements
+        # 2. District announcements for their district
+        # 3. Branch announcements for branches in their district
+        announcements = announcements.filter(
+            Q(scope='mission') |
+            Q(scope='district', district=user.managed_district) |
+            Q(scope='branch', branch__district=user.managed_district)
+        ).distinct().order_by('-publish_date')
     
     return render(request, 'announcements/announcement_list.html', {'announcements': announcements})
 
@@ -93,12 +115,14 @@ def announcement_add(request):
                 
         priority = request.POST.get('priority', 'normal')
         branch_id = request.POST.get('branch')
+        district_id = request.POST.get('district')
+        area_id = request.POST.get('area')
         
         # Handle image upload
         image = request.FILES.get('image')
         
         try:
-            # If scope is branch, ensure branch is set
+            # Set target based on scope
             if scope == 'branch' and not branch_id and request.user.branch:
                 branch_id = str(request.user.branch.id)
                 
@@ -110,6 +134,8 @@ def announcement_add(request):
                 expiry_date=expiry_date if expiry_date else None,
                 priority=priority,
                 branch_id=branch_id if branch_id else None,
+                district_id=district_id if district_id else None,
+                area_id=area_id if area_id else None,
                 image=image,
                 created_by=request.user,
                 is_published=True
@@ -119,14 +145,28 @@ def announcement_add(request):
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
     
-    # Determine branches based on user role
+    # Determine branches, districts, and areas based on user role
     branches = Branch.objects.filter(is_active=True)
+    districts = District.objects.filter(is_active=True)
+    areas = Area.objects.filter(is_active=True)
+    
     if request.user.is_branch_executive and request.user.branch:
         branches = branches.filter(pk=request.user.branch_id)
+        districts = District.objects.none()
+        areas = Area.objects.none()
+    elif request.user.is_district_executive and request.user.managed_district:
+        branches = branches.filter(district=request.user.managed_district)
+        districts = districts.filter(pk=request.user.managed_district.pk)
+        areas = Area.objects.none()
+    elif request.user.is_area_executive and request.user.managed_area:
+        branches = branches.filter(district__area=request.user.managed_area)
+        districts = districts.filter(area=request.user.managed_area)
+        areas = areas.filter(pk=request.user.managed_area.pk)
     
     context = {
         'branches': branches,
-        'areas': Area.objects.filter(is_active=True),
+        'districts': districts,
+        'areas': areas,
         'today': date.today().isoformat(),
         'is_branch_admin': request.user.is_branch_executive and not request.user.is_mission_admin,
     }
@@ -179,6 +219,8 @@ def event_add(request):
         location = request.POST.get('location', '')
         scope = request.POST.get('scope', 'branch')
         branch_id = request.POST.get('branch')
+        district_id = request.POST.get('district')
+        area_id = request.POST.get('area')
         
         try:
             # Convert date and time strings to datetime objects
@@ -194,12 +236,14 @@ def event_add(request):
                 end_time=end_time,
                 location=location,
                 scope=scope,
-                branch_id=branch_id if branch_id else None,
+                branch_id=branch_id if scope == 'branch' and branch_id else None,
+                district_id=district_id if scope == 'district' and district_id else None,
+                area_id=area_id if scope == 'area' and area_id else None,
                 created_by=request.user,
                 is_published=True
             )
             messages.success(request, f'Event "{title}" created successfully.')
-            return redirect('announcements:event_list')
+            return redirect('announcements:events')
         except Exception as e:
             messages.error(request, f'Error creating event: {str(e)}')
     
@@ -211,6 +255,7 @@ def event_add(request):
     context = {
         'branches': branches,
         'areas': Area.objects.filter(is_active=True),
+        'districts': District.objects.filter(is_active=True),
         'today': timezone.now().strftime('%Y-%m-%d'),
         'now': timezone.now().strftime('%H:%M'),
         'is_branch_admin': request.user.is_branch_executive and not request.user.is_mission_admin,
@@ -236,7 +281,7 @@ def event_edit(request, event_id):
     if not (request.user.is_mission_admin or 
             (request.user == event.created_by and request.user.role != 'member')):
         messages.error(request, 'Access denied.')
-        return redirect('announcements:event_list')
+        return redirect('announcements:events')
     
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -262,7 +307,7 @@ def event_edit(request, event_id):
             event.save()
             
             messages.success(request, f'Event "{title}" updated successfully.')
-            return redirect('announcements:event_list')
+            return redirect('announcements:events')
         except Exception as e:
             messages.error(request, f'Error updating event: {str(e)}')
     
@@ -294,16 +339,16 @@ def event_delete(request, event_id):
     if not (request.user.is_mission_admin or 
             (request.user == event.created_by and request.user.role != 'member')):
         messages.error(request, 'Access denied.')
-        return redirect('announcements:event_list')
+        return redirect('announcements:events')
     
     if request.method == 'POST':
         title = event.title
         event.delete()
         messages.success(request, f'Event "{title}" deleted successfully.')
-        return redirect('announcements:event_list')
+        return redirect('announcements:events')
     
     # If GET request, redirect to list page (delete should only happen via POST)
-    return redirect('announcements:event_list')
+    return redirect('announcements:events')
 
 
 @login_required
@@ -320,8 +365,6 @@ def announcement_edit(request, announcement_id):
         return redirect('announcements:detail', announcement_id=announcement_id)
     
     if request.method == 'POST':
-        from django.utils import timezone
-        
         title = request.POST.get('title')
         content = request.POST.get('content', '')
         scope = request.POST.get('scope', 'branch')

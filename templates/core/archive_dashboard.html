@@ -1,178 +1,116 @@
 {% extends 'base.html' %}
 
-{% block title %}Archive Dashboard{% endblock %}
+{% block title %}Historical Archives - Date-Based Summaries{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Archive Dashboard</h1>
-            <p class="text-gray-500">Historical data and reports by fiscal year</p>
+            <h1 class="text-2xl font-bold text-gray-900">Historical Archives</h1>
+            <p class="text-gray-500">Date-based historical summaries and reports</p>
         </div>
+        <!-- Year creation disabled - system uses continuous date-based reporting -->
+        {% comment %}
         {% if perms.core.manage_archives %}
         <a href="{% url 'core:create_fiscal_year' %}" class="btn-primary">
             <span class="material-icons-outlined text-sm mr-2 align-middle">add_circle</span>
             Create Fiscal Year
         </a>
         {% endif %}
+        {% endcomment %}
     </div>
 
-    <!-- Active Fiscal Year -->
-    {% if active_year %}
-    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
-        <div class="flex items-center justify-between">
+    <!-- Info Banner -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+            <span class="material-icons-outlined text-blue-600 mt-0.5">info</span>
             <div>
-                <h2 class="text-xl font-bold mb-2">Current Fiscal Year</h2>
-                <p class="text-blue-100 text-lg">{{ active_year }}</p>
-                <p class="text-blue-100 text-sm">{{ active_year.start_date|date:"M d, Y" }} - {{ active_year.end_date|date:"M d, Y" }}</p>
+                <h3 class="font-semibold text-blue-900 mb-1">Date-Based Archive System</h3>
+                <p class="text-blue-700 text-sm">
+                    Archive views now provide date-based historical summaries without year state management. 
+                    All data remains in core tables and is accessible via date filtering.
+                </p>
             </div>
-            <div class="text-right">
-                <div class="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
-                    <p class="text-sm text-blue-100 mb-1">Active Year</p>
-                    <p class="text-3xl font-bold">{{ active_year.year }}</p>
-                </div>
-            </div>
+        </div>
+    </div>
+
+    <!-- Available Years -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Available Years</h2>
+            <p class="text-sm text-gray-500 mt-1">{{ total_years }} years of historical data available</p>
         </div>
         
-        <!-- Active Year Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-            <div class="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                        <span class="material-icons-outlined text-white">payments</span>
-                    </div>
-                    <div>
-                        <p class="text-sm text-blue-100">Total Contributions</p>
-                        <p class="text-xl font-bold">{{ active_stats.total_contributions|currency }}</p>
-                    </div>
+        <div class="p-6">
+            {% if year_summaries %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for year_summary in year_summaries %}
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-bold text-gray-900">{{ year_summary.year }}</h3>
+                                {% if year_summary.has_cached_data %}
+                                    <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Cached</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Contributions:</span>
+                                    <span class="font-medium text-green-600">{{ year_summary.contributions_total|currency }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Expenditures:</span>
+                                    <span class="font-medium text-red-600">{{ year_summary.expenditures_total|currency }}</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="text-gray-600">Net Balance:</span>
+                                    <span class="font-bold {% if year_summary.net_balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                        {{ year_summary.net_balance|currency }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>{{ year_summary.contributions_count }} contributions</span>
+                                    <span>{{ year_summary.expenditures_count }} expenditures</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <a href="{% url 'core:year_detail' year_summary.year %}" 
+                                   class="w-full block text-center bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
-            </div>
-            <div class="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                        <span class="material-icons-outlined text-white">people</span>
-                    </div>
-                    <div>
-                        <p class="text-sm text-blue-100">Total Members</p>
-                        <p class="text-xl font-bold">{{ active_stats.total_members|default:0 }}</p>
-                    </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <span class="material-icons-outlined text-gray-400 text-4xl">folder_open</span>
+                    <p class="text-gray-500 mt-2">No historical data available</p>
                 </div>
-            </div>
-            <div class="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                        <span class="material-icons-outlined text-white">person_add</span>
-                    </div>
-                    <div>
-                        <p class="text-sm text-blue-100">New Members</p>
-                        <p class="text-xl font-bold">{{ active_stats.new_members|default:0 }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                        <span class="material-icons-outlined text-white">event</span>
-                    </div>
-                    <div>
-                        <p class="text-sm text-blue-100">Total Services</p>
-                        <p class="text-xl font-bold">{{ active_stats.total_services|default:0 }}</p>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 
-    <!-- Archived Fiscal Years -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div class="p-6 border-b border-gray-200">
+    <!-- Current Year Summary -->
+    {% if current_year %}
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                        <span class="material-icons-outlined text-amber-600">archive</span>
-                    </div>
-                    <div>
-                        <h2 class="font-semibold text-gray-900">Archived Fiscal Years</h2>
-                        <p class="text-sm text-gray-500">Historical data and reports</p>
-                    </div>
+                <div>
+                    <h2 class="text-xl font-bold mb-2">Current Year</h2>
+                    <p class="text-blue-100 text-lg">{{ current_year }}</p>
+                    <p class="text-blue-100 text-sm">Jan 1, {{ current_year }} - Dec 31, {{ current_year }}</p>
                 </div>
-                <span class="text-sm text-gray-500">{{ archived_years|length }} year{{ archived_years|length|pluralize }}</span>
-            </div>
-        </div>
-        
-        {% if archived_years %}
-        <div class="divide-y divide-gray-200">
-            {% for year in archived_years %}
-            <div class="p-6 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                            {{ year.year|slice:"2:" }}
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-gray-900">{{ year }}</h3>
-                            <p class="text-sm text-gray-500">{{ year.start_date|date:"M d, Y" }} - {{ year.end_date|date:"M d, Y" }}</p>
-                            <p class="text-xs text-gray-400 mt-1">Archived on {{ year.closed_at|date:"M d, Y H:i"|default:"Not yet" }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <p class="text-sm text-gray-500">Archive Date</p>
-                            <p class="text-sm font-medium text-gray-900">{{ year.closed_at|date:"M d, Y"|default:"Not archived" }}</p>
-                        </div>
-                        <a href="{% url 'core:year_detail' year.id %}" class="btn-secondary">
-                            <span class="material-icons-outlined text-sm mr-2 align-middle">visibility</span>
-                            View Details
-                        </a>
+                <div class="text-right">
+                    <div class="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                        <p class="text-sm text-blue-100 mb-1">Active Period</p>
+                        <p class="text-3xl font-bold">{{ current_year }}</p>
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="p-12 text-center">
-            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="material-icons-outlined text-gray-400 text-2xl">archive</span>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No Archived Years</h3>
-            <p class="text-gray-500 mb-4">Historical data will appear here when fiscal years are archived.</p>
-            {% if perms.core.manage_archives %}
-            <a href="{% url 'core:create_fiscal_year' %}" class="btn-primary">
-                <span class="material-icons-outlined text-sm mr-2 align-middle">add_circle</span>
-                Create First Fiscal Year
-            </a>
-            {% endif %}
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Quick Actions -->
-    {% if perms.core.manage_archives %}
-    <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                <span class="material-icons-outlined text-amber-600">info</span>
-            </div>
-            <div>
-                <h3 class="font-medium text-amber-900">Archive Management</h3>
-                <p class="text-sm text-amber-700">Create new fiscal years and archive historical data</p>
-            </div>
-        </div>
-        <div class="flex flex-wrap gap-3">
-            <a href="{% url 'core:create_fiscal_year' %}" class="btn-amber">
-                <span class="material-icons-outlined text-sm mr-2 align-middle">add_circle</span>
-                New Fiscal Year
-            </a>
-            {% if active_year %}
-            <a href="{% url 'core:archive_fiscal_year' active_year.id %}" class="btn-outline-amber">
-                <span class="material-icons-outlined text-sm mr-2 align-middle">archive</span>
-                Archive Current Year
-            </a>
-            {% endif %}
-        </div>
-    </div>
     {% endif %}
+
 </div>
 {% endblock %}

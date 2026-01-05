@@ -63,61 +63,87 @@
     
     <!-- Filters -->
     <div class="card">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <div class="form-group">
-                <label class="form-label">Month</label>
-                <select name="month" class="form-input form-select">
-                    <option value="">All Months</option>
-                    {% for month_num, month_name in months %}
-                    <option value="{{ month_num }}" {% if selected_month == month_num %}selected{% endif %}>
-                        {{ month_name }}
-                    </option>
-                    {% endfor %}
-                </select>
+        <form method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div class="form-group">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-input form-select">
+                        <option value="">All Months</option>
+                        {% for month_num, month_name in months %}
+                        <option value="{{ month_num }}" {% if selected_month == month_num %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-input form-select">
+                        <option value="">All Years</option>
+                        {% for year in years %}
+                        <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>
+                            {{ year }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group relative sm:col-span-2 lg:col-span-1 xl:col-span-1">
+                    <label class="form-label">Branch Search</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="branchSearch" 
+                               placeholder="Search branches..." 
+                               class="form-input pr-10"
+                               autocomplete="off">
+                        <span class="material-icons-outlined absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">
+                            search
+                        </span>
+                    </div>
+                    <!-- Hidden search results container -->
+                    <div id="branchSearchResults" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Branch</label>
+                    <select name="branch" id="branchSelect" class="form-input form-select">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" 
+                                data-name="{{ branch.name|lower }}" 
+                                data-code="{{ branch.code|lower }}"
+                                {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                            {{ branch.name }} ({{ branch.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <!-- Selected branch display -->
+                    <div id="selectedBranchDisplay" class="mt-2 text-sm text-gray-600 hidden">
+                        Selected: <span id="selectedBranchName" class="font-medium"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-input form-select">
+                        <option value="">All Status</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Year</label>
-                <select name="year" class="form-input form-select">
-                    <option value="">All Years</option>
-                    {% for year in years %}
-                    <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>
-                        {{ year }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Branch</label>
-                <select name="branch" class="form-input form-select">
-                    <option value="">All Branches</option>
-                    {% for branch in branches %}
-                    <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
-                        {{ branch.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Status</label>
-                <select name="status" class="form-input form-select">
-                    <option value="">All Status</option>
-                    {% for value, label in status_choices %}
-                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
-                        {{ label }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="flex items-end gap-2">
-                <button type="submit" class="btn btn-primary flex-1 inline-flex items-center justify-center">
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+                <button type="submit" class="btn btn-primary px-6 py-2 inline-flex items-center justify-center min-w-[120px] sm:flex-1 sm:max-w-xs">
                     <span class="material-icons-outlined mr-1 text-lg">filter_list</span>
                     Filter
                 </button>
-                <a href="{% url 'reports:monthly_reports' %}" class="btn btn-secondary">Clear</a>
+                <a href="{% url 'reports:monthly_reports' %}" class="btn btn-secondary px-6 py-2 min-w-[80px] sm:flex-1 sm:max-w-xs">Clear</a>
             </div>
         </form>
     </div>
@@ -210,4 +236,171 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const branchSearch = document.getElementById('branchSearch');
+    const branchSelect = document.getElementById('branchSelect');
+    const searchResults = document.getElementById('branchSearchResults');
+    const selectedDisplay = document.getElementById('selectedBranchDisplay');
+    const selectedName = document.getElementById('selectedBranchName');
+    
+    // Store all branch options for searching
+    const branches = [];
+    const options = branchSelect.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value) {
+            branches.push({
+                value: option.value,
+                name: option.textContent.trim(),
+                nameLower: option.dataset.name || option.textContent.toLowerCase(),
+                codeLower: option.dataset.code || ''
+            });
+        }
+    });
+    
+    // Handle search input
+    branchSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm.length === 0) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+        
+        // Filter branches based on search term
+        const filteredBranches = branches.filter(branch => 
+            branch.nameLower.includes(searchTerm) || 
+            branch.codeLower.includes(searchTerm)
+        );
+        
+        // Display search results
+        if (filteredBranches.length > 0) {
+            let html = '';
+            filteredBranches.forEach(branch => {
+                html += `
+                    <div class="branch-search-result px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                         data-value="${branch.value}"
+                         data-name="${branch.name}">
+                        <div class="font-medium text-gray-900">${branch.name}</div>
+                        <div class="text-sm text-gray-500">Code: ${branch.codeUpper || branch.value}</div>
+                    </div>
+                `;
+            });
+            searchResults.innerHTML = html;
+            searchResults.classList.remove('hidden');
+        } else {
+            searchResults.innerHTML = `
+                <div class="px-4 py-3 text-gray-500 text-center">
+                    No branches found matching "${branchSearch.value}"
+                </div>
+            `;
+            searchResults.classList.remove('hidden');
+        }
+    });
+    
+    // Handle search result clicks
+    searchResults.addEventListener('click', function(e) {
+        const result = e.target.closest('.branch-search-result');
+        if (result) {
+            const value = result.dataset.value;
+            const name = result.dataset.name;
+            
+            // Update the select dropdown
+            branchSelect.value = value;
+            
+            // Update the search input
+            branchSearch.value = name;
+            
+            // Show selected branch display
+            if (value) {
+                selectedName.textContent = name;
+                selectedDisplay.classList.remove('hidden');
+            } else {
+                selectedDisplay.classList.add('hidden');
+            }
+            
+            // Hide search results
+            searchResults.classList.add('hidden');
+            
+            // Optionally submit the form
+            // branchSelect.form.submit();
+        }
+    });
+    
+    // Handle branch select change
+    branchSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const name = selectedOption.textContent.trim();
+        
+        if (this.value) {
+            branchSearch.value = name;
+            selectedName.textContent = name;
+            selectedDisplay.classList.remove('hidden');
+        } else {
+            branchSearch.value = '';
+            selectedDisplay.classList.add('hidden');
+        }
+        
+        searchResults.classList.add('hidden');
+    });
+    
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!branchSearch.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.add('hidden');
+        }
+    });
+    
+    // Handle keyboard navigation
+    branchSearch.addEventListener('keydown', function(e) {
+        const results = searchResults.querySelectorAll('.branch-search-result');
+        let currentIndex = -1;
+        
+        // Find current selected index
+        results.forEach((result, index) => {
+            if (result.classList.contains('bg-blue-50')) {
+                currentIndex = index;
+            }
+        });
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentIndex = Math.min(currentIndex + 1, results.length - 1);
+            updateSelection(results, currentIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentIndex = Math.max(currentIndex - 1, 0);
+            updateSelection(results, currentIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentIndex >= 0 && results[currentIndex]) {
+                results[currentIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            searchResults.classList.add('hidden');
+        }
+    });
+    
+    function updateSelection(results, index) {
+        results.forEach((result, i) => {
+            if (i === index) {
+                result.classList.add('bg-blue-50', 'border-blue-200');
+                result.scrollIntoView({ block: 'nearest' });
+            } else {
+                result.classList.remove('bg-blue-50', 'border-blue-200');
+            }
+        });
+    }
+    
+    // Initialize selected display if branch is pre-selected
+    if (branchSelect.value) {
+        const selectedOption = branchSelect.options[branchSelect.selectedIndex];
+        selectedName.textContent = selectedOption.textContent.trim();
+        selectedDisplay.classList.remove('hidden');
+        branchSearch.value = selectedOption.textContent.trim();
+    }
+});
+</script>
+
 {% endblock %}

@@ -1,0 +1,17 @@
+{% load currency_filters %}
+{% load financial_terms %}
+
+<div class="financial-card financial-card-{{ type }}">
+    <div class="financial-card-title">
+        {{ title }}
+        {% if help_text %}
+            {% financial_help_icon help_text %}
+        {% endif %}
+    </div>
+    <div class="financial-card-amount {{ amount|financial_amount_class }}">
+        {{ amount|currency }}
+    </div>
+    {% if description %}
+        <div class="financial-card-description">{{ description }}</div>
+    {% endif %}
+</div>

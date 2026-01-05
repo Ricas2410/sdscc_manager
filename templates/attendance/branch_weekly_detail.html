@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load core_tags %}
+
+{% block title %}{{ branch.name }} - Weekly Attendance Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl p-6 shadow-xl text-gray-900 border border-gray-100">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-emerald-700 text-sm font-semibold">Branch Details</p>
+                <h1 class="text-2xl font-bold text-gray-900">{{ branch.name }}</h1>
+                <p class="text-emerald-600 mt-1">
+                    Weekly attendance for {{ week_start|date:"M d, Y" }} - {{ week_end|date:"M d, Y" }}
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ branch.district.name }} District / {{ branch.district.area.name }} Area
+                </p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <a href="{% url 'attendance:weekly_report' %}" class="btn btn-secondary">
+                    <span class="material-icons-outlined mr-2">arrow_back</span>
+                    Back to Weekly Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="rounded-2xl shadow-lg overflow-hidden bg-slate-900 text-slate-100 border border-white/10">
+        <div class="px-6 py-4 border-b border-white/10 bg-slate-900/90">
+            <h2 class="text-lg font-semibold text-emerald-300">Performance Summary</h2>
+        </div>
+        <div class="p-6 bg-slate-900/90">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-200">{{ total_attendance|intcomma }}</div>
+                    <div class="text-sm text-slate-200">Total Attendance</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-200">{{ attendance_rate|floatformat:1 }}%</div>
+                    <div class="text-sm text-slate-200">Attendance Rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-200">{{ avg_per_service|floatformat:1 }}</div>
+                    <div class="text-sm text-slate-200">Avg Per Service</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-200">{{ total_visitors|intcomma }}</div>
+                    <div class="text-sm text-slate-200">Total Visitors</div>
+                </div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-blue-100 font-medium">Total Services</div>
+                    <div class="text-2xl font-bold text-white">{{ total_sessions }}</div>
+                </div>
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-green-100 font-medium">Branch Members</div>
+                    <div class="text-2xl font-bold text-white">{{ branch_member_count|intcomma }}</div>
+                </div>
+                <div class="bg-slate-800 border border-white/10 rounded-lg p-4">
+                    <div class="text-sm text-purple-100 font-medium">Member Participation</div>
+                    <div class="text-2xl font-bold text-white">
+                        {{ member_stats|length|intcomma }} / {{ branch_member_count|intcomma }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Service Sessions</h2>
+            <p class="text-sm text-gray-500">{{ total_sessions }} services this week</p>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for session in sessions %}
+                <div class="border rounded-lg p-4 {% if session.date == week_start|date:'Y-m-d' %}border-blue-200 bg-blue-50{% else %}border-gray-200{% endif %}">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-semibold text-gray-900">{{ session.service_type.name }}</h4>
+                        <span class="text-xs text-gray-500">{{ session.date|date:"M d" }}</span>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Attendance:</span>
+                            <span class="font-medium">{{ session.total_attendance|intcomma }}</span>
+                        </div>
+                        {% if session.preacher %}
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Preacher:</span>
+                            <span class="font-medium">{{ session.preacher.get_full_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if session.visitors_count > 0 %}
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Visitors:</span>
+                            <span class="font-medium text-orange-600">{{ session.visitors_count|intcomma }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    <span class="material-icons-outlined text-4xl text-gray-300">event_busy</span>
+                    <p class="mt-2">No services recorded for this week.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Member Attendance -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-gray-900">Individual Member Attendance</h2>
+            <p class="text-sm text-gray-500">{{ member_stats|length }} members attended services this week</p>
+        </div>
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Member ID</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Excused</th>
+                            <th>Late</th>
+                            <th>Total</th>
+                            <th>Attendance Rate</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in member_stats %}
+                        <tr class="{% if stat.attendance_rate < 50 %}bg-red-50{% elif stat.attendance_rate >= 80 %}bg-green-50{% endif %}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-8 w-8">
+                                        <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                            <span class="text-primary-600 font-bold text-xs">{{ stat.member.first_name|slice:":1" }}{{ stat.member.last_name|slice:":1" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">{{ stat.member.get_full_name }}</div>
+                                        <div class="text-sm text-gray-500">{{ stat.member.phone|default:"No phone" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                                {{ stat.member.member_id }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                {{ stat.present }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                                {{ stat.absent }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-medium">
+                                {{ stat.excused }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-orange-600 font-medium">
+                                {{ stat.late }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                {{ stat.total }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    {% if stat.attendance_rate >= 80 %}bg-green-100 text-green-800
+                                    {% elif stat.attendance_rate >= 60 %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ stat.attendance_rate|floatformat:1 }}%
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if stat.attendance_rate >= 80 %}
+                                <span class="badge badge-success">Excellent</span>
+                                {% elif stat.attendance_rate >= 60 %}
+                                <span class="badge badge-warning">Good</span>
+                                {% else %}
+                                <span class="badge badge-danger">Poor</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="px-6 py-12 text-center text-sm text-gray-500">
+                                <span class="material-icons-outlined text-4xl text-gray-300">people</span>
+                                <p class="mt-2">No member attendance records found for this week.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

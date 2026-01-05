@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+{% load financial_terms %}
+
+{% block title %}Opening Balance Details{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Opening Balance Details</h1>
+            <p class="text-gray-600">Pre-system funds for {{ balance.level|title }} level</p>
+        </div>
+        
+        <div class="mt-4 md:mt-0 flex space-x-2">
+            <a href="{% url 'contributions:opening_balances' %}" class="btn-secondary">
+                <span class="material-icons-outlined text-lg mr-1">arrow_back</span>
+                Back to List
+            </a>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Level:</span>
+                        <span class="font-medium text-gray-900">{{ balance.get_level_display }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Entity:</span>
+                        <span class="font-medium text-gray-900">{% if balance.branch %}{{ balance.branch.name }}{% else %}Mission{% endif %}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Contribution Type:</span>
+                        <span class="font-medium text-gray-900">{{ balance.contribution_type.name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Amount:</span>
+                        <span class="font-medium text-gray-900">{{ balance.amount|currency }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Date:</span>
+                        <span class="font-medium text-gray-900">{{ balance.date|date:"F j, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Status Information</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Status:</span>
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if balance.status == 'approved' %}bg-green-100 text-green-800
+                            {% elif balance.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ balance.get_status_display }}
+                        </span>
+                    </div>
+                    {% if balance.approved_by %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Approved By:</span>
+                        <span class="font-medium text-gray-900">{{ balance.approved_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Approved At:</span>
+                        <span class="font-medium text-gray-900">{{ balance.approved_at|date:"F j, Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if balance.rejection_reason %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Rejection Reason:</span>
+                        <span class="font-medium text-red-600">{{ balance.rejection_reason }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Created By:</span>
+                        <span class="font-medium text-gray-900">{{ balance.created_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Created At:</span>
+                        <span class="font-medium text-gray-900">{{ balance.created_at|date:"F j, Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Description</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-gray-700">{{ balance.description }}</p>
+            </div>
+        </div>
+        
+        {% if balance.documentation %}
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Supporting Documentation</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <a href="{{ balance.documentation.url }}" class="text-blue-600 hover:text-blue-800 flex items-center" target="_blank">
+                    <span class="material-icons-outlined text-lg mr-1">description</span>
+                    View Documentation
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.is_mission_admin and balance.status == 'pending' %}
+        <div class="mt-8 flex space-x-4">
+            <a href="{% url 'contributions:opening_balance_approve' balance.id %}" class="btn-success">
+                <span class="material-icons-outlined text-lg mr-1">check_circle</span>
+                Approve
+            </a>
+            <a href="{% url 'contributions:opening_balance_reject' balance.id %}" class="btn-danger">
+                <span class="material-icons-outlined text-lg mr-1">cancel</span>
+                Reject
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

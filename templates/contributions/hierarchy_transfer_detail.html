@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+{% load financial_terms %}
+
+{% block title %}Hierarchy Transfer Details{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Hierarchy Transfer Details</h1>
+            <p class="text-gray-600">Transfer between hierarchy levels</p>
+        </div>
+        
+        <div class="mt-4 md:mt-0 flex space-x-2">
+            <a href="{% url 'contributions:hierarchy_transfers' %}" class="btn-secondary">
+                <span class="material-icons-outlined text-lg mr-1">arrow_back</span>
+                Back to List
+            </a>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Transfer Information</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Amount:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.amount|currency }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Date:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.date|date:"F j, Y" }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Purpose:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.get_purpose_display }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Reference:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.reference|default:"-" }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Status:</span>
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if transfer.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif transfer.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ transfer.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Source & Destination</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Source Level:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.get_source_level_display }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Source Entity:</span>
+                        <span class="font-medium text-gray-900">
+                            {% if transfer.source_area %}{{ transfer.source_area.name }}
+                            {% elif transfer.source_district %}{{ transfer.source_district.name }}
+                            {% elif transfer.source_branch %}{{ transfer.source_branch.name }}
+                            {% else %}Mission{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Destination Level:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.get_destination_level_display }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Destination Entity:</span>
+                        <span class="font-medium text-gray-900">
+                            {% if transfer.destination_area %}{{ transfer.destination_area.name }}
+                            {% elif transfer.destination_district %}{{ transfer.destination_district.name }}
+                            {% elif transfer.destination_branch %}{{ transfer.destination_branch.name }}
+                            {% else %}Mission{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Description</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-gray-700">{{ transfer.description|default:"No description provided." }}</p>
+            </div>
+        </div>
+        
+        {% if transfer.documentation %}
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Supporting Documentation</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <a href="{{ transfer.documentation.url }}" class="text-blue-600 hover:text-blue-800 flex items-center" target="_blank">
+                    <span class="material-icons-outlined text-lg mr-1">description</span>
+                    View Documentation
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Audit Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Created By:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.created_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Created At:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.created_at|date:"F j, Y H:i" }}</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    {% if transfer.approved_by %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Approved By:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.approved_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Approved At:</span>
+                        <span class="font-medium text-gray-900">{{ transfer.approved_at|date:"F j, Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if user.is_mission_admin and transfer.status == 'pending' %}
+        <div class="mt-8 flex space-x-4">
+            <a href="{% url 'contributions:hierarchy_transfer_approve' transfer.id %}" class="btn-success">
+                <span class="material-icons-outlined text-lg mr-1">check_circle</span>
+                Approve
+            </a>
+            <a href="{% url 'contributions:hierarchy_transfer_cancel' transfer.id %}" class="btn-danger">
+                <span class="material-icons-outlined text-lg mr-1">cancel</span>
+                Cancel
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

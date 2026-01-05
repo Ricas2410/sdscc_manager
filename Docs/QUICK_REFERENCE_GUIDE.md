@@ -120,17 +120,17 @@
 ## Contact Information
 
 ### Support
-- **IT Helpdesk:** support@sdscc.org
+- **IT Helpdesk:** support@7dscc.org
 - **Phone Support:** +233-XXX-XXXX
 - **Office Hours:** 8 AM - 6 PM GMT
 
 ### Emergency
 - **Critical Issues:** +233-XXX-XXXX
 - **After Hours:** +233-XXX-XXXX
-- **System Down:** emergency@sdscc.org
+- **System Down:** emergency@7dscc.org
 
 ### Administration
-- **Mission Office:** mission@sdscc.org
+- **Mission Office:** mission@7dscc.org
 - **Area Offices:** Check area directory
 - **Branch Offices:** Check branch directory
 
@@ -182,15 +182,15 @@
 ### Download
 - **iOS:** App Store
 - **Android:** Google Play Store
-- **Direct:** sdscc.org/mobile
+- **Direct:** 7dscc.org/mobile
 
 ## Training Resources
 
 ### Online
-- **Help Center:** help.sdscc.org
+- **Help Center:** help.7dscc.org
 - **Video Tutorials:** YouTube channel
-- **Documentation:** docs.sdscc.org
-- **FAQ:** faq.sdscc.org
+- **Documentation:** docs.7dscc.org
+- **FAQ:** faq.7dscc.org
 
 ### In-Person
 - **New User Training:** Monthly
@@ -207,7 +207,7 @@
 - **Notifications:** Email alerts
 
 ### Feature Requests
-- **Submit:** features@sdscc.org
+- **Submit:** features@7dscc.org
 - **Review:** Monthly committee
 - **Priority:** Based on needs
 - **Implementation:** As scheduled

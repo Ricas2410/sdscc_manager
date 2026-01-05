@@ -34,8 +34,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'Month {month}/{year} is already closed'))
             return
 
-        # Get current fiscal year
-        fiscal_year = FiscalYear.get_current()
+        # DEPRECATED: Year-as-state architecture - Removed fiscal_year usage
+        # Monthly closing now uses date filtering only
         
         # Verify all branches have closed the month
         branches = Branch.objects.filter(is_active=True)
@@ -43,7 +43,7 @@ class Command(BaseCommand):
         
         for branch in branches:
             close_record = MonthlyClose.objects.filter(
-                fiscal_year=fiscal_year,
+                # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                 branch=branch,
                 month=month,
                 year=year,

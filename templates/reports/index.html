@@ -36,6 +36,18 @@
                         <span class="text-sm text-gray-700">Expenditure Report</span>
                         <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
                     </a>
+                    {% if user.is_mission_admin or user.is_auditor or user.is_area_executive %}
+                    <a href="{% url 'reports:area_financial_reports' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Area Financial Reports</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    {% endif %}
+                    {% if user.is_mission_admin or user.is_auditor or user.is_area_executive or user.is_district_executive %}
+                    <a href="{% url 'reports:district_financial_reports' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">District Financial Reports</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -86,6 +98,24 @@
                         <span class="text-sm text-gray-700">All Members</span>
                         <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
                     </a>
+                    {% if user.is_mission_admin %}
+                    <a href="{% url 'contributions:opening_balances' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Opening Balances</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    {% endif %}
+                    {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive %}
+                    <a href="{% url 'contributions:hierarchy_transfers' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Hierarchy Transfers</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    {% endif %}
+                    {% if user.is_mission_admin or user.is_area_executive or user.is_district_executive or user.is_branch_executive %}
+                    <a href="{% url 'contributions:hierarchy_remittances' %}" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                        <span class="text-sm text-gray-700">Hierarchy Remittances</span>
+                        <span class="material-icons-outlined text-gray-400 group-hover:text-primary-600">arrow_forward</span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

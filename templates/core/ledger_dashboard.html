@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Financial Ledger Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Financial Ledger Dashboard</h1>
+            <p class="text-gray-600">Single source of financial truth - Custody vs Ownership</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'core:ledger_audit_trail' %}" class="btn-secondary">
+                <span class="material-icons-outlined text-lg mr-1">history</span>
+                Audit Trail
+            </a>
+            <a href="{% url 'core:outstanding_remittances' %}" class="btn-primary">
+                <span class="material-icons-outlined text-lg mr-1">pending_actions</span>
+                Outstanding Remittances
+            </a>
+        </div>
+    </div>
+
+    <!-- Mission Financial Position Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Cash (Spendable) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Mission Cash</p>
+                    <p class="text-xs text-gray-400 mt-1">Money physically received</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-green-600">account_balance_wallet</span>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-green-600 mt-4">GH₵{{ mission_cash|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-green-600 mt-2">
+                <span class="material-icons-outlined text-sm align-middle">check_circle</span>
+                Available to spend
+            </p>
+        </div>
+
+        <!-- Receivables (Not Spendable) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Mission Receivables</p>
+                    <p class="text-xs text-gray-400 mt-1">Money owed by branches</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-amber-600">pending</span>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-amber-600 mt-4">GH₵{{ mission_receivables|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-amber-600 mt-2">
+                <span class="material-icons-outlined text-sm align-middle">warning</span>
+                NOT available to spend
+            </p>
+        </div>
+
+        <!-- Total Position -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Financial Position</p>
+                    <p class="text-xs text-gray-400 mt-1">Cash + Receivables</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span class="material-icons-outlined text-blue-600">account_balance</span>
+                </div>
+            </div>
+            <p class="text-3xl font-bold text-blue-600 mt-4">GH₵{{ mission_total_position|floatformat:2|intcomma }}</p>
+            <p class="text-xs text-gray-500 mt-2">
+                Total ownership value
+            </p>
+        </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ current_month }} {{ current_year }} Summary</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <p class="text-sm text-gray-600">Cash In</p>
+                <p class="text-xl font-bold text-green-600">GH₵{{ monthly_summary.cash_in|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded-lg">
+                <p class="text-sm text-gray-600">Cash Out</p>
+                <p class="text-xl font-bold text-red-600">GH₵{{ monthly_summary.cash_out|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="text-center p-4 bg-amber-50 rounded-lg">
+                <p class="text-sm text-gray-600">New Receivables</p>
+                <p class="text-xl font-bold text-amber-600">GH₵{{ monthly_summary.receivables_added|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-gray-600">Receivables Cleared</p>
+                <p class="text-xl font-bold text-blue-600">GH₵{{ monthly_summary.receivables_cleared|floatformat:2|intcomma }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch Summaries -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">Branch Financial Positions</h2>
+                    <p class="text-sm text-gray-500">Sorted by amount owed to Mission</p>
+                </div>
+                
+                <!-- Hierarchy Filters -->
+                <div class="flex flex-wrap gap-3">
+                    <select id="areaFilter" onchange="filterBranches()" 
+                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Areas</option>
+                        {% for area in areas %}
+                        <option value="{{ area.name }}">{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <select id="districtFilter" onchange="filterBranches()" 
+                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Districts</option>
+                        {% for district in districts %}
+                        <option value="{{ district.name }}">{{ district.name }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <input type="text" id="branchSearch" placeholder="Search branch..." 
+                           onkeyup="filterBranches()"
+                           class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48">
+                    
+                    <button onclick="clearFilters()" 
+                            class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                        <span class="material-icons-outlined text-sm align-middle mr-1">clear</span>
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="branchTable" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Branch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Area / District</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cash Held</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Owed to Mission</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Spendable</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in branch_summaries %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ item.branch.name }}</div>
+                            <div class="text-xs text-gray-500">{{ item.branch.code }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.area }} / {{ item.district }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="text-gray-900 font-medium">GH₵{{ item.cash|floatformat:2|intcomma }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            {% if item.payables > 0 %}
+                            <span class="text-amber-600 font-medium">GH₵{{ item.payables|floatformat:2|intcomma }}</span>
+                            {% else %}
+                            <span class="text-green-600">GH₵0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            {% if item.spendable >= 0 %}
+                            <span class="text-green-600 font-medium">GH₵{{ item.spendable|floatformat:2|intcomma }}</span>
+                            {% else %}
+                            <span class="text-red-600 font-medium">GH₵{{ item.spendable|floatformat:2|intcomma }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <a href="{% url 'core:branch_financial_position' item.branch.id %}" 
+                               class="text-blue-600 hover:text-blue-800 text-sm">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            No branch data available
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Important Notice -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+            <span class="material-icons-outlined text-blue-600 mr-3">info</span>
+            <div>
+                <h3 class="font-medium text-blue-800">Understanding Custody vs Ownership</h3>
+                <ul class="mt-2 text-sm text-blue-700 space-y-1">
+                    <li><strong>Cash:</strong> Money physically received and available to spend</li>
+                    <li><strong>Receivables:</strong> Money owed to Mission but still held by branches - NOT spendable</li>
+                    <li><strong>Payables:</strong> Money held by branches that belongs to Mission</li>
+                    <li><strong>Spendable:</strong> Branch cash minus what they owe to Mission</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterBranches() {
+    const areaFilter = document.getElementById('areaFilter').value.toLowerCase();
+    const districtFilter = document.getElementById('districtFilter').value.toLowerCase();
+    const searchFilter = document.getElementById('branchSearch').value.toLowerCase();
+    
+    const table = document.getElementById('branchTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const branchName = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+        const areaDistrict = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+        
+        const matchesArea = !areaFilter || areaDistrict.includes(areaFilter);
+        const matchesDistrict = !districtFilter || areaDistrict.includes(districtFilter);
+        const matchesSearch = !searchFilter || branchName.includes(searchFilter);
+        
+        if (matchesArea && matchesDistrict && matchesSearch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('areaFilter').value = '';
+    document.getElementById('districtFilter').value = '';
+    document.getElementById('branchSearch').value = '';
+    filterBranches();
+}
+</script>
+{% endblock %}

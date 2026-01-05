@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if prayer %}Edit Prayer Request{% else %}Submit Prayer Request{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Premium Header -->
+    <div class="mb-10 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+            <a href="{% url 'core:prayer_requests' %}" 
+               class="w-12 h-12 flex items-center justify-center bg-white text-gray-400 hover:text-indigo-600 rounded-2xl shadow-sm hover:shadow-md transition-all border border-gray-100">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-4xl font-black text-gray-900 tracking-tight">{% if prayer %}Update Request{% else %}Submit Petition{% endif %}</h1>
+                <p class="text-gray-500 font-medium mt-1">{% if prayer %}Refine your spiritual request for the intercessory team{% else %}Share your heart with the church family and leadership{% endif %}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Strategic Form Container -->
+    <form method="POST" class="space-y-10">
+        {% csrf_token %}
+        
+        <!-- Section: Petition Core -->
+        <div class="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden">
+            <div class="px-10 py-8 border-b border-gray-50 bg-gray-50/30 flex items-center gap-4">
+                <div class="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+                    <span class="material-icons-outlined text-xl">favorite</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight">Petition Details</h2>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Spiritual Request Intelligence</p>
+                </div>
+            </div>
+            
+            <div class="p-10 space-y-10">
+                <div class="group">
+                    <label for="title" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3 ml-1 group-focus-within:text-indigo-600 transition-colors">
+                        Petition Subject <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="title" id="title" required
+                           class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                           placeholder="e.g. Healing for Family, Career Guidance..."
+                           value="{{ prayer.title|default:'' }}">
+                </div>
+                
+                <div class="group">
+                    <label for="description" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3 ml-1 group-focus-within:text-indigo-600 transition-colors">
+                        Detailed Request <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea name="description" id="description" rows="6" required
+                              class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-[2rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300 leading-relaxed"
+                              placeholder="Describe your prayer need in detail. The intercessory team will see this and pray specifically for you...">{{ prayer.description|default:'' }}</textarea>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3 ml-1">Confidentiality level: High (Secured Registry)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Privacy Architecture -->
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-10 py-8 border-b border-gray-50 bg-gray-50/30 flex items-center gap-4">
+                <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+                    <span class="material-icons-outlined text-xl">admin_panel_settings</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight">Visibility Protocol</h2>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Access Control Logic</p>
+                </div>
+            </div>
+            
+            <div class="p-10">
+                <p class="text-sm font-bold text-gray-500 mb-8 leading-relaxed">Select the jurisdiction of intercessors who should have access to this petition once approved by leadership.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for value, label in visibility_choices %}
+                    <label class="relative flex flex-col p-6 bg-gray-50 border border-gray-100 rounded-[2rem] cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-200 transition-all group">
+                        <input type="radio" name="visibility_scope" value="{{ value }}" 
+                               {% if prayer.visibility_scope == value or not prayer and value == 'branch' %}checked{% endif %}
+                               class="sr-only peer">
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-sm text-indigo-600 group-hover:scale-110 transition-transform">
+                                <span class="material-icons-outlined text-xl">
+                                    {% if value == 'branch' %}church{% elif value == 'district' %}hub{% elif value == 'area' %}location_city{% else %}public{% endif %}
+                                </span>
+                            </span>
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-200 bg-white peer-checked:border-indigo-600 peer-checked:bg-indigo-600 transition-all flex items-center justify-center">
+                                <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+                            </div>
+                        </div>
+                        
+                        <span class="text-base font-black text-gray-900 tracking-tight">{{ label }}</span>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                            {% if value == 'branch' %}Local Station Only
+                            {% elif value == 'district' %}Regional District
+                            {% elif value == 'area' %}Area Jurisdiction
+                            {% else %}Global Archive Access
+                            {% endif %}
+                        </p>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Operations -->
+        <div class="bg-gray-900 rounded-[2.5rem] shadow-2xl p-10 text-white relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500"></div>
+            <div class="flex flex-col md:flex-row items-center justify-between gap-10">
+                <div class="flex items-center gap-6">
+                    <div class="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl border border-white/10">
+                        <span class="material-icons-outlined text-white">auto_awesome</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-white tracking-tight">Finalize Petition</h2>
+                        <p class="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] mt-1">Ready for intercession</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <a href="{% url 'core:prayer_requests' %}" class="flex-1 md:flex-none px-8 py-4 text-gray-400 font-black uppercase tracking-widest text-[10px] hover:text-white transition-colors">
+                        Abondon Request
+                    </a>
+                    <button type="submit" class="flex-1 md:flex-none px-12 py-5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-500 transition-all font-black shadow-xl active:scale-95 flex items-center justify-center group">
+                        <span class="material-icons-outlined mr-3 group-hover:rotate-12 transition-transform">{% if prayer %}sync{% else %}send{% endif %}</span>
+                        {% if prayer %}Update Registry{% else %}Transmit Petition{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+    
+    <!-- Intelligence Brief -->
+    <div class="mt-10 p-8 bg-indigo-50/50 rounded-[2rem] border border-indigo-100">
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+                <span class="material-icons-outlined text-xl">auto_stories</span>
+            </div>
+            <h3 class="text-sm font-black text-indigo-900 uppercase tracking-widest">intercessory Protocol:</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex items-start gap-3">
+                <span class="material-icons-outlined text-indigo-400 text-sm mt-0.5">verified</span>
+                <p class="text-xs font-bold text-indigo-700 leading-relaxed">Your petition is encrypted and will be reviewed by the station administrator before being released to the team.</p>
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="material-icons-outlined text-indigo-400 text-sm mt-0.5">verified</span>
+                <p class="text-xs font-bold text-indigo-700 leading-relaxed">You will be notified once intercessors begin standing in the gap for your request.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

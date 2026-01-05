@@ -8,6 +8,14 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 ### 1. Mission Administrator
 **Highest Level - Full System Access**
 
+The **Mission Admin** (also referred to as **System Administrator**, **National Admin**, or **HQ Admin**) is the **highest authority** in the SDSCC management system.
+
+They have **unrestricted, system-wide access** across all modules including contributions, expenditures, remittances, payroll, branch setup, auditing, announcements, settings, and user management.
+
+Mission Admins ensure **financial accountability**, **system configuration**, **pastoral oversight**, and **church-wide operations** run seamlessly.
+
+This role includes **both technical system administration and executive mission leadership controls**.
+
 #### Permissions
 - Manage all branches, areas, districts
 - Create and manage all user accounts
@@ -15,6 +23,34 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 - Override month closures
 - System configuration
 - Global reports and analytics
+- Full READ + WRITE + CONFIGURATION access across all features
+
+| Module                                    | Mission Admin Permissions |
+| ----------------------------------------- | ------------------------- |
+| Contributor System (General + Individual) | Full                      |
+| Contribution Types (Create/Close/Edit)    | Full                      |
+| Expenditures (Mission + All Branches)     | Full                      |
+| Utilities & Welfare                       | Full                      |
+| Branch Local Balances                     | Full                      |
+| Mission Funds                             | Full                      |
+| Member Records                            | Full                      |
+| Groups / Departments                      | Full                      |
+| Sermon Management                         | Full                      |
+| Attendance (All levels)                   | View Only (edit optional) |
+| Pastor Commission Configuration           | Full                      |
+| Monthly Closing                           | Full                      |
+| Remittances                               | Full                      |
+| Payroll (Mission staff)                   | Full                      |
+| Inventory and Assets                      | Full                      |
+| Announcements (Mission → All levels)      | Full                      |
+| District / Area Executive Management      | Full                      |
+| Branch Admin Management                   | Full                      |
+| User Account + Roles                      | Full                      |
+| Audit Logs                                | Full                      |
+| Settings & System Configuration           | Full                      |
+| PWA / Branding / Logo                     | Full                      |
+| Security (PIN, Password reset)            | Full                      |
+| Reports (All branches, all levels)        | Full                      |
 
 #### Key Features
 - View all branches simultaneously
@@ -22,6 +58,8 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 - Approve any welfare request
 - Access audit logs
 - System-wide notifications
+- Full national overview dashboard with financial summaries, remittance tracking, expenditure monitoring, staff summaries, and alerts
+- System-wide contribution management, monthly closing control, remittance verification, payroll management, announcements, hierarchy management, user management, auditing, and configuration
 
 #### Typical Users
 - General Overseer
@@ -33,18 +71,23 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 ### 2. Area Administrator
 **Regional Level - Multiple Districts**
 
+Area Executives manage finances **only at their assigned level**, with visibility into lower levels but not higher levels.
+
 #### Permissions
 - Manage all districts in area
 - Create district and branch admins
 - View financial data for area
 - Generate area reports
 - Monitor branch performance
+- Edit financials within area
+- View lower levels (districts and branches)
 
 #### Key Features
 - Hierarchical dropdown for district selection
 - Area-wide financial summaries
 - Branch comparison tools
 - District oversight
+- Area → Districts → Branches scope
 
 #### Typical Users
 - Area Overseer
@@ -79,18 +122,50 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 ### 4. Branch Administrator
 **Local Level - Single Branch**
 
+Branch Executives are the **primary operational admins** of the church.
+They handle all **member management, contributions, expenditures, attendance, utilities, welfare, and reporting** for their local branch.
+
 #### Permissions
 - Manage branch members
 - Process contributions and expenditures
 - Close monthly finances
 - Manage branch staff
 - Generate branch reports
+- Full member management (add, edit, deactivate)
+- General contributions full control
+- Individual contributions full control
+- Create branch-only contribution types
+- Expenditures add/edit/approve
+- Utilities & welfare full control
+- Attendance management
+- Branch announcements creation
+- Sermon uploads
+- Remittance recording
+
+| Module                    | Permission                                   |
+| ------------------------- | -------------------------------------------- |
+| Member Management         | Full (add, edit, deactivate)                 |
+| General Contributions     | Full (add, edit, close, upload receipt)      |
+| Individual Contributions  | Full (add, edit, delete with reason + audit) |
+| Contribution Types        | Create branch-only types                     |
+| Pledges / Closeable Types | Record, update, close                        |
+| Expenditures              | Add / edit / approve local expenses          |
+| Utilities & Welfare       | Full control                                 |
+| Branch Balance            | Full view                                    |
+| Mission Allocations       | View-only                                    |
+| Attendance                | Add, edit, view                              |
+| Announcements             | Create (branch level only)                   |
+| Sermons                   | Upload (branch pastor optional)              |
+| Remittance to Mission     | Record "Sent" payment                        |
 
 #### Key Features
 - Branch-only data view
 - Monthly closing capabilities
 - Local financial management
 - Member administration
+- Branch balance monitoring
+- Welfare and utility management
+- Local reporting and analytics
 
 #### Typical Users
 - Branch Pastor
@@ -126,12 +201,23 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 ### 6. Pastor
 **Pastoral Care - Member Focus**
 
+Pastors are **not normal church members**. They are **spiritual leaders** and **staff-level users**, and may optionally serve as **administrators** when assigned as branch, district, or area admins.
+
+The system must dynamically adjust **sidebar**, **permissions**, and **dashboard features** based on their pastoral rank and administrative assignment.
+
 #### Permissions
 - Manage assigned branch members
 - View member contributions
 - Record pastoral activities
 - Manage member groups
 - Generate member reports
+- View all financial data read-only (if not admin)
+- Manage attendance
+- Create announcements/events (by pastoral rank)
+- Access commission & payroll
+- Access member directory
+- View aggregated reports
+- If assigned as admin, inherit full admin permissions for that level
 
 #### Key Features
 - Member management tools
@@ -139,16 +225,28 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 - Pastoral care records
 - Member communication
 - Limited financial view
+- Dynamic sidebar based on role (staff mode vs admin mode)
+- Dashboard with financial overview (read-only), attendance metrics, pastoral metrics, commission summary
+- Member directory with search and edit capabilities for non-financial details
+- Announcements & events creation based on rank
+- Tithe commission module for eligible pastors
 
 #### Typical Users
 - Branch Pastor
 - Associate Pastor
 - Assistant Pastor
+- District Pastor
+- Area Pastor
 
 ---
 
 ### 7. Member
 **Basic Access - Personal Information**
+
+Members are the **core users** of the SDSCC system.
+They represent the **final level of the church hierarchy**, with access strictly limited to **their own data**, **general church content**, and **allowed financial views**.
+
+Members **cannot** access or view anything outside their personal scope.
 
 #### Permissions
 - View personal profile
@@ -156,6 +254,31 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 - View own contributions
 - Access announcements
 - View church calendar
+- View own attendance
+- Access sermons
+- View assigned groups
+- Limited financial views (own contributions only)
+
+| Module                              | Member Permission          |
+| ----------------------------------- | -------------------------- |
+| Own Contributions                   | Full view (no edit)        |
+| Contribution Types List             | View only (if allowed)     |
+| General Offering Summaries          | View only                  |
+| Funeral Contributions               | View own only              |
+| Branch Announcements                | Full view                  |
+| District/Area/Mission Announcements | View only                  |
+| Sermons                             | Full access                |
+| Attendance                          | View own attendance        |
+| Member Profile                      | View + edit limited fields |
+| Groups/Departments                  | View assigned groups       |
+| Pastoral Notes                      | Not visible                |
+| Branch Finances                     | No access                  |
+| Branch Expenditures                 | No access                  |
+| Payroll                             | No access                  |
+| Remittance                          | No access                  |
+| Utilities & Welfare                 | No access                  |
+| Audit Logs                          | No access                  |
+| System Settings                     | No access                  |
 
 #### Key Features
 - Profile management
@@ -163,6 +286,10 @@ The SDSCC Church Management System uses a hierarchical role-based access control
 - Contribution history
 - Communication access
 - Mobile app access
+- Personal contribution overview
+- General church announcements
+- Sermon access
+- Church events and calendar
 
 #### Typical Users
 - Church Members

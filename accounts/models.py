@@ -185,7 +185,8 @@ class User(AbstractUser):
             self.Role.MISSION_ADMIN,
             self.Role.AREA_EXECUTIVE,
             self.Role.DISTRICT_EXECUTIVE,
-            self.Role.BRANCH_EXECUTIVE
+            self.Role.BRANCH_EXECUTIVE,
+            self.Role.AUDITOR  # Auditors have admin-level access for auditing purposes
         ]
         return self.role in admin_roles or self.is_superuser
     
@@ -194,8 +195,6 @@ class User(AbstractUser):
         """Check if user can manage financial entries."""
         finance_roles = [
             self.Role.MISSION_ADMIN,
-            self.Role.AREA_EXECUTIVE,
-            self.Role.DISTRICT_EXECUTIVE,
             self.Role.BRANCH_EXECUTIVE
         ]
         return self.role in finance_roles
@@ -204,6 +203,19 @@ class User(AbstractUser):
     def can_view_all_finances(self):
         """Check if user can view all financial data."""
         return self.is_mission_admin or self.is_auditor
+    
+    @property
+    def can_view_finances(self):
+        """Check if user can view financial data (read-only for area/district executives)."""
+        view_roles = [
+            self.Role.MISSION_ADMIN,
+            self.Role.AREA_EXECUTIVE,
+            self.Role.DISTRICT_EXECUTIVE,
+            self.Role.BRANCH_EXECUTIVE,
+            self.Role.AUDITOR,
+            self.Role.PASTOR  # Pastors can view finances but not modify them
+        ]
+        return self.role in view_roles
     
     def get_accessible_branches(self):
         """Get list of branches this user can access based on role."""
@@ -215,9 +227,44 @@ class User(AbstractUser):
             return Branch.objects.filter(district__area=self.managed_area, is_active=True)
         elif self.is_district_executive and self.managed_district:
             return Branch.objects.filter(district=self.managed_district, is_active=True)
-        elif self.branch:
+        elif self.is_branch_executive and self.branch:
+            return Branch.objects.filter(pk=self.branch.pk)
+        elif self.is_pastor and self.branch:
             return Branch.objects.filter(pk=self.branch.pk)
         return Branch.objects.none()
+    
+    def save(self, *args, **kwargs):
+        # Auto-assign Area/District for executives based on Branch hierarchy
+        self._auto_assign_hierarchy()
+        super().save(*args, **kwargs)
+    
+    def _auto_assign_hierarchy(self):
+        """Automatically assign Area/District for executives based on Branch hierarchy.
+        
+        This eliminates the need for manual assignment and ensures executives
+        can immediately access their appropriate dashboards after creation.
+        """
+        if not self.branch:
+            return
+        
+        # Get the hierarchy from the user's branch
+        district = self.branch.district
+        area = district.area if district else None
+        
+        # Auto-assign for all users based on their branch
+        if self.role == self.Role.AREA_EXECUTIVE:
+            # Area Executive manages the area of their branch
+            self.managed_area = area
+            self.managed_district = None  # Area executives don't manage specific districts
+        elif self.role == self.Role.DISTRICT_EXECUTIVE:
+            # District Executive manages the district of their branch
+            self.managed_district = district
+            self.managed_area = None  # District executives don't manage specific areas
+        else:
+            # Clear assignments for non-executive roles
+            if self.role in [self.Role.BRANCH_EXECUTIVE, self.Role.PASTOR, self.Role.STAFF, self.Role.MEMBER]:
+                self.managed_area = None
+                self.managed_district = None
     
     def get_dashboard_url(self):
         """Return appropriate dashboard URL based on role."""

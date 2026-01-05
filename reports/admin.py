@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import MonthlyReport, MonthlyReportItem
+from .models_hierarchy import AreaFinancialReport, DistrictFinancialReport
 
 class MonthlyReportItemInline(admin.TabularInline):
     model = MonthlyReportItem
@@ -21,4 +22,36 @@ class MonthlyReportAdmin(admin.ModelAdmin):
         ('Approval', {'fields': ('submitted_by', 'submitted_at', 'approved_by', 'approved_at')}),
         ('Payment', {'fields': ('payment_date', 'payment_reference', 'payment_method')}),
         ('Notes', {'fields': ('notes', 'attachment')}),
+    )
+
+@admin.register(AreaFinancialReport)
+class AreaFinancialReportAdmin(admin.ModelAdmin):
+    list_display = ('area', 'month', 'year', 'total_income', 'total_expenditure', 'closing_balance', 'is_generated')
+    list_filter = ('is_generated', 'year', 'month', 'area')
+    search_fields = ('area__name',)
+    readonly_fields = ('generated_by', 'generated_at')
+    
+    fieldsets = (
+        ('Period Info', {'fields': ('area', 'month', 'year')}),
+        ('Balance', {'fields': ('opening_balance', 'closing_balance')}),
+        ('Income', {'fields': ('contributions_received', 'remittances_received', 'transfers_received', 'total_income')}),
+        ('Expenditure', {'fields': ('expenditures', 'transfers_sent', 'total_expenditure')}),
+        ('Report Status', {'fields': ('is_generated', 'generated_by', 'generated_at')}),
+        ('Report Data', {'fields': ('report_data',)}),
+    )
+
+@admin.register(DistrictFinancialReport)
+class DistrictFinancialReportAdmin(admin.ModelAdmin):
+    list_display = ('district', 'month', 'year', 'total_income', 'total_expenditure', 'closing_balance', 'is_generated')
+    list_filter = ('is_generated', 'year', 'month', 'district__area')
+    search_fields = ('district__name',)
+    readonly_fields = ('generated_by', 'generated_at')
+    
+    fieldsets = (
+        ('Period Info', {'fields': ('district', 'month', 'year')}),
+        ('Balance', {'fields': ('opening_balance', 'closing_balance')}),
+        ('Income', {'fields': ('contributions_received', 'remittances_received', 'transfers_received', 'total_income')}),
+        ('Expenditure', {'fields': ('expenditures', 'transfers_sent', 'total_expenditure')}),
+        ('Report Status', {'fields': ('is_generated', 'generated_by', 'generated_at')}),
+        ('Report Data', {'fields': ('report_data',)}),
     )

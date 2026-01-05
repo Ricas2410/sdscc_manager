@@ -109,20 +109,28 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Restore Type</label>
                             <select name="restore_type" class="input-field">
-                                <option value="structure">Structure Only (Safe)</option>
-                                <option value="full">Full Restore (Caution)</option>
+                                <option value="structure">Structure Only (Safe - Add Missing)</option>
+                                <option value="full">Full Restore (Add Missing)</option>
+                                <option value="replace">Replace All (Complete Overwrite)</option>
                             </select>
                         </div>
                         
                         <div class="p-3 bg-amber-50 rounded-lg border border-amber-200">
                             <div class="flex items-start gap-2">
-                                <span class="material-icons-outlined text-amber-600 text-sm">warning</span>
-                                <p class="text-xs text-amber-700">Only items that don't already exist will be restored. Existing data will not be overwritten.</p>
+                                <span class="material-icons-outlined text-amber-600 text-sm">info</span>
+                                <div class="text-xs text-amber-700">
+                                    <p class="font-medium mb-1">Restore Options:</p>
+                                    <ul class="space-y-1">
+                                        <li>• <strong>Structure Only:</strong> Add missing organizational structure</li>
+                                        <li>• <strong>Full Restore:</strong> Add missing data (no overwrites)</li>
+                                        <li>• <strong>Replace All:</strong> Delete existing data and replace with backup</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn-secondary w-full mt-6 border-green-300 text-green-700 hover:bg-green-50">
+                    <button type="submit" onclick="return confirmRestore()" class="btn-secondary w-full mt-6 border-green-300 text-green-700 hover:bg-green-50">
                         <span class="material-icons-outlined mr-2">restore</span>
                         Restore from Backup
                     </button>
@@ -130,6 +138,100 @@
             </div>
         </div>
     </div>
+    
+    <script>
+    function confirmRestore() {
+        const restoreType = document.querySelector('select[name="restore_type"]').value;
+        const backupFile = document.querySelector('input[name="backup_file"]').files[0];
+        
+        if (!backupFile) {
+            alert('Please select a backup file first.');
+            return false;
+        }
+        
+        if (restoreType === 'full') {
+            const confirmed = confirm(
+                '⚠️ FULL RESTORE WARNING\n\n' +
+                'You are about to perform a FULL restore operation.\n\n' +
+                'This will restore:\n' +
+                '• All users and their accounts\n' +
+                '• All members and their data\n' +
+                '• All contributions and financial records\n' +
+                '• All attendance records\n' +
+                '• All payroll data\n' +
+                '• All other system data\n\n' +
+                'The restore process will:\n' +
+                '✓ Skip items that already exist (no overwrites)\n' +
+                '✓ Restore data in the correct dependency order\n' +
+                '✓ Show you any errors that occur\n\n' +
+                'Do you want to proceed with the full restore?'
+            );
+            
+            if (!confirmed) {
+                return false;
+            }
+            
+            // Second confirmation for full restore
+            const doubleConfirm = confirm(
+                'FINAL CONFIRMATION\n\n' +
+                'Are you absolutely sure you want to proceed?\n\n' +
+                'This action cannot be undone automatically.\n' +
+                'Make sure you have a current backup before proceeding.'
+            );
+            
+            return doubleConfirm;
+        } else if (restoreType === 'replace') {
+            const confirmed = confirm(
+                '🚨 DANGER: REPLACE ALL DATA\n\n' +
+                'You are about to REPLACE ALL EXISTING DATA with backup data.\n\n' +
+                '⚠️ THIS WILL DELETE AND REPLACE:\n' +
+                '• ALL users and their accounts\n' +
+                '• ALL members and their data\n' +
+                '• ALL contributions and financial records\n' +
+                '• ALL attendance records\n' +
+                '• ALL payroll data\n' +
+                '• ALL other system data\n\n' +
+                'The replace process will:\n' +
+                '❌ DELETE all existing data in affected tables\n' +
+                '✓ Restore all data from backup\n' +
+                '✓ Complete data replacement\n\n' +
+                '⚠️ THIS ACTION CANNOT BE UNDONE!\n\n' +
+                'Do you want to proceed with replacing all data?'
+            );
+            
+            if (!confirmed) {
+                return false;
+            }
+            
+            // Second confirmation for replace
+            const doubleConfirm = confirm(
+                '🚨 FINAL WARNING: COMPLETE DATA REPLACEMENT\n\n' +
+                'This will PERMANENTLY DELETE all existing data and replace it with backup data.\n\n' +
+                'Last chance to cancel!\n\n' +
+                'Type "REPLACE" to confirm this destructive action:'
+            );
+            
+            if (doubleConfirm) {
+                const finalConfirm = prompt('Type "REPLACE" to confirm:');
+                return finalConfirm === 'REPLACE';
+            }
+            
+            return false;
+        } else {
+            // Structure only restore - single confirmation
+            return confirm(
+                'Structure Restore\n\n' +
+                'This will restore organizational structure only:\n' +
+                '• Areas, Districts, Branches\n' +
+                '• Contribution Types\n' +
+                '• Expenditure Categories\n' +
+                '• Groups\n\n' +
+                'Existing items will not be overwritten.\n\n' +
+                'Proceed with restore?'
+            );
+        }
+    }
+    </script>
     
     <!-- Export Options -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

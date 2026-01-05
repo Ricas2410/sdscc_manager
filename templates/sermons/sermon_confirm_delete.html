@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Delete Sermon{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-16">
+    <!-- Premium Header -->
+    <div class="mb-10 text-center">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-rose-50 rounded-[2rem] mb-6 shadow-inner">
+            <span class="material-icons-outlined text-rose-600 text-4xl">delete_forever</span>
+        </div>
+        <h1 class="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">Terminate Archive</h1>
+        <p class="text-gray-500 font-bold uppercase tracking-[0.2em] text-[10px]">Registry Deletion Protocol</p>
+    </div>
+
+    <!-- Confirmation Console -->
+    <div class="bg-white rounded-[3rem] shadow-2xl border border-gray-100 overflow-hidden">
+        <div class="p-10 space-y-10">
+            <!-- Alert Brief -->
+            <div class="p-6 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-4">
+                <span class="material-icons-outlined text-amber-600">warning</span>
+                <div>
+                    <p class="text-sm font-black text-amber-900 uppercase tracking-widest leading-tight">Irreversible Operation</p>
+                    <p class="text-xs font-bold text-amber-700/80 mt-1">Executing this command will permanently remove the spiritual record from the global archive.</p>
+                </div>
+            </div>
+
+            <!-- Record Snapshot -->
+            <div class="space-y-6">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Record Identification</h3>
+                    <div class="h-px flex-1 bg-gray-50"></div>
+                </div>
+                
+                <div class="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative group">
+                    <div class="absolute top-0 right-0 w-32 h-full bg-indigo-50/30 rounded-full blur-3xl -mr-16 -z-0"></div>
+                    <div class="relative z-10">
+                        <h2 class="text-2xl font-black text-gray-900 tracking-tight mb-4 group-hover:text-indigo-600 transition-colors">{{ sermon.title }}</h2>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Speaker</p>
+                                <p class="text-sm font-bold text-gray-700">{{ sermon.preacher_name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Release Date</p>
+                                <p class="text-sm font-bold text-gray-700">{{ sermon.sermon_date|date:"F d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Impact Analytics -->
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Data Impact Summary</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
+                            <span class="material-icons-outlined text-sm">article</span>
+                        </div>
+                        <span class="text-xs font-bold text-gray-600">Full Transcript</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                            <span class="material-icons-outlined text-sm">headphones</span>
+                        </div>
+                        <span class="text-xs font-bold text-gray-600">Audio Feed Assets</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center">
+                            <span class="material-icons-outlined text-sm">image</span>
+                        </div>
+                        <span class="text-xs font-bold text-gray-600">Visual Covers</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="w-8 h-8 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center">
+                            <span class="material-icons-outlined text-sm">analytics</span>
+                        </div>
+                        <span class="text-xs font-bold text-gray-600">Archive Analytics</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Command -->
+            <form method="post" class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-50">
+                {% csrf_token %}
+                <a href="{% url 'sermons:detail' sermon.id %}" class="flex-1 inline-flex items-center justify-center px-8 py-5 bg-gray-50 text-gray-500 hover:text-gray-700 rounded-2xl transition-all font-black uppercase tracking-widest text-[10px] active:scale-95 shadow-sm">
+                    Abondon Operation
+                </a>
+                <button type="submit" class="flex-1 inline-flex items-center justify-center px-8 py-5 bg-rose-600 text-white rounded-2xl hover:bg-rose-700 transition-all font-black shadow-xl shadow-rose-500/20 active:scale-95 group">
+                    <span class="material-icons-outlined mr-3 group-hover:animate-bounce">delete_sweep</span>
+                    Authorize Destruction
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

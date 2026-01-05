@@ -61,7 +61,7 @@
                     <thead>
                         <tr>
                             <th>Contribution Type</th>
-                            <th>Split</th>
+                            <th class="hidden md:table-cell">Split</th>
                             <th class="w-48">Amount ({{ site_settings.currency_symbol }})</th>
                             <th class="w-64">Notes</th>
                         </tr>
@@ -85,7 +85,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
+                            <td class="hidden md:table-cell">
                                 <span class="text-xs text-gray-500">M: {{ ct.mission_percentage }}% / B: {{ ct.branch_percentage }}%</span>
                             </td>
                             <td>

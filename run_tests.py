@@ -5,6 +5,18 @@ print("=" * 80)
 print("SDSCC SYSTEM - Comprehensive Feature Testing")
 print("=" * 80)
 
+import os
+
+if not os.environ.get('DJANGO_SETTINGS_MODULE'):
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sdscc.settings')
+
+try:
+    import django
+    django.setup()
+except Exception:
+    # If running via `python manage.py shell < run_tests.py`, Django is already setup.
+    pass
+
 from django.test import Client
 from django.contrib.auth import get_user_model
 from core.models import Branch, District, Area, FiscalYear, MissionFinancialSummary, BranchFinancialSummary

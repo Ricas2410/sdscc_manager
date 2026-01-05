@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load currency_filters %}
+{% load financial_terms %}
+
+{% block title %}Hierarchy Remittance Details{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Hierarchy Remittance Details</h1>
+            <p class="text-gray-600">Remittance to {{ remittance.get_destination_level_display }} level</p>
+        </div>
+        
+        <div class="mt-4 md:mt-0 flex space-x-2">
+            <a href="{% url 'contributions:hierarchy_remittances' %}" class="btn-secondary">
+                <span class="material-icons-outlined text-lg mr-1">arrow_back</span>
+                Back to List
+            </a>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Remittance Information</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Branch:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.branch.name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Destination Level:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.get_destination_level_display }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Destination Entity:</span>
+                        <span class="font-medium text-gray-900">
+                            {% if remittance.area %}{{ remittance.area.name }}
+                            {% elif remittance.district %}{{ remittance.district.name }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Period:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.get_month_display }} {{ remittance.year }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Financial Details</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Amount Due:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.amount_due|currency }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Amount Sent:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.amount_sent|currency }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Outstanding Amount:</span>
+                        <span class="font-medium {% if remittance.outstanding_amount > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                            {{ remittance.outstanding_amount|currency }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Status:</span>
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if remittance.status == 'verified' %}bg-green-100 text-green-800
+                            {% elif remittance.status == 'sent' %}bg-blue-100 text-blue-800
+                            {% elif remittance.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ remittance.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if remittance.payment_date or remittance.payment_method or remittance.payment_reference %}
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Payment Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    {% if remittance.payment_date %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Payment Date:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.payment_date|date:"F j, Y" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if remittance.payment_method %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Payment Method:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.payment_method }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="space-y-3">
+                    {% if remittance.payment_reference %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Payment Reference:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.payment_reference }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if remittance.payment_proof %}
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Payment Proof</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <a href="{{ remittance.payment_proof.url }}" class="text-blue-600 hover:text-blue-800 flex items-center" target="_blank">
+                    <span class="material-icons-outlined text-lg mr-1">description</span>
+                    View Payment Proof
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if remittance.notes %}
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Notes</h2>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-gray-700">{{ remittance.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Verification Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Created By:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.created_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Created At:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.created_at|date:"F j, Y H:i" }}</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    {% if remittance.verified_by %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Verified By:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.verified_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Verified At:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.verified_at|date:"F j, Y H:i" }}</span>
+                    </div>
+                    {% if remittance.verification_notes %}
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-gray-600">Verification Notes:</span>
+                        <span class="font-medium text-gray-900">{{ remittance.verification_notes }}</span>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if user.is_branch_executive and remittance.branch == user.branch and remittance.status == 'pending' %}
+        <div class="mt-8 flex space-x-4">
+            <a href="{% url 'contributions:hierarchy_remittance_pay' remittance.id %}" class="btn-success">
+                <span class="material-icons-outlined text-lg mr-1">payments</span>
+                Pay Remittance
+            </a>
+        </div>
+        {% endif %}
+        
+        {% if user.is_area_executive or user.is_district_executive or user.is_mission_admin %}
+        {% if remittance.status == 'sent' %}
+        <div class="mt-8 flex space-x-4">
+            <a href="{% url 'contributions:hierarchy_remittance_verify' remittance.id %}" class="btn-success">
+                <span class="material-icons-outlined text-lg mr-1">check_circle</span>
+                Verify Payment
+            </a>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

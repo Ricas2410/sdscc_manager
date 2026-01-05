@@ -40,7 +40,8 @@ class ContributionType(TimeStampedModel):
         DISTRICT = 'district', 'District'
         BRANCH = 'branch', 'Branch'
     
-    scope = models.CharField(max_length=20, choices=Scope.choices, default=Scope.MISSION)
+    scope = models.CharField(max_length=20, choices=Scope.choices, default=Scope.MISSION, 
+                           help_text='Defines the hierarchical level this contribution type belongs to')
     
     # For branch/district/area specific types
     branch = models.ForeignKey(
@@ -98,9 +99,26 @@ class ContributionType(TimeStampedModel):
     
     def clean(self):
         from django.core.exceptions import ValidationError
+        # Validate allocation percentages
         total = self.mission_percentage + self.area_percentage + self.district_percentage + self.branch_percentage
         if total != 100:
             raise ValidationError('Allocation percentages must sum to 100%')
+        
+        # Validate scope-specific fields
+        if self.scope == self.Scope.BRANCH and not self.branch:
+            raise ValidationError('Branch-scoped contribution types must have a branch assigned')
+        elif self.scope == self.Scope.DISTRICT and not self.district:
+            raise ValidationError('District-scoped contribution types must have a district assigned')
+        elif self.scope == self.Scope.AREA and not self.area:
+            raise ValidationError('Area-scoped contribution types must have an area assigned')
+            
+        # Ensure proper hierarchy alignment
+        if self.branch and self.scope != self.Scope.BRANCH:
+            raise ValidationError('Branch can only be set for branch-scoped contribution types')
+        if self.district and self.scope != self.Scope.DISTRICT:
+            raise ValidationError('District can only be set for district-scoped contribution types')
+        if self.area and self.scope != self.Scope.AREA:
+            raise ValidationError('Area can only be set for area-scoped contribution types')
     
     def calculate_allocations(self, amount):
         """Calculate allocation amounts from total contribution."""
@@ -128,7 +146,7 @@ class Contribution(TimeStampedModel):
     
     contribution_type = models.ForeignKey(ContributionType, on_delete=models.PROTECT, related_name='contributions')
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='contributions')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='contributions')
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='contributions', null=True, blank=True)
     
     # For individual contributions
     member = models.ForeignKey(
@@ -150,8 +168,9 @@ class Contribution(TimeStampedModel):
     
     # Status
     class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'  # Editable within 24 hours, no ledger entries
         PENDING = 'pending', 'Pending'
-        VERIFIED = 'verified', 'Verified'
+        VERIFIED = 'verified', 'Verified'  # Final, ledger entries created
         REJECTED = 'rejected', 'Rejected'
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.VERIFIED)
@@ -159,6 +178,11 @@ class Contribution(TimeStampedModel):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_contributions'
     )
     verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Draft mode fields - 24-hour edit window
+    is_draft = models.BooleanField(default=False, help_text='Draft contributions can be edited within 24 hours')
+    draft_expires_at = models.DateTimeField(null=True, blank=True, help_text='When draft auto-submits')
+    submitted_at = models.DateTimeField(null=True, blank=True, help_text='When draft was finalized')
     
     # Late entry tracking
     is_late_entry = models.BooleanField(default=False)
@@ -187,6 +211,112 @@ class Contribution(TimeStampedModel):
             self.district_amount = allocations['district']
             self.branch_amount = allocations['branch']
         super().save(*args, **kwargs)
+    
+    @property
+    def is_editable(self):
+        """Check if contribution can be edited (only drafts within 24-hour window)."""
+        from django.utils import timezone
+        if self.status != self.Status.DRAFT:
+            return False
+        if self.draft_expires_at and timezone.now() > self.draft_expires_at:
+            return False
+        return True
+    
+    @property
+    def time_remaining(self):
+        """Get time remaining for draft edit window."""
+        from django.utils import timezone
+        if not self.draft_expires_at:
+            return None
+        remaining = self.draft_expires_at - timezone.now()
+        if remaining.total_seconds() <= 0:
+            return None
+        return remaining
+    
+    def finalize_draft(self, user=None):
+        """
+        Finalize a draft contribution - makes it immutable and creates ledger entries.
+        Called when user submits or when 24-hour window expires.
+        """
+        from django.utils import timezone
+        if self.status != self.Status.DRAFT:
+            return False
+        
+        self.status = self.Status.VERIFIED
+        self.is_draft = False
+        self.submitted_at = timezone.now()
+        if user:
+            self.verified_by = user
+            self.verified_at = timezone.now()
+        self.save()
+        
+        # Ledger entries will be created by signal handler
+        return True
+
+
+class MissionDonation(TimeStampedModel):
+    """
+    Direct donations from members to Mission.
+    These are NOT part of branch weekly contributions and do NOT affect branch PAYABLES.
+    Recorded as Mission CASH directly.
+    
+    Visibility Rules:
+    - Donor (Member): Sees only their own donations
+    - Mission Admin / National Finance: See all donations
+    - Branch/Area/District admins: NO visibility (donor privacy)
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    donor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='mission_donations'
+    )
+    
+    # Donation details
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    
+    class DonationType(models.TextChoices):
+        GENERAL = 'general', 'General Donation'
+        PROJECT = 'project', 'Special Project'
+        BUILDING = 'building', 'Building Fund'
+        MISSIONS = 'missions', 'Missions & Outreach'
+        EDUCATION = 'education', 'Education Fund'
+        WELFARE = 'welfare', 'Welfare Fund'
+        OTHER = 'other', 'Other'
+    
+    donation_type = models.CharField(max_length=20, choices=DonationType.choices, default=DonationType.GENERAL)
+    description = models.TextField(blank=True)
+    
+    # Payment details
+    payment_method = models.CharField(max_length=50, blank=True)
+    payment_reference = models.CharField(max_length=100, blank=True)
+    receipt = models.FileField(upload_to='mission_donation_receipts/', blank=True, null=True)
+    
+    # Status
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending Verification'
+        VERIFIED = 'verified', 'Verified'
+        REJECTED = 'rejected', 'Rejected'
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_mission_donations'
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Privacy - donor can choose to be anonymous in reports
+    is_anonymous = models.BooleanField(default=False, help_text='Hide donor name in public reports')
+    
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-date', '-created_at']
+        verbose_name = 'Mission Donation'
+        verbose_name_plural = 'Mission Donations'
+    
+    def __str__(self):
+        donor_name = 'Anonymous' if self.is_anonymous else self.donor.get_full_name()
+        return f"{donor_name} - {self.amount} ({self.date})"
 
 
 class WeeklyContributionSummary(TimeStampedModel):
@@ -194,7 +324,7 @@ class WeeklyContributionSummary(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='weekly_summaries')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='weekly_summaries')
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='weekly_summaries', null=True, blank=True)
     
     week_start = models.DateField()
     week_end = models.DateField()
@@ -231,7 +361,7 @@ class Remittance(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='remittances')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='remittances')
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='remittances', null=True, blank=True)
     
     month = models.IntegerField()
     year = models.IntegerField()
@@ -321,7 +451,7 @@ class TitheCommission(TimeStampedModel):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='commissions'
     )
     branch = models.ForeignKey('core.Branch', on_delete=models.PROTECT, related_name='commissions')
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='commissions')
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='commissions', null=True, blank=True)
     
     month = models.IntegerField()
     year = models.IntegerField()

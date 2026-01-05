@@ -48,4 +48,7 @@ urlpatterns = [
     path('upload-photo/', photo_upload_views.upload_profile_photo, name='upload_photo'),
     path('delete-photo/', photo_upload_views.delete_profile_photo, name='delete_photo'),
     path('crop-photo/', photo_upload_views.crop_profile_photo, name='crop_photo'),
+    
+    # AJAX Photo Upload for profile edit
+    path('ajax-upload-photo/', views.ajax_upload_photo, name='ajax_upload_photo'),
 ]

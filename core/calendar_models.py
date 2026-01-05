@@ -75,6 +75,7 @@ class CalendarEvent(TimeStampedModel):
     # Status
     is_published = models.BooleanField(default=True)
     is_cancelled = models.BooleanField(default=False)
+    color = models.CharField(max_length=7, default='#3B82F6')
     
     # Creator
     created_by = models.ForeignKey(

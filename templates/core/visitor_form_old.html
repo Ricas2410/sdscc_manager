@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Visitor{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Precision Header -->
+    <div class="mb-10">
+        <div class="flex items-center gap-6">
+            <a href="{% url 'core:visitors' %}" 
+               class="w-14 h-14 flex items-center justify-center bg-white text-gray-400 hover:text-indigo-600 rounded-2xl shadow-sm hover:shadow-xl transition-all border border-gray-100">
+                <span class="material-icons-outlined">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-4xl font-black text-gray-900 tracking-tight leading-none mb-2">Onboard Guest</h1>
+                <p class="text-gray-500 font-medium tracking-wide uppercase text-[10px]">Registry Initialization Protocol</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Strategic Form Container -->
+    <form method="POST" class="space-y-10">
+        {% csrf_token %}
+        
+        <!-- Section: Jurisdiction -->
+        {% if areas %}
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-10 py-6 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                <h2 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Deployment Location</h2>
+            </div>
+            <div class="p-10">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Area Region <span class="text-rose-500">*</span></label>
+                        <select name="area" id="areaSelect" class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700" required>
+                            <option value="">Select Area</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">District Focus <span class="text-rose-500">*</span></label>
+                        <select name="district" id="districtSelect" class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700" required>
+                            <option value="">Select District</option>
+                            {% for district in districts %}
+                            <option value="{{ district.id }}" data-area="{{ district.area.id }}">{{ district.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Branch Station <span class="text-rose-500">*</span></label>
+                        <select name="branch" id="branchSelect" class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700" required>
+                            <option value="">Select Branch</option>
+                            {% for branch in branches %}
+                            <option value="{{ branch.id }}" data-district="{{ branch.district.id }}">{{ branch.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-10">
+            <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-1">Assigned Branch Station <span class="text-rose-500">*</span></label>
+            <select name="branch" class="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 shadow-inner" required>
+                <option value="">Select Branch</option>
+                {% for branch in branches %}
+                <option value="{{ branch.id }}" {% if user.branch and user.branch.id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        
+        <!-- Section: Personal Intelligence -->
+        <div class="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden">
+            <div class="px-10 py-6 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                <h2 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Guest Identification</h2>
+            </div>
+            <div class="p-10 space-y-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2 group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Given Name <span class="text-rose-500">*</span></label>
+                        <input type="text" name="first_name" required
+                               class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                               placeholder="e.g. Samuel">
+                    </div>
+                    <div class="space-y-2 group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Family Name <span class="text-rose-500">*</span></label>
+                        <input type="text" name="last_name" required
+                               class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                               placeholder="e.g. Mensah">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2 group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Voice Channel</label>
+                        <div class="relative">
+                            <span class="material-icons-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">phone</span>
+                            <input type="tel" name="phone"
+                                   class="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                                   placeholder="024 XXX XXXX">
+                        </div>
+                    </div>
+                    <div class="space-y-2 group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Electronic Mail</label>
+                        <div class="relative">
+                            <span class="material-icons-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">alternate_email</span>
+                            <input type="email" name="email"
+                                   class="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                                   placeholder="samuel@domain.com">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2 group">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Physical Residence</label>
+                    <div class="relative">
+                        <span class="material-icons-outlined absolute left-5 top-6 text-gray-300">map</span>
+                        <textarea name="address" rows="2"
+                                  class="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                                  placeholder="House No, Street, Community..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Engagement Intelligence -->
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-10 py-6 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <h2 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Touchpoint Analytics</h2>
+            </div>
+            <div class="p-10 space-y-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2 group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Initial Entry Date</label>
+                        <input type="date" name="first_visit_date"
+                               class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700"
+                               value="{{ today|date:'Y-m-d' }}">
+                    </div>
+                    <div class="space-y-2 group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Discovery Channel</label>
+                        <input type="text" name="how_heard"
+                               class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                               placeholder="e.g. Member Invitation, Billboard">
+                    </div>
+                </div>
+                
+                <div class="space-y-2 group">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 group-focus-within:text-indigo-600 transition-colors">Strategic Narrative / Discipleship Notes</label>
+                    <textarea name="notes" rows="3"
+                              class="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-[2rem] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all font-bold text-gray-700 placeholder:text-gray-300"
+                              placeholder="Record important conversation details or specific spiritual needs..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Operations -->
+        <div class="flex flex-col sm:flex-row items-center justify-end gap-6 pt-6">
+            <a href="{% url 'core:visitors' %}" 
+               class="text-xs font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-600 transition-colors">
+                Abondon Protocol
+            </a>
+            <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-12 py-5 bg-indigo-600 text-white rounded-[1.5rem] hover:bg-indigo-700 transition-all font-black shadow-2xl hover:shadow-indigo-500/25 active:scale-95 group">
+                <span class="material-icons-outlined mr-3 group-hover:rotate-12 transition-transform">how_to_reg</span>
+                Finalize Onboarding
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const areaSelect = document.getElementById('areaSelect');
+    const districtSelect = document.getElementById('districtSelect');
+    const branchSelect = document.getElementById('branchSelect');
+    
+    if (areaSelect && districtSelect && branchSelect) {
+        // Handle area selection
+        areaSelect.addEventListener('change', function() {
+            const selectedArea = this.value;
+            
+            // Filter districts
+            const districtOptions = districtSelect.querySelectorAll('option');
+            districtOptions.forEach(option => {
+                if (selectedArea === '') {
+                    option.style.display = 'block';
+                } else {
+                    const districtArea = option.getAttribute('data-area');
+                    option.style.display = districtArea === selectedArea ? 'block' : 'none';
+                }
+            });
+            
+            // Reset district and branch selections
+            districtSelect.value = '';
+            branchSelect.value = '';
+            
+            // Filter branches based on new district selection (empty)
+            filterBranches('');
+        });
+        
+        // Handle district selection
+        districtSelect.addEventListener('change', function() {
+            const selectedDistrict = this.value;
+            filterBranches(selectedDistrict);
+        });
+        
+        function filterBranches(selectedDistrict) {
+            const branchOptions = branchSelect.querySelectorAll('option');
+            branchOptions.forEach(option => {
+                if (selectedDistrict === '') {
+                    option.style.display = 'block';
+                } else {
+                    const branchDistrict = option.getAttribute('data-district');
+                    option.style.display = branchDistrict === selectedDistrict ? 'block' : 'none';
+                }
+            });
+            
+            // Reset branch selection if it doesn't match the new district filter
+            if (branchSelect.value && branchSelect.value !== selectedDistrict) {
+                branchSelect.value = '';
+            }
+        }
+        
+        // Initialize filters based on current selections
+        if (areaSelect.value) {
+            areaSelect.dispatchEvent(new Event('change'));
+        } else if (districtSelect.value) {
+            filterBranches(districtSelect.value);
+        }
+    }
+});
+</script>
+{% endblock %}

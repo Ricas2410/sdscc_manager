@@ -84,7 +84,7 @@
             <div class="card-body">
                 <div class="form-group">
                     <label class="form-label">Target Audience</label>
-                    <select name="scope" class="form-input form-select">
+                    <select name="scope" id="scopeSelect" class="form-input form-select" onchange="updateTargetSelection()">
                         <option value="branch" {% if is_edit and event.scope == 'branch' %}selected{% endif %}>Branch Only</option>
                         {% if user.is_district_executive or user.is_area_executive or user.is_mission_admin %}
                         <option value="district" {% if is_edit and event.scope == 'district' %}selected{% endif %}>District-wide</option>
@@ -98,17 +98,38 @@
                     </select>
                 </div>
                 
-                {% if not is_branch_admin %}
-                <div class="form-group">
+                <!-- Branch Selection -->
+                <div id="branchSelection" class="form-group" style="display: none;">
                     <label class="form-label">Branch</label>
-                    <select name="branch" class="form-input form-select">
+                    <select name="branch" id="branchSelect" class="form-input form-select">
                         <option value="">Select a branch</option>
                         {% for branch in branches %}
                         <option value="{{ branch.id }}" {% if is_edit and event.branch_id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                {% endif %}
+                
+                <!-- District Selection -->
+                <div id="districtSelection" class="form-group" style="display: none;">
+                    <label class="form-label">District</label>
+                    <select name="district" id="districtSelect" class="form-input form-select">
+                        <option value="">Select a district</option>
+                        {% for district in districts %}
+                        <option value="{{ district.id }}" {% if is_edit and event.district_id == district.id %}selected{% endif %}>{{ district.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Area Selection -->
+                <div id="areaSelection" class="form-group" style="display: none;">
+                    <label class="form-label">Area</label>
+                    <select name="area" id="areaSelect" class="form-input form-select">
+                        <option value="">Select an area</option>
+                        {% for area in areas %}
+                        <option value="{{ area.id }}" {% if is_edit and event.area_id == area.id %}selected{% endif %}>{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -122,4 +143,39 @@
         </div>
     </form>
 </div>
+
+<script>
+function updateTargetSelection() {
+    const scopeSelect = document.getElementById('scopeSelect');
+    const branchSelection = document.getElementById('branchSelection');
+    const districtSelection = document.getElementById('districtSelection');
+    const areaSelection = document.getElementById('areaSelection');
+    
+    // Hide all selections first
+    branchSelection.style.display = 'none';
+    districtSelection.style.display = 'none';
+    areaSelection.style.display = 'none';
+    
+    // Show relevant selection based on scope
+    switch(scopeSelect.value) {
+        case 'branch':
+            branchSelection.style.display = 'block';
+            break;
+        case 'district':
+            districtSelection.style.display = 'block';
+            break;
+        case 'area':
+            areaSelection.style.display = 'block';
+            break;
+        case 'mission':
+            // Mission-wide doesn't need specific location selection
+            break;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateTargetSelection();
+});
+</script>
 {% endblock %}
