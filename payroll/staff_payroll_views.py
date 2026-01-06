@@ -48,7 +48,7 @@ def staff_payroll_management(request):
     recent_payrolls = PayrollRun.objects.all().order_by('-year', '-month')[:5]
     
     context = {
-        'staff_profiles': staff_profiles,
+        'staff_with_payroll': staff_profiles,
         'users_without_payroll': users_without_payroll,
         'total_monthly_salary': total_monthly_salary,
         'total_staff_count': total_staff_count,
@@ -71,6 +71,7 @@ def add_staff_to_payroll(request):
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
         base_salary = Decimal(request.POST.get('base_salary', '0'))
+        tithe_deduction_percentage = Decimal(request.POST.get('tithe_deduction_percentage', '10'))
         housing_allowance = Decimal(request.POST.get('housing_allowance', '0'))
         transport_allowance = Decimal(request.POST.get('transport_allowance', '0'))
         other_allowances = Decimal(request.POST.get('other_allowances', '0'))
@@ -100,6 +101,7 @@ def add_staff_to_payroll(request):
                 user=user,
                 employee_id=employee_id,
                 base_salary=base_salary,
+                tithe_deduction_percentage=tithe_deduction_percentage,
                 position=position or user.get_role_display(),
                 hire_date=date.today(),
                 is_active=True
@@ -170,6 +172,7 @@ def update_staff_salary(request, profile_id):
     
     if request.method == 'POST':
         profile.base_salary = Decimal(request.POST.get('base_salary', profile.base_salary))
+        profile.tithe_deduction_percentage = Decimal(request.POST.get('tithe_deduction_percentage', profile.tithe_deduction_percentage))
         profile.position = request.POST.get('position', profile.position)
         profile.save()
         
@@ -243,12 +246,12 @@ def payroll_processing(request):
             month = int(request.POST.get('month'))
             year = int(request.POST.get('year'))
             
+            # Check if payroll already exists
+            if PayrollRun.objects.filter(month=month, year=year).exists():
+                messages.warning(request, f'Payroll for {calendar.month_name[month]} {year} already exists.')
+                return redirect('payroll:payroll_processing')
+            
             try:
-                # Check if payroll already exists
-                if PayrollRun.objects.filter(month=month, year=year).exists():
-                    messages.warning(request, f'Payroll for {calendar.month_name[month]} {year} already exists.')
-                    return redirect('payroll:payroll_processing')
-                
                 # DEPRECATED: Year-as-state architecture - fiscal_year no longer assigned
                 # Payroll runs now use date-based filtering only
                 
@@ -256,9 +259,9 @@ def payroll_processing(request):
                 payroll_run = PayrollRun.objects.create(
                     month=month,
                     year=year,
-                    # fiscal_year=fiscal_year,  # REMOVED: Use date filtering instead
                     status='draft',
-                    created_by=request.user
+                    processed_by=request.user,
+                    processed_at=timezone.now()
                 )
                 
                 # Generate payslips for all active staff
@@ -279,32 +282,58 @@ def payroll_processing(request):
                                 profile.deductions.filter(is_recurring=True, end_date__gte=date.today())
                     total_deductions = sum(d.amount for d in deductions)
                     
-                    # Build allowance breakdown
-                    allowances_breakdown = {a.allowance_type.name: float(a.amount) for a in allowances}
-                    deductions_breakdown = {d.deduction_type.name: float(d.amount) for d in deductions}
+                    # Calculate tithe deduction
+                    tithe_deduction = (profile.base_salary * profile.tithe_deduction_percentage) / Decimal('100')
                     
-                    # Add SSNIT deduction (5.5%)
-                    ssnit = profile.base_salary * Decimal('0.055')
-                    deductions_breakdown['SSNIT (5.5%)'] = float(ssnit)
-                    total_deductions += ssnit
+                    # Add tithe to total deductions
+                    total_deductions += tithe_deduction
                     
-                    gross_pay = profile.base_salary + total_allowances
-                    net_pay = gross_pay - total_deductions
+                    # Calculate net pay
+                    net_pay = profile.base_salary + total_allowances - total_deductions
                     
-                    PaySlip.objects.create(
-                        payroll_run=payroll_run,
+                    # Create payslip
+                    payslip = PaySlip.objects.create(
                         staff=profile,
+                        payroll_run=payroll_run,
                         base_salary=profile.base_salary,
-                        total_allowances=total_allowances,
-                        total_deductions=total_deductions,
-                        gross_pay=gross_pay,
+                        allowances=total_allowances,
+                        deductions=total_deductions,
                         net_pay=net_pay,
-                        allowances_breakdown=allowances_breakdown,
-                        deductions_breakdown=deductions_breakdown,
-                        status='pending'
+                        status='draft'
                     )
-                    payslip_count += 1
-                    total_net += net_pay
+                    
+                    # Post tithe deduction to mission ledger
+                    if tithe_deduction > 0:
+                        # Get or create tithe contribution type
+                        tithe_type, _ = ContributionType.objects.get_or_create(
+                            name='Staff Tithe',
+                            defaults={
+                                'name': 'Staff Tithe Deduction',
+                                'category': 'tithe',
+                                'scope': 'mission',
+                                'mission_percentage': 100,
+                                'area_percentage': 0,
+                                'district_percentage': 0,
+                                'branch_percentage': 0,
+                                'is_individual': True,
+                                'is_general': False,
+                                'frequency': 'monthly'
+                            }
+                        )
+                        
+                        # Create contribution record for the tithe
+                        Contribution.objects.create(
+                            contribution_type=tithe_type,
+                            branch=profile.user.branch,
+                            member=profile.user,
+                            date=date(year, month, 1),  # First day of the month
+                            amount=tithe_deduction,
+                            description=f'Tithe deduction from {profile.user.get_full_name()} salary for {calendar.month_name[month]} {year}',
+                            reference=f'PAYROLL-{payroll_run.id}',
+                            status='verified',
+                            verified_by=request.user,
+                            verified_at=timezone.now()
+                        )
                 
                 # Update payroll run totals
                 payroll_run.calculate_totals()
@@ -313,6 +342,274 @@ def payroll_processing(request):
                 messages.success(request, f'Generated {payslip_count} payslips for {calendar.month_name[month]} {year}')
             except Exception as e:
                 messages.error(request, f'Error generating payroll: {str(e)}')
+                return redirect('payroll:payroll_processing')
+        
+        elif action == 'change_status':
+            payslip_id = request.POST.get('payslip_id')
+            new_status = request.POST.get('new_status')
+            
+            if not payslip_id or not new_status:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': 'Payslip ID and new status are required.'})
+                messages.error(request, 'Payslip ID and new status are required.')
+                return redirect('payroll:payroll_processing')
+            
+            try:
+                payslip = PaySlip.objects.get(id=payslip_id)
+                old_status = payslip.status
+                
+                # Validate status change - allow skipping but prevent invalid transitions
+                if new_status == 'cancelled' and payslip.status == 'paid':
+                    error_msg = 'Cannot cancel a paid payslip.'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'success': False, 'message': error_msg})
+                    messages.error(request, error_msg)
+                    return redirect('payroll:payroll_processing')
+                
+                # Allow status skipping (e.g., draft -> paid)
+                # When skipping to paid, automatically mark as processed
+                if new_status == 'paid':
+                    if payslip.status != 'approved':
+                        # Auto-approve if not already approved
+                        payslip.status = 'approved'
+                        payslip.save()
+                        # Now open payment modal (handled in frontend)
+                    
+                    # Return payment modal request instead of marking as paid
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'success': True, 
+                            'message': f'Payslip for {payslip.staff.user.get_full_name()} is ready for payment',
+                            'action': 'open_payment_modal',
+                            'payslip_id': payslip.id,
+                            'staff_name': payslip.staff.user.get_full_name(),
+                            'amount': str(payslip.net_pay)
+                        })
+                    else:
+                        messages.success(request, f'Payslip approved for {payslip.staff.user.get_full_name()}. Please complete payment.')
+                        return redirect('payroll:payroll_processing')
+                
+                # For other status changes, allow direct updates
+                payslip.status = new_status
+                payslip.save()
+                
+                # Calculate updated status counts
+                if payroll_run := payslip.payroll_run:
+                    payslips = payroll_run.payslips.all()
+                    status_counts = {
+                        'draft': payslips.filter(status='draft').count(),
+                        'processing': payslips.filter(status='processing').count(),
+                        'approved': payslips.filter(status='approved').count(),
+                        'paid': payslips.filter(status='paid').count()
+                    }
+                else:
+                    status_counts = {}
+                
+                success_msg = f'Status changed for {payslip.staff.user.get_full_name()} from {old_status} to {new_status}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True, 
+                        'message': success_msg,
+                        'status_counts': status_counts
+                    })
+                else:
+                    messages.success(request, success_msg)
+                    return redirect('payroll:payroll_processing')
+                    
+            except PaySlip.DoesNotExist:
+                error_msg = 'Payslip not found.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            except Exception as e:
+                error_msg = f'Error changing status: {str(e)}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            
+            return redirect('payroll:payroll_processing')
+        
+        elif action == 'mark_processing':
+            payslip_id = request.POST.get('payslip_id')
+            payroll_id = request.POST.get('payroll_id')
+            
+            try:
+                if payslip_id:
+                    # Single payslip
+                    payslip = PaySlip.objects.get(id=payslip_id)
+                    if payslip.status != 'draft':
+                        error_msg = 'Only draft payslips can be marked as processing.'
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({'success': False, 'message': error_msg})
+                        messages.error(request, error_msg)
+                        return redirect('payroll:payroll_processing')
+                    
+                    payslip.status = 'processing'
+                    payslip.save()
+                    success_msg = f'Payslip marked as processing for {payslip.staff.user.get_full_name()}'
+                    
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        # Calculate updated status counts
+                        if payroll_run := payslip.payroll_run:
+                            payslips = payroll_run.payslips.all()
+                            status_counts = {
+                                'draft': payslips.filter(status='draft').count(),
+                                'processing': payslips.filter(status='processing').count(),
+                                'approved': payslips.filter(status='approved').count(),
+                                'paid': payslips.filter(status='paid').count()
+                            }
+                        else:
+                            status_counts = {}
+                        
+                        return JsonResponse({
+                            'success': True, 
+                            'message': success_msg,
+                            'status_counts': status_counts
+                        })
+                    else:
+                        messages.success(request, success_msg)
+                        
+                elif payroll_id:
+                    # All payslips in payroll run
+                    payroll_run = PayrollRun.objects.get(id=payroll_id)
+                    draft_payslips = PaySlip.objects.filter(payroll_run=payroll_run, status='draft')
+                    count = draft_payslips.count()
+                    
+                    if count > 0:
+                        draft_payslips.update(status='processing')
+                        success_msg = f'Marked {count} payslips as processing'
+                    else:
+                        success_msg = f'No draft payslips found to process'
+                    
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        # Calculate updated status counts
+                        payslips = payroll_run.payslips.all()
+                        status_counts = {
+                            'draft': payslips.filter(status='draft').count(),
+                            'processing': payslips.filter(status='processing').count(),
+                            'approved': payslips.filter(status='approved').count(),
+                            'paid': payslips.filter(status='paid').count()
+                        }
+                        
+                        return JsonResponse({
+                            'success': True, 
+                            'message': success_msg,
+                            'status_counts': status_counts
+                        })
+                    else:
+                        messages.success(request, success_msg)
+                        
+            except PaySlip.DoesNotExist:
+                error_msg = 'Payslip not found.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            except Exception as e:
+                error_msg = f'Error updating status: {str(e)}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            
+            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return redirect('payroll:payroll_processing')
+        
+        elif action == 'mark_approved':
+            payslip_id = request.POST.get('payslip_id')
+            payroll_id = request.POST.get('payroll_id')
+            
+            try:
+                if payslip_id:
+                    # Single payslip
+                    payslip = PaySlip.objects.get(id=payslip_id)
+                    if payslip.status not in ['draft', 'processing']:
+                        error_msg = 'Only draft or processing payslips can be approved.'
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({'success': False, 'message': error_msg})
+                        messages.error(request, error_msg)
+                        return redirect('payroll:payroll_processing')
+                    
+                    payslip.status = 'approved'
+                    payslip.save()
+                    success_msg = f'Payslip approved for {payslip.staff.user.get_full_name()}'
+                    
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        # Calculate updated status counts
+                        if payroll_run := payslip.payroll_run:
+                            payslips = payroll_run.payslips.all()
+                            status_counts = {
+                                'draft': payslips.filter(status='draft').count(),
+                                'processing': payslips.filter(status='processing').count(),
+                                'approved': payslips.filter(status='approved').count(),
+                                'paid': payslips.filter(status='paid').count()
+                            }
+                        else:
+                            status_counts = {}
+                        
+                        return JsonResponse({
+                            'success': True, 
+                            'message': success_msg,
+                            'status_counts': status_counts
+                        })
+                    else:
+                        messages.success(request, success_msg)
+                        
+                elif payroll_id:
+                    # All payslips in payroll run
+                    payroll_run = PayrollRun.objects.get(id=payroll_id)
+                    eligible_payslips = PaySlip.objects.filter(payroll_run=payroll_run, status__in=['draft', 'processing'])
+                    count = eligible_payslips.count()
+                    
+                    if count > 0:
+                        eligible_payslips.update(status='approved')
+                        success_msg = f'Approved {count} payslips'
+                    else:
+                        success_msg = f'No draft or processing payslips found to approve'
+                    
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        # Calculate updated status counts
+                        payslips = payroll_run.payslips.all()
+                        status_counts = {
+                            'draft': payslips.filter(status='draft').count(),
+                            'processing': payslips.filter(status='processing').count(),
+                            'approved': payslips.filter(status='approved').count(),
+                            'paid': payslips.filter(status='paid').count()
+                        }
+                        
+                        return JsonResponse({
+                            'success': True, 
+                            'message': success_msg,
+                            'status_counts': status_counts
+                        })
+                    else:
+                        messages.success(request, success_msg)
+                        
+            except PaySlip.DoesNotExist:
+                error_msg = 'Payslip not found.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            except Exception as e:
+                error_msg = f'Error approving payslips: {str(e)}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            
+            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return redirect('payroll:payroll_processing')
+        
+        elif action == 'mark_cancelled':
+            payslip_id = request.POST.get('payslip_id')
+            
+            try:
+                payslip = PaySlip.objects.get(id=payslip_id)
+                if payslip.status == 'paid':
+                    messages.error(request, 'Cannot cancel a paid payslip.')
+                else:
+                    payslip.status = 'cancelled'
+                    payslip.save()
+                    messages.success(request, f'Payslip cancelled for {payslip.staff.user.get_full_name()}')
+            except Exception as e:
+                messages.error(request, f'Error cancelling payslip: {str(e)}')
         
         elif action == 'mark_all_paid':
             payroll_id = request.POST.get('payroll_id')
@@ -321,7 +618,14 @@ def payroll_processing(request):
             
             try:
                 payroll_run = PayrollRun.objects.get(id=payroll_id)
-                payslips = PaySlip.objects.filter(payroll_run=payroll_run, status='pending')
+                payslips = PaySlip.objects.filter(payroll_run=payroll_run, status='approved')
+                
+                if not payslips.exists():
+                    error_msg = 'No approved payslips found to mark as paid.'
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'success': False, 'message': error_msg})
+                    messages.error(request, error_msg)
+                    return redirect('payroll:payroll_processing')
                 
                 # Create expenditure category for payroll if not exists
                 category, _ = ExpenditureCategory.objects.get_or_create(
@@ -362,22 +666,53 @@ def payroll_processing(request):
                     payslip.payment_reference = payment_ref
                     payslip.save()
                 
-                messages.success(request, f'Marked {len(payslips)} payslips as paid.')
+                success_msg = f'Marked {len(payslips)} payslips as paid.'
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    # Calculate updated status counts
+                    all_payslips = payroll_run.payslips.all()
+                    status_counts = {
+                        'draft': all_payslips.filter(status='draft').count(),
+                        'processing': all_payslips.filter(status='processing').count(),
+                        'approved': all_payslips.filter(status='approved').count(),
+                        'paid': all_payslips.filter(status='paid').count()
+                    }
+                    
+                    return JsonResponse({
+                        'success': True, 
+                        'message': success_msg,
+                        'status_counts': status_counts
+                    })
+                else:
+                    messages.success(request, success_msg)
+                    
+            except PayrollRun.DoesNotExist:
+                error_msg = 'Payroll run not found.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
             except Exception as e:
-                messages.error(request, f'Error processing batch payment: {str(e)}')
+                error_msg = f'Error marking payslips as paid: {str(e)}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+            
+            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return redirect('payroll:payroll_processing')
         
-        elif action == 'mark_selected_paid':
+        elif action == 'mark_paid':
             payslip_id = request.POST.get('payslip_id')
-            payment_date = date.today()
-            payment_ref = f'PAY-{date.today().strftime("%Y%m%d")}-{payslip_id[:8]}' if payslip_id else f'PAY-{date.today().strftime("%Y%m%d")}'
+            payment_date = request.POST.get('payment_date')
+            payment_reference = request.POST.get('payment_reference')
+            payment_method = request.POST.get('payment_method')
+            payment_notes = request.POST.get('payment_notes', '')
+            
+            if not payslip_id or not payment_date or not payment_reference:
+                messages.error(request, 'Payment date and reference are required.')
+                return redirect('payroll:payroll_processing')
             
             try:
-                if payslip_id:
-                    payslips = PaySlip.objects.filter(id=payslip_id, status='pending')
-                else:
-                    # Fallback to multiple selection
-                    payslip_ids = request.POST.getlist('payslip_ids')
-                    payslips = PaySlip.objects.filter(id__in=payslip_ids, status='pending')
+                payslip = PaySlip.objects.get(id=payslip_id, status='pending')
                 
                 # Create expenditure category for payroll if not exists
                 category, _ = ExpenditureCategory.objects.get_or_create(
@@ -390,53 +725,65 @@ def payroll_processing(request):
                     }
                 )
                 
-                for payslip in payslips:
-                    # Create expenditure record for audit trail
-                    Expenditure.objects.create(
-                        branch=payslip.staff.user.branch if payslip.staff.user.branch else None,
-                        category=category,
-                        level='mission',
-                        amount=payslip.net_pay,
-                        date=payment_date,
-                        title=f'Salary - {payslip.staff.user.get_full_name()}',
-                        description=f'Salary payment for {calendar.month_name[payslip.payroll_run.month]} {payslip.payroll_run.year}',
-                        vendor=payslip.staff.user.get_full_name(),
-                        reference_number=payment_ref,
-                        status='approved',
-                        approved_by=request.user,
-                        approved_at=timezone.now(),
-                        notes=f'Payment method: Bank transfer. Payslip ID: {payslip.id}'
-                    )
-                    
-                    # Mark payslip as paid
-                    payslip.status = 'paid'
-                    payslip.payment_date = payment_date
-                    payslip.payment_reference = payment_ref
-                    payslip.save()
+                # Create expenditure record for audit trail
+                Expenditure.objects.create(
+                    branch=payslip.staff.user.branch if payslip.staff.user.branch else None,
+                    category=category,
+                    level='mission',
+                    amount=payslip.net_pay,
+                    date=payment_date,
+                    title=f'Salary - {payslip.staff.user.get_full_name()}',
+                    description=f'Salary payment for {calendar.month_name[payslip.payroll_run.month]} {payslip.payroll_run.year}',
+                    vendor=payslip.staff.user.get_full_name(),
+                    reference_number=payment_reference,
+                    status='approved',
+                    approved_by=request.user,
+                    approved_at=timezone.now(),
+                    notes=f'Payment method: {payment_method}. Payslip ID: {payslip.id}. {payment_notes}'
+                )
                 
-                messages.success(request, f'Marked {len(payslips)} payslips as paid.')
+                # Mark payslip as paid
+                payslip.status = 'paid'
+                payslip.payment_date = payment_date
+                payslip.payment_reference = payment_reference
+                payslip.notes = payment_notes
+                payslip.save()
+                
+                messages.success(request, f'Payment processed for {payslip.staff.user.get_full_name()}')
+            except PaySlip.DoesNotExist:
+                messages.error(request, 'Payslip not found or already paid.')
             except Exception as e:
                 messages.error(request, f'Error processing payment: {str(e)}')
         
         return redirect('payroll:payroll_processing')
     
-    # Get payroll runs
-    month = int(request.GET.get('month', date.today().month))
-    year = int(request.GET.get('year', date.today().year))
+    # Get payroll runs - use timezone-aware date
+    from django.utils import timezone
+    now = timezone.now()
+    month = int(request.GET.get('month', now.month))
+    year = int(request.GET.get('year', now.year))
     
     payroll_run = PayrollRun.objects.filter(month=month, year=year).prefetch_related('payslips__staff__user').first()
     
-    # Calculate paid count if payroll exists
-    paid_count = 0
+    # Calculate status counts if payroll exists
+    draft_count = processing_count = approved_count = paid_count = 0
     if payroll_run:
-        paid_count = payroll_run.payslips.filter(status='paid').count()
+        payslips = payroll_run.payslips.all()
+        draft_count = payslips.filter(status='draft').count()
+        processing_count = payslips.filter(status='processing').count()
+        approved_count = payslips.filter(status='approved').count()
+        paid_count = payslips.filter(status='paid').count()
     
     # Month/year options
     months = [(i, calendar.month_name[i]) for i in range(1, 13)]
-    years = list(range(date.today().year - 2, date.today().year + 2))
+    years = list(range(now.year - 2, now.year + 3))
+    years.sort(reverse=True)  # Sort years in descending order
     
     context = {
         'payroll_run': payroll_run,
+        'draft_count': draft_count,
+        'processing_count': processing_count,
+        'approved_count': approved_count,
         'paid_count': paid_count,
         'month': month,
         'year': year,
@@ -554,10 +901,10 @@ def payment_history(request):
     
     # Base queryset
     payslips = PaySlip.objects.select_related(
-        'staff_profile__user',
-        'staff_profile__position',
+        'staff__user',
+        'staff',
         'payroll_run'
-    ).order_by('-payroll_run__year', '-payroll_run__month', 'staff_profile__user__last_name')
+    ).order_by('-payroll_run__year', '-payroll_run__month', 'staff__user__last_name')
     
     # Apply filters
     if year:
@@ -567,7 +914,7 @@ def payment_history(request):
         payslips = payslips.filter(payroll_run__month=month)
     
     if staff_id:
-        payslips = payslips.filter(staff_profile_id=staff_id)
+        payslips = payslips.filter(staff_id=staff_id)
     
     # Calculate summary statistics
     total_gross_pay = payslips.aggregate(total=Sum('gross_pay'))['total'] or Decimal('0.00')
@@ -651,10 +998,10 @@ def export_payment_history(request):
     
     # Base queryset
     payslips = PaySlip.objects.select_related(
-        'staff_profile__user',
-        'staff_profile__position',
+        'staff__user',
+        'staff',
         'payroll_run'
-    ).order_by('-payroll_run__year', '-payroll_run__month', 'staff_profile__user__last_name')
+    ).order_by('-payroll_run__year', '-payroll_run__month', 'staff__user__last_name')
     
     # Apply filters
     if year:
@@ -662,7 +1009,7 @@ def export_payment_history(request):
     if month:
         payslips = payslips.filter(payroll_run__month=month)
     if staff_id:
-        payslips = payslips.filter(staff_profile_id=staff_id)
+        payslips = payslips.filter(staff_id=staff_id)
     
     try:
         import openpyxl
@@ -686,7 +1033,7 @@ def export_payment_history(request):
     
     # Headers
     headers = ["Year", "Month", "Staff ID", "Staff Name", "Position", 
-               "Basic Salary", "Allowances", "Gross Pay", "SSNIT", "Other Deductions", 
+               "Basic Salary", "Allowances", "Gross Pay", "Tithe", "Other Deductions", 
                "Total Deductions", "Net Pay", "Payment Status"]
     
     for col, header in enumerate(headers, 1):
@@ -697,20 +1044,28 @@ def export_payment_history(request):
     
     # Data rows
     for row, payslip in enumerate(payslips, 2):
+        # Get tithe amount from deductions breakdown
+        tithe_amount = 0
+        if payslip.deductions_breakdown:
+            for name, amount in payslip.deductions_breakdown.items():
+                if 'Tithe' in name:
+                    tithe_amount = Decimal(str(amount))
+                    break
+        
         data = [
             payslip.payroll_run.year,
             month_name[payslip.payroll_run.month],
-            payslip.staff_profile.user.username,
-            payslip.staff_profile.user.get_full_name(),
-            payslip.staff_profile.position.name if payslip.staff_profile.position else "N/A",
+            payslip.staff.user.username,
+            payslip.staff.user.get_full_name(),
+            payslip.staff.position or "N/A",
             payslip.basic_salary,
             payslip.total_allowances,
             payslip.gross_pay,
-            payslip.ssnit_deduction,
-            payslip.total_deductions - payslip.ssnit_deduction,
+            tithe_amount,
+            payslip.total_deductions - tithe_amount,
             payslip.total_deductions,
             payslip.net_pay,
-            payslip.get_payment_status_display()
+            payslip.get_status_display()
         ]
         
         for col, value in enumerate(data, 1):

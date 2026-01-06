@@ -24,15 +24,13 @@
         </div>
     </div>
 
-    <!-- Generate Payroll Form -->
+    <!-- Payroll Filter Section -->
     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Generate New Payroll</h2>
-        <form method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="generate">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Payroll Management</h2>
+        <div class="flex flex-wrap gap-4 items-end">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                <select name="month" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" required>
+                <select id="monthSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                     {% for m in months %}
                     <option value="{{ m.0 }}" {% if m.0 == month %}selected{% endif %}>{{ m.1 }}</option>
                     {% endfor %}
@@ -40,19 +38,27 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                <select name="year" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" required>
+                <select id="yearSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                     {% for y in years %}
-                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}">{{ y }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="md:col-span-2 flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+            <div class="flex gap-2">
+                <button type="button" onclick="generatePayroll()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                     <i class="material-icons mr-2">add_circle</i>
                     Generate Payroll
                 </button>
+                <button type="button" onclick="viewPayroll()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                    <i class="material-icons mr-2">filter_list</i>
+                    View
+                </button>
+                <a href="{% url 'payroll:payroll_processing' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors inline-flex items-center">
+                    <i class="material-icons mr-2">refresh</i>
+                    Current
+                </a>
             </div>
-        </form>
+        </div>
     </div>
 
     <!-- Payroll Run Details -->
@@ -64,40 +70,55 @@
                 <p class="text-sm text-gray-500">{{ payroll_run.payslips.count }} payslips generated</p>
             </div>
             <div class="flex space-x-2">
-                <form method="post" class="inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="mark_all_paid">
-                    <input type="hidden" name="payroll_id" value="{{ payroll_run.id }}">
-                    <button type="submit" class="btn-primary btn-sm">
-                        <span class="material-icons-outlined mr-1">check_circle</span> Mark All Paid
-                    </button>
-                </form>
+                <!-- Status Management Actions -->
+                <button type="button" onclick="markAllProcessing()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <i class="material-icons mr-2">settings</i>
+                    Process All
+                </button>
+                <button type="button" onclick="markAllApproved()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+                    <i class="material-icons mr-2">verified</i>
+                    Approve All
+                </button>
+                <button type="button" onclick="markAllPaid()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                    <i class="material-icons mr-2">check_circle</i>
+                    Pay All
+                </button>
+                
+                <!-- Export and Print -->
                 <button onclick="window.print()" class="btn-secondary btn-sm">
                     <span class="material-icons-outlined mr-1">print</span> Print
                 </button>
                 <a href="{% url 'payroll:export_payroll' %}?month={{ month }}&year={{ year }}" class="btn-secondary btn-sm">
-                    <span class="material-icons-outlined mr-1">download</span> Export Excel
+                    <span class="material-icons-outlined mr-1">download</span> Export
                 </a>
             </div>
         </div>
 
         <!-- Summary Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 border-b">
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 p-6 border-b">
             <div>
                 <p class="text-sm text-gray-500">Total Gross Pay</p>
                 <p class="text-2xl font-bold text-gray-900">{{ payroll_run.total_gross|currency }}</p>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500">Total Deductions</p>
-                <p class="text-2xl font-bold text-red-600">{{ payroll_run.total_deductions|currency }}</p>
             </div>
             <div>
                 <p class="text-sm text-gray-500">Total Net Pay</p>
                 <p class="text-2xl font-bold text-green-600">{{ payroll_run.total_net|currency }}</p>
             </div>
             <div>
-                <p class="text-sm text-gray-500">Payment Status</p>
-                <p class="text-2xl font-bold text-blue-600">{{ paid_count }}/{{ payroll_run.payslips.count }}</p>
+                <p class="text-sm text-gray-500">Draft</p>
+                <p class="text-2xl font-bold text-gray-600" id="draft-count">{{ draft_count }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Processing</p>
+                <p class="text-2xl font-bold text-blue-600" id="processing-count">{{ processing_count }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Approved</p>
+                <p class="text-2xl font-bold text-purple-600" id="approved-count">{{ approved_count }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Paid</p>
+                <p class="text-2xl font-bold text-green-600" id="paid-count">{{ paid_count }}</p>
             </div>
         </div>
 
@@ -107,17 +128,18 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff Member</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gross Pay</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Deductions</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Pay</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manage Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for payslip in payroll_run.payslips.all %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50" data-payslip-id="{{ payslip.id }}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">
@@ -129,42 +151,95 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payslip.staff.position|default:"Staff" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="space-y-1">
+                                {% if payslip.staff.user.phone %}
+                                <p class="flex items-center">
+                                    <span class="material-icons-outlined text-xs mr-1">phone</span>
+                                    {{ payslip.staff.user.phone }}
+                                </p>
+                                {% endif %}
+                                {% if payslip.staff.user.email %}
+                                <p class="flex items-center">
+                                    <span class="material-icons-outlined text-xs mr-1">email</span>
+                                    <span class="text-xs">{{ payslip.staff.user.email|truncatechars:20 }}</span>
+                                </p>
+                                {% endif %}
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">{{ payslip.gross_pay|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">{{ payslip.total_deductions|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">{{ payslip.net_pay|currency }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if payslip.is_paid %}
-                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                                <span class="material-icons-outlined text-xs mr-1">check_circle</span> Paid
+                        <td class="px-6 py-4 whitespace-nowrap status-display">
+                            {% if payslip.status == 'paid' %}
+                            <div>
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                    <span class="material-icons-outlined text-xs mr-1">check_circle</span> Paid
+                                </span>
+                                {% if payslip.payment_reference %}
+                                <p class="text-xs text-gray-500 mt-1">Ref: {{ payslip.payment_reference }}</p>
+                                {% endif %}
+                                {% if payslip.payment_date %}
+                                <p class="text-xs text-gray-500">{{ payslip.payment_date|date:"M d, Y" }}</p>
+                                {% endif %}
+                            </div>
+                            {% elif payslip.status == 'approved' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                <span class="material-icons-outlined text-xs mr-1">verified</span> Approved
+                            </span>
+                            {% elif payslip.status == 'processing' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800">
+                                <span class="material-icons-outlined text-xs mr-1">settings</span> Processing
+                            </span>
+                            {% elif payslip.status == 'cancelled' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                <span class="material-icons-outlined text-xs mr-1">cancel</span> Cancelled
                             </span>
                             {% else %}
-                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                <span class="material-icons-outlined text-xs mr-1">pending</span> Pending
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                <span class="material-icons-outlined text-xs mr-1">description</span> Draft
                             </span>
                             {% endif %}
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <select name="new_status" class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                    onchange="updateStatus('{{ payslip.id }}', this.value, '{{ payslip.staff.user.get_full_name }}')">
+                                <option value="draft" {% if payslip.status == 'draft' %}selected{% endif %}>Draft</option>
+                                <option value="processing" {% if payslip.status == 'processing' %}selected{% endif %}>Processing</option>
+                                <option value="approved" {% if payslip.status == 'approved' %}selected{% endif %}>Approved</option>
+                                <option value="paid" {% if payslip.status == 'paid' %}selected{% endif %}>Paid</option>
+                                <option value="cancelled" {% if payslip.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex space-x-2">
-                                <a href="{% url 'payroll:payslip_detail' payslip.id %}" class="text-primary-600 hover:text-primary-900">
+                                <a href="{% url 'payroll:payslip_detail' payslip.id %}" class="text-primary-600 hover:text-primary-900" title="View details">
                                     View
                                 </a>
-                                {% if not payslip.is_paid %}
+                                
+                                <!-- Quick Actions -->
+                                {% if payslip.status == 'draft' %}
                                 <form method="post" class="inline">
                                     {% csrf_token %}
-                                    <input type="hidden" name="action" value="mark_paid">
+                                    <input type="hidden" name="action" value="mark_processing">
                                     <input type="hidden" name="payslip_id" value="{{ payslip.id }}">
-                                    <button type="submit" class="text-green-600 hover:text-green-900">
-                                        Mark Paid
+                                    <button type="submit" class="text-blue-600 hover:text-blue-900" title="Mark as processing">
+                                        Process
                                     </button>
                                 </form>
+                                {% endif %}
+                                
+                                {% if payslip.status == 'approved' %}
+                                <button onclick="openPaymentModal('{{ payslip.id }}', '{{ payslip.staff.user.get_full_name }}', '{{ payslip.net_pay }}')" class="text-green-600 hover:text-green-900" title="Mark as paid">
+                                    Pay
+                                </button>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="9" class="px-6 py-12 text-center">
                             <span class="material-icons-outlined text-5xl text-gray-300">receipt_long</span>
                             <p class="mt-2 text-gray-500">No payslips generated yet</p>
                         </td>
@@ -175,11 +250,494 @@
         </div>
     </div>
     {% else %}
+    <!-- No Payroll Generated State -->
     <div class="bg-white shadow rounded-lg p-12 text-center">
         <span class="material-icons-outlined text-6xl text-gray-300">account_balance_wallet</span>
-        <h3 class="mt-4 text-lg font-medium text-gray-900">No Payroll Selected</h3>
-        <p class="mt-2 text-sm text-gray-500">Generate a new payroll or select a month/year to view existing payroll</p>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No Payroll Generated for {{ month_name }} {{ year }}</h3>
+        <p class="mt-2 text-sm text-gray-500">Generate payroll for this month to start managing payments</p>
+        
+        <!-- Quick Generate Button -->
+        <div class="mt-6">
+            <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="generate">
+                <input type="hidden" name="month" value="{{ month }}">
+                <input type="hidden" name="year" value="{{ year }}">
+                <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <i class="material-icons mr-2">add_circle</i>
+                    Generate Payroll for {{ month_name }} {{ year }}
+                </button>
+            </form>
+        </div>
     </div>
     {% endif %}
 </div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+        <!-- Center the modal -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <span class="material-icons text-yellow-600">warning</span>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            Confirm Action
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500" id="confirmMessage">
+                                Are you sure you want to proceed with this action?
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" id="confirmBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                    Confirm
+                </button>
+                <button type="button" onclick="closeConfirmModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closePaymentModal()"></div>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form method="post" id="paymentForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="mark_paid">
+                <input type="hidden" name="payslip_id" id="payment_payslip_id">
+
+                <!-- Header -->
+                <div class="px-6 py-4 bg-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Mark Payment as Paid</h3>
+                            <p class="text-sm text-gray-500 mt-1">Processing payment for <span id="payment_staff_name" class="font-medium text-gray-700"></span></p>
+                        </div>
+                        <button type="button" onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-500 transition-colors">
+                            <span class="material-icons-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Body -->
+                <div class="px-6 py-4 bg-white">
+                    <div class="space-y-4">
+                        <!-- Payment Summary -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-gray-900 mb-2">Payment Summary</h4>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Net Amount:</span>
+                                <span id="payment_amount" class="text-lg font-bold text-green-600"></span>
+                            </div>
+                        </div>
+
+                        <!-- Payment Details -->
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Payment Details</h4>
+                            <div class="space-y-4">
+                                <!-- Payment Date -->
+                                <div>
+                                    <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-2">Payment Date</label>
+                                    <input type="date" id="payment_date" name="payment_date" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+
+                                <!-- Payment Reference -->
+                                <div>
+                                    <label for="payment_reference" class="block text-sm font-medium text-gray-700 mb-2">Payment Reference/ID</label>
+                                    <input type="text" id="payment_reference" name="payment_reference" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="e.g., BANK-REF-12345, TXN-001">
+                                    <p class="mt-1 text-xs text-gray-500">Transaction reference from bank or payment system</p>
+                                </div>
+
+                                <!-- Payment Method -->
+                                <div>
+                                    <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                    <select id="payment_method" name="payment_method" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                        <option value="">Select method</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                        <option value="cash">Cash</option>
+                                        <option value="check">Check</option>
+                                        <option value="mobile_money">Mobile Money</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <!-- Notes -->
+                                <div>
+                                    <label for="payment_notes" class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                                    <textarea id="payment_notes" name="payment_notes" rows="3"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                              placeholder="Additional payment notes..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                    <button type="button" onclick="closePaymentModal()" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                        <i class="material-icons mr-2">check_circle</i>
+                        Mark as Paid
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// AJAX status update
+function updateStatus(payslipId, newStatus, staffName) {
+    if (newStatus === 'cancelled') {
+        showConfirmModal(`Are you sure you want to cancel the payslip for ${staffName}?`, function() {
+            performStatusUpdate(payslipId, newStatus, staffName);
+        });
+        return;
+    } else if (newStatus === 'paid') {
+        // Open payment modal instead of direct update
+        openPaymentModal(payslipId, staffName, '0');
+        return;
+    } else {
+        showConfirmModal(`Change status for ${staffName} to ${newStatus}?`, function() {
+            performStatusUpdate(payslipId, newStatus, staffName);
+        });
+        return;
+    }
+}
+
+function performStatusUpdate(payslipId, newStatus, staffName) {
+    fetch('/payroll/payroll-processing/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `action=change_status&payslip_id=${payslipId}&new_status=${newStatus}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showMessage(data.message, 'success');
+            
+            // Handle special actions
+            if (data.action === 'open_payment_modal') {
+                openPaymentModal(data.payslip_id, data.staff_name, data.amount);
+                // Update status display to approved
+                updateStatusDisplay(payslipId, 'approved');
+            } else {
+                // Update the status display
+                updateStatusDisplay(payslipId, newStatus);
+            }
+            
+            // Update status counts
+            if (data.status_counts) {
+                updateStatusCounts(data.status_counts);
+            }
+        } else {
+            showMessage(data.message, 'error');
+            // Reset dropdown
+            const dropdown = document.querySelector(`select[onchange*="${payslipId}"]`);
+            if (dropdown) {
+                dropdown.value = dropdown.getAttribute('data-current-status');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error updating status', 'error');
+        // Reset dropdown
+        const dropdown = document.querySelector(`select[onchange*="${payslipId}"]`);
+        if (dropdown) {
+            dropdown.value = dropdown.getAttribute('data-current-status');
+        }
+    });
+}
+
+// Update status display
+function updateStatusDisplay(payslipId, newStatus) {
+    const row = document.querySelector(`tr[data-payslip-id="${payslipId}"]`);
+    if (row) {
+        const statusCell = row.querySelector('.status-display');
+        if (statusCell) {
+            statusCell.innerHTML = getStatusBadge(newStatus);
+        }
+    }
+}
+
+// Get status badge HTML
+function getStatusBadge(status) {
+    const badges = {
+        'draft': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800"><span class="material-icons-outlined text-xs mr-1">description</span> Draft</span>',
+        'processing': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800"><span class="material-icons-outlined text-xs mr-1">settings</span> Processing</span>',
+        'approved': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"><span class="material-icons-outlined text-xs mr-1">verified</span> Approved</span>',
+        'paid': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800"><span class="material-icons-outlined text-xs mr-1">check_circle</span> Paid</span>',
+        'cancelled': '<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800"><span class="material-icons-outlined text-xs mr-1">cancel</span> Cancelled</span>'
+    };
+    return badges[status] || badges['draft'];
+}
+
+// Update status counts
+function updateStatusCounts(counts) {
+    if (counts.draft !== undefined) document.getElementById('draft-count').textContent = counts.draft;
+    if (counts.processing !== undefined) document.getElementById('processing-count').textContent = counts.processing;
+    if (counts.approved !== undefined) document.getElementById('approved-count').textContent = counts.approved;
+    if (counts.paid !== undefined) document.getElementById('paid-count').textContent = counts.paid;
+}
+
+// Show message
+function showMessage(message, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000);
+}
+
+// Generate payroll
+function generatePayroll() {
+    const month = document.getElementById('monthSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    
+    fetch('/payroll/payroll-processing/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken,
+        },
+        body: `action=generate&month=${month}&year=${year}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Reload page to show new payroll
+            setTimeout(() => {
+                window.location.href = `/payroll/payroll-processing/?month=${month}&year=${year}`;
+            }, 1000);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error generating payroll', 'error');
+    });
+}
+
+// View payroll
+function viewPayroll() {
+    const month = document.getElementById('monthSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    window.location.href = `/payroll/payroll-processing/?month=${month}&year=${year}`;
+}
+
+function openPaymentModal(payslipId, staffName, amount) {
+    document.getElementById('payment_payslip_id').value = payslipId;
+    document.getElementById('payment_staff_name').textContent = staffName;
+    document.getElementById('payment_amount').textContent = '{{ site_settings.currency_symbol }} ' + parseFloat(amount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('payment_date').value = today;
+    
+    // Generate default reference
+    const defaultRef = 'PAY-' + today.replace(/-/g, '') + '-' + payslipId.slice(0, 8);
+    document.getElementById('payment_reference').value = defaultRef;
+    
+    // Show modal
+    document.getElementById('paymentModal').classList.remove('hidden');
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    // Reset form
+    document.getElementById('paymentForm').reset();
+}
+
+// Confirmation modal functions
+let confirmCallback = null;
+
+function showConfirmModal(message, callback) {
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    confirmCallback = callback;
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    confirmCallback = null;
+}
+
+// Confirm button handler
+document.getElementById('confirmBtn').addEventListener('click', function() {
+    if (confirmCallback) {
+        confirmCallback();
+    }
+    closeConfirmModal();
+});
+
+// Bulk action functions
+function markAllProcessing() {
+    const payrollId = '{{ payroll_run.id }}';
+    
+    showConfirmModal('Are you sure you want to mark all draft payslips as processing?', function() {
+        fetch('/payroll/payroll-processing/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `action=mark_processing&payroll_id=${payrollId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // Update status counts
+                if (data.status_counts) {
+                    updateStatusCounts(data.status_counts);
+                }
+                // Reload page to show updated status badges
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showMessage(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error updating status', 'error');
+        });
+    });
+}
+
+function markAllApproved() {
+    const payrollId = '{{ payroll_run.id }}';
+    
+    showConfirmModal('Are you sure you want to mark all draft and processing payslips as approved?', function() {
+        fetch('/payroll/payroll-processing/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `action=mark_approved&payroll_id=${payrollId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // Update status counts
+                if (data.status_counts) {
+                    updateStatusCounts(data.status_counts);
+                }
+                // Reload page to show updated status badges
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showMessage(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error updating status', 'error');
+        });
+    });
+}
+
+function markAllPaid() {
+    const payrollId = '{{ payroll_run.id }}';
+    
+    showConfirmModal('Are you sure you want to mark all approved payslips as paid? This will create expenditure records and cannot be undone.', function() {
+        fetch('/payroll/payroll-processing/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `action=mark_all_paid&payroll_id=${payrollId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                // Update status counts
+                if (data.status_counts) {
+                    updateStatusCounts(data.status_counts);
+                }
+                // Reload page to show updated status badges
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showMessage(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error updating status', 'error');
+        });
+    });
+}
+</script>
 {% endblock %}
