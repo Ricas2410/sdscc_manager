@@ -13,7 +13,7 @@
                 <p class="text-slate-600 mt-1">Monthly salary payment records and breakdown</p>
             </div>
             <div class="flex gap-2">
-                <a href="?{{ request.GET.urlencode }}&export=excel" class="btn btn-success" onclick="window.location.href='{% url 'payroll:export_payment_history' %}?{{ request.GET.urlencode }}'; return false;">
+                <a href="{% url 'payroll:export_payment_history' %}?{{ request.GET.urlencode }}" class="btn btn-success">
                     <span class="material-icons-outlined text-lg mr-2">download</span>
                     Export to Excel
                 </a>
@@ -141,8 +141,6 @@
                     {% for item in monthly_breakdown %}
                     <tr>
                         <td class="font-medium">
-                            {% load calendar %}
-                            {% widthratio item.payroll_run__month 1 1 as month_num %}
                             {{ item.payroll_run__month|date:"F" }} {{ item.payroll_run__year }}
                         </td>
                         <td>{{ item.payslip_count }}</td>
@@ -179,7 +177,7 @@
                         <th>Basic Salary</th>
                         <th>Allowances</th>
                         <th>Gross Pay</th>
-                        <th>SSNIT</th>
+                        <th>Tithe</th>
                         <th>Deductions</th>
                         <th>Net Pay</th>
                         <th>Status</th>
@@ -190,17 +188,27 @@
                     {% for payslip in payslips %}
                     <tr>
                         <td class="font-medium">
-                            {% load calendar %}
                             {{ payslip.payroll_run.month|date:"M" }} {{ payslip.payroll_run.year }}
                         </td>
                         {% if is_admin or is_auditor %}
-                        <td>{{ payslip.staff_profile.user.get_full_name }}</td>
-                        <td>{{ payslip.staff_profile.position.name|default:"N/A" }}</td>
+                        <td>{{ payslip.staff.user.get_full_name }}</td>
+                        <td>{{ payslip.staff.position|default:"N/A" }}</td>
                         {% endif %}
                         <td>GH₵{{ payslip.basic_salary|floatformat:2 }}</td>
                         <td>GH₵{{ payslip.total_allowances|floatformat:2 }}</td>
                         <td class="font-semibold text-green-700">GH₵{{ payslip.gross_pay|floatformat:2 }}</td>
-                        <td class="text-red-600">GH₵{{ payslip.ssnit_deduction|floatformat:2 }}</td>
+                        <td class="text-red-600">
+                            {% with tithe_amount=0 %}
+                                {% for name, amount in payslip.deductions_breakdown.items %}
+                                    {% if 'Tithe' in name %}
+                                        GH₵{{ amount|floatformat:2 }}
+                                        {% with tithe_amount=amount %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if tithe_amount == 0 %}GH₵0.00{% endif %}
+                            {% endwith %}
+                        </td>
                         <td class="text-red-700">GH₵{{ payslip.total_deductions|floatformat:2 }}</td>
                         <td class="font-bold text-blue-700">GH₵{{ payslip.net_pay|floatformat:2 }}</td>
                         <td>

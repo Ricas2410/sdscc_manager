@@ -34,6 +34,7 @@ class StaffPayrollProfile(TimeStampedModel):
     
     # Salary Details
     base_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tithe_deduction_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=10.0, help_text="Percentage of gross salary for tithe deduction")
     
     class PaymentCycle(models.TextChoices):
         WEEKLY = 'weekly', 'Weekly'
@@ -176,7 +177,7 @@ class PayrollRun(TimeStampedModel):
     """A payroll processing run for a specific period."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='payroll_runs')
+    fiscal_year = models.ForeignKey('core.FiscalYear', on_delete=models.PROTECT, related_name='payroll_runs', null=True, blank=True)
     
     month = models.IntegerField()
     year = models.IntegerField()

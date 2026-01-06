@@ -191,9 +191,17 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if payslip.status == 'paid' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <span class="material-icons text-xs mr-1">check_circle</span>Paid
-                            </span>
+                            <div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <span class="material-icons text-xs mr-1">check_circle</span>Paid
+                                </span>
+                                {% if payslip.payment_reference %}
+                                <div class="text-xs text-gray-500 mt-1">Ref: {{ payslip.payment_reference }}</div>
+                                {% endif %}
+                                {% if payslip.payment_date %}
+                                <div class="text-xs text-gray-500">{{ payslip.payment_date|date:"M d, Y" }}</div>
+                                {% endif %}
+                            </div>
                             {% elif payslip.status == 'approved' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                 <span class="material-icons text-xs mr-1">verified</span>Approved

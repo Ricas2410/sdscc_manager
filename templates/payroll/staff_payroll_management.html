@@ -102,9 +102,10 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">{{ profile.total_allowances|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">{{ profile.gross_salary|currency }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a href="{% url 'payroll:update_salary' profile.id %}" class="text-primary-600 hover:text-primary-900">
+                            <button onclick="openEditSalaryModal('{{ profile.id }}', '{{ profile.user.get_full_name }}', '{{ profile.position|default:"" }}', '{{ profile.base_salary }}', '{{ profile.tithe_deduction_percentage }}', '{{ profile.housing_allowance }}', '{{ profile.transport_allowance }}', '{{ profile.other_allowances }}')" 
+                                class="text-primary-600 hover:text-primary-900 font-medium">
                                 Edit Salary
-                            </a>
+                            </button>
                         </td>
                     </tr>
                     {% empty %}
@@ -227,6 +228,17 @@
                                     <p class="mt-1 text-xs text-gray-500">Monthly base salary before allowances</p>
                                 </div>
 
+                                <!-- Tithe Deduction -->
+                                <div>
+                                    <label for="tithe_deduction_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Tithe Deduction (%)
+                                    </label>
+                                    <input type="number" id="tithe_deduction_percentage" name="tithe_deduction_percentage" step="0.1" min="0" max="100" value="10"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="10.0">
+                                    <p class="mt-1 text-xs text-gray-500">Percentage of gross salary deducted as tithe (default: 10%)</p>
+                                </div>
+
                                 <!-- Allowances Grid -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <!-- Housing Allowance -->
@@ -273,6 +285,118 @@
     </div>
 </div>
 
+<!-- Edit Salary Modal -->
+<div id="editSalaryModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeEditSalaryModal()"></div>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form method="post" id="editSalaryForm" class="divide-y divide-gray-200">
+                {% csrf_token %}
+                <input type="hidden" name="profile_id" id="edit_profile_id">
+
+                <!-- Header -->
+                <div class="px-6 py-4 bg-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 id="edit-modal-title" class="text-lg font-semibold text-gray-900">Edit Salary & Deductions</h3>
+                            <p class="text-sm text-gray-500 mt-1">Updating <span id="edit_user_name" class="font-medium text-gray-700"></span></p>
+                        </div>
+                        <button type="button" onclick="closeEditSalaryModal()" class="text-gray-400 hover:text-gray-500 transition-colors">
+                            <span class="sr-only">Close</span>
+                            <i class="material-icons-outlined">close</i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Body -->
+                <div class="px-6 py-4 bg-white">
+                    <div class="space-y-6">
+                        <!-- Employee Information -->
+                        <div>
+                            <label for="edit_position" class="block text-sm font-medium text-gray-700 mb-2">Position/Title</label>
+                            <input type="text" id="edit_position" name="position" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="e.g., Senior Pastor, Administrator, Secretary" required>
+                        </div>
+
+                        <!-- Salary Information -->
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Salary & Compensation</h4>
+                            <div class="space-y-4">
+                                <!-- Base Salary -->
+                                <div>
+                                    <label for="edit_base_salary" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Base Salary ({{ site_settings.currency_symbol }})
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" id="edit_base_salary" name="base_salary" step="0.01" min="0" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="0.00">
+                                </div>
+
+                                <!-- Tithe Deduction -->
+                                <div>
+                                    <label for="edit_tithe_deduction_percentage" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Tithe Deduction (%)
+                                    </label>
+                                    <input type="number" id="edit_tithe_deduction_percentage" name="tithe_deduction_percentage" step="0.1" min="0" max="100"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="10.0">
+                                    <p class="mt-1 text-xs text-gray-500">Percentage of gross salary deducted as tithe</p>
+                                </div>
+
+                                <!-- Allowances Grid -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <!-- Housing Allowance -->
+                                    <div>
+                                        <label for="edit_housing_allowance" class="block text-sm font-medium text-gray-700 mb-2">Housing Allowance</label>
+                                        <input type="number" id="edit_housing_allowance" name="housing_allowance" step="0.01" min="0" value="0"
+                                               class="w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    </div>
+
+                                    <!-- Transport Allowance -->
+                                    <div>
+                                        <label for="edit_transport_allowance" class="block text-sm font-medium text-gray-700 mb-2">Transport Allowance</label>
+                                        <input type="number" id="edit_transport_allowance" name="transport_allowance" step="0.01" min="0" value="0"
+                                               class="w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    </div>
+                                </div>
+
+                                <!-- Other Allowances -->
+                                <div>
+                                    <label for="edit_other_allowances" class="block text-sm font-medium text-gray-700 mb-2">Other Allowances</label>
+                                    <input type="number" id="edit_other_allowances" name="other_allowances" step="0.01" min="0" value="0"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+
+                                <!-- Total Preview -->
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm font-medium text-blue-900">Total Monthly Compensation:</span>
+                                        <span id="edit_total_preview" class="text-sm font-bold text-blue-900">{{ site_settings.currency_symbol }} 0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+                    <button type="button" onclick="closeEditSalaryModal()" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <i class="material-icons mr-2">save</i>
+                        Update Salary
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function openAddPayrollModal(userId, userName, userRole) {
     document.getElementById('modal_user_id').value = userId;
@@ -303,6 +427,44 @@ function calculateTotal() {
     });
 }
 
+function calculateEditTotal() {
+    const baseSalary = parseFloat(document.getElementById('edit_base_salary').value) || 0;
+    const housingAllowance = parseFloat(document.getElementById('edit_housing_allowance').value) || 0;
+    const transportAllowance = parseFloat(document.getElementById('edit_transport_allowance').value) || 0;
+    const otherAllowances = parseFloat(document.getElementById('edit_other_allowances').value) || 0;
+
+    const total = baseSalary + housingAllowance + transportAllowance + otherAllowances;
+
+    document.getElementById('edit_total_preview').textContent = '{{ site_settings.currency_symbol }} ' + total.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function openEditSalaryModal(profileId, userName, position, baseSalary, tithePercentage, housing, transport, other) {
+    document.getElementById('edit_profile_id').value = profileId;
+    document.getElementById('edit_user_name').textContent = userName;
+    document.getElementById('edit_position').value = position || '';
+    document.getElementById('edit_base_salary').value = baseSalary || 0;
+    document.getElementById('edit_tithe_deduction_percentage').value = tithePercentage || 10;
+    document.getElementById('edit_housing_allowance').value = housing || 0;
+    document.getElementById('edit_transport_allowance').value = transport || 0;
+    document.getElementById('edit_other_allowances').value = other || 0;
+    
+    // Set form action
+    document.getElementById('editSalaryForm').action = `/payroll/staff/update-salary/${profileId}/`;
+    
+    // Calculate total
+    calculateEditTotal();
+    
+    // Show modal
+    document.getElementById('editSalaryModal').classList.remove('hidden');
+}
+
+function closeEditSalaryModal() {
+    document.getElementById('editSalaryModal').classList.add('hidden');
+}
+
 // Add event listeners for real-time calculation
 document.addEventListener('DOMContentLoaded', function() {
     const salaryInputs = ['base_salary', 'housing_allowance', 'transport_allowance', 'other_allowances'];
@@ -314,11 +476,24 @@ document.addEventListener('DOMContentLoaded', function() {
             input.addEventListener('change', calculateTotal);
         }
     });
+    
+    const editSalaryInputs = ['edit_base_salary', 'edit_housing_allowance', 'edit_transport_allowance', 'edit_other_allowances'];
+    
+    editSalaryInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('input', calculateEditTotal);
+            input.addEventListener('change', calculateEditTotal);
+        }
+    });
 });
 
 // Close on Escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAddPayrollModal();
+    if (e.key === 'Escape') {
+        closeAddPayrollModal();
+        closeEditSalaryModal();
+    }
 });
 </script>
 {% endblock %}
